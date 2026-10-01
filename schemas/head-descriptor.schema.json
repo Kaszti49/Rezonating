@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rezonating.com/schemas/head-descriptor/v0",
+  "title": "Rezonating head descriptor",
+  "description": "What a sensor head tells the node about itself. Stored in the head's EEPROM (on-chip encoding to be decided; this is the logical form). DRAFT v0 - Tier 1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "type", "model", "serial", "interface", "channels"],
+  "properties": {
+    "schema": { "const": 0 },
+    "type": { "enum": ["geophone", "accelerometer", "piezo"] },
+    "model": { "type": "string", "maxLength": 24, "examples": ["sm24", "adxl355", "disc35"] },
+    "serial": { "type": "string", "maxLength": 12, "examples": ["G-0001"] },
+    "hw_rev": { "type": "integer", "minimum": 0 },
+    "interface": { "enum": ["analog", "i2c"] },
+    "i2c_address": { "type": "integer", "minimum": 8, "maximum": 119 },
+    "channels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["quantity", "units", "sensitivity"],
+        "properties": {
+          "axis": { "enum": ["z", "x", "y"] },
+          "quantity": { "enum": ["velocity", "acceleration", "strain"] },
+          "units": { "enum": ["m/s", "g", "V"] },
+          "sensitivity": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Volts per unit for analog heads; LSB per unit for digital heads."
+          }
+        }
+      }
+    },
+    "recommended_gain": { "enum": [1, 2, 4, 8, 16, 32, 64, 128] },
+    "shunt_ohm": { "type": "number", "exclusiveMinimum": 0, "description": "Damping resistor across a geophone coil, if fitted." },
+    "mount": { "enum": ["spike", "weighted-base", "glue", "magnet", "screw", "clamp", "buried"] },
+    "calibrated": { "type": "string", "format": "date" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "interface": { "const": "i2c" } } },
+      "then": { "required": ["i2c_address"] }
+    }
+  ]
+}

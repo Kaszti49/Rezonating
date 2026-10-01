@@ -1,0 +1,15 @@
+{
+  "schema": 0,
+  "type": "accelerometer",
+  "model": "adxl355",
+  "serial": "A-0001",
+  "hw_rev": 0,
+  "interface": "i2c",
+  "i2c_address": 29,
+  "channels": [
+    { "axis": "x", "quantity": "acceleration", "units": "g", "sensitivity": 256000 },
+    { "axis": "y", "quantity": "acceleration", "units": "g", "sensitivity": 256000 },
+    { "axis": "z", "quantity": "acceleration", "units": "g", "sensitivity": 256000 }
+  ],
+  "mount": "magnet"
+}

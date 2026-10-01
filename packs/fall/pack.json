@@ -1,0 +1,22 @@
+{
+  "schema": 0,
+  "id": "fall",
+  "version": "0.0.1",
+  "name": "Fall detection",
+  "engine": "classifier",
+  "requires": {
+    "heads": [{ "type": "geophone", "min": 1, "max": 4 }],
+    "sample_rate_hz": 1000,
+    "simultaneous": false,
+    "uses_packs": ["footstep-id"]
+  },
+  "dsp": [{ "highpass_hz": 2 }, { "lowpass_hz": 400 }],
+  "trigger": { "type": "threshold", "level": 0.0005, "pre_ms": 500, "post_ms": 3000 },
+  "features": "impact_v1",
+  "model": "model.tflite",
+  "labels": ["fall", "object_drop", "jump", "other"],
+  "params": { "stillness_after_s": 20 },
+  "outputs": [
+    { "key": "fall", "entity": "binary_sensor", "name": "Fall detected", "device_class": "safety" }
+  ]
+}

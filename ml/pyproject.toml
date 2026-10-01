@@ -1,0 +1,24 @@
+[project]
+name = "rezonating-ml"
+version = "0.0.1"
+description = "Features, training and export for Rezonating packs"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "scikit-learn>=1.4",
+  "soundfile>=0.12",
+  "jsonschema[format-nongpl]>=4.21",
+]
+
+[project.optional-dependencies]
+deep = ["torch>=2.2"]
+export = ["tensorflow>=2.15"]
+dev = ["pytest>=8", "jupyter"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

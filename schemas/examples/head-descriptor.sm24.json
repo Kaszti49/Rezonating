@@ -1,0 +1,13 @@
+{
+  "schema": 0,
+  "type": "geophone",
+  "model": "sm24",
+  "serial": "G-0001",
+  "hw_rev": 0,
+  "interface": "analog",
+  "channels": [
+    { "axis": "z", "quantity": "velocity", "units": "m/s", "sensitivity": 28.8 }
+  ],
+  "recommended_gain": 32,
+  "mount": "spike"
+}

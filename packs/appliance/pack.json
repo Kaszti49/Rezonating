@@ -1,0 +1,20 @@
+{
+  "schema": 0,
+  "id": "appliance",
+  "version": "0.0.1",
+  "name": "Appliance health",
+  "engine": "anomaly",
+  "requires": {
+    "heads": [{ "type": "accelerometer", "min": 1, "max": 1 }],
+    "sample_rate_hz": 2000,
+    "simultaneous": false
+  },
+  "dsp": [{ "highpass_hz": 3 }],
+  "trigger": { "type": "periodic", "every_s": 10 },
+  "features": "spectrum_bands_v1",
+  "params": { "baseline_cycles": 5, "alert_sigma": 4 },
+  "outputs": [
+    { "key": "state", "entity": "sensor", "name": "Machine state" },
+    { "key": "anomaly", "entity": "binary_sensor", "name": "Abnormal vibration", "device_class": "problem" }
+  ]
+}

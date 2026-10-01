@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.wav binary
+*.tflite binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.kicad_pcb text
+*.kicad_sch text

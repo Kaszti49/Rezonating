@@ -1,0 +1,21 @@
+{
+  "schema": 0,
+  "id": "footstep-id",
+  "version": "0.0.1",
+  "name": "Footstep person ID",
+  "engine": "classifier",
+  "requires": {
+    "heads": [{ "type": "geophone", "min": 1, "max": 4 }],
+    "sample_rate_hz": 1000,
+    "simultaneous": false
+  },
+  "dsp": [{ "highpass_hz": 5 }, { "lowpass_hz": 400 }],
+  "trigger": { "type": "sta_lta", "sta_ms": 50, "lta_ms": 2000, "ratio": 3.5, "pre_ms": 100, "post_ms": 400 },
+  "features": "footstep_v1",
+  "model": "model.tflite",
+  "labels": ["P1", "P2", "P3", "unknown"],
+  "outputs": [
+    { "key": "person", "entity": "sensor", "name": "Last person" },
+    { "key": "step", "entity": "event", "name": "Footstep" }
+  ]
+}

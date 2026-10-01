@@ -1,0 +1,26 @@
+{
+  "schema": 0,
+  "session": "2026-11-14_home-a_kitchen_01",
+  "node": "rzn-indoor-01",
+  "firmware": "0.1.0",
+  "start_utc": "2026-11-14T16:02:11.000Z",
+  "sample_rate": 1000,
+  "kind": "continuous",
+  "channels": [
+    {
+      "ch": 0,
+      "port": 1,
+      "head": "geophone/sm24",
+      "serial": "G-0001",
+      "units": "m/s",
+      "gain": 32,
+      "mount": "spike",
+      "surface": "laminate on concrete slab",
+      "position_m": [0.0, 0.0]
+    }
+  ],
+  "protocol": "walk-pass-v1",
+  "labels": [
+    { "t0": 12.4, "t1": 15.1, "label": "walk", "person": "P2", "shoes": true, "pace": "normal" }
+  ]
+}

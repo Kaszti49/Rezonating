@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rezonating.com/schemas/pack-manifest/v0",
+  "title": "Rezonating pack manifest",
+  "description": "What a pack needs from the node and what it produces. Packs configure built-in engines; they never contain code. DRAFT v0 - Tier 1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "version", "name", "engine", "requires", "outputs"],
+  "properties": {
+    "schema": { "const": 0 },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "name": { "type": "string", "maxLength": 48 },
+    "engine": { "enum": ["classifier", "anomaly", "localizer", "rule"] },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heads", "sample_rate_hz"],
+      "properties": {
+        "heads": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "min"],
+            "properties": {
+              "type": { "enum": ["geophone", "accelerometer", "piezo"] },
+              "min": { "type": "integer", "minimum": 1, "maximum": 4 },
+              "max": { "type": "integer", "minimum": 1, "maximum": 4 }
+            }
+          }
+        },
+        "sample_rate_hz": { "enum": [500, 1000, 2000, 4000, 8000, 16000, 32000, 64000] },
+        "simultaneous": { "type": "boolean", "default": false },
+        "uses_packs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other packs whose events this pack consumes (e.g. a rule pack on footstep events)."
+        }
+      }
+    },
+    "dsp": {
+      "type": "array",
+      "description": "Filter chain applied in order.",
+      "items": {
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "properties": {
+          "highpass_hz": { "type": "number", "exclusiveMinimum": 0 },
+          "lowpass_hz": { "type": "number", "exclusiveMinimum": 0 },
+          "decimate": { "type": "integer", "minimum": 2 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["sta_lta", "threshold", "periodic"] },
+        "sta_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "lta_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "ratio": { "type": "number", "exclusiveMinimum": 1 },
+        "level": { "type": "number", "exclusiveMinimum": 0 },
+        "every_s": { "type": "number", "exclusiveMinimum": 0 },
+        "pre_ms": { "type": "number", "minimum": 0 },
+        "post_ms": { "type": "number", "minimum": 0 }
+      }
+    },
+    "features": { "type": "string", "description": "Name of a shared feature set, e.g. footstep_v1." },
+    "model": { "type": "string", "pattern": "\\.tflite$" },
+    "labels": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "params": { "type": "object", "description": "Engine-specific settings." },
+    "memory_kb": { "type": "integer", "minimum": 1, "maximum": 4096 },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "entity", "name"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,31}$" },
+          "entity": { "enum": ["sensor", "binary_sensor", "event"] },
+          "name": { "type": "string", "maxLength": 48 },
+          "device_class": { "type": "string" }
+        }
+      }
+    }
+  }
+}
