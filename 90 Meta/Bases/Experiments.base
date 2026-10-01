@@ -1,0 +1,26 @@
+filters:
+  and:
+    - file.inFolder("50 Experiments")
+    - type == "experiment"
+properties:
+  file.name:
+    displayName: Experiment
+views:
+  - type: table
+    name: Log
+    order:
+      - file.name
+      - status
+      - date
+      - owner
+      - pack
+      - metric
+      - metric_value
+      - result
+  - type: cards
+    name: Cards
+    order:
+      - file.name
+      - status
+      - result
+      - metric_value

@@ -1,0 +1,93 @@
+{
+  "collapse-filter": false,
+  "search": "-path:\"90 Meta/Templates\"",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"20 Work\"",
+      "color": {
+        "a": 1,
+        "rgb": 13346551
+      }
+    },
+    {
+      "query": "path:\"30 Hardware\"",
+      "color": {
+        "a": 1,
+        "rgb": 16429959
+      }
+    },
+    {
+      "query": "path:\"40 Packs\"",
+      "color": {
+        "a": 1,
+        "rgb": 10937249
+      }
+    },
+    {
+      "query": "path:\"50 Experiments\"",
+      "color": {
+        "a": 1,
+        "rgb": 16376495
+      }
+    },
+    {
+      "query": "path:\"60 Research\"",
+      "color": {
+        "a": 1,
+        "rgb": 9024762
+      }
+    },
+    {
+      "query": "path:\"70 Journal\"",
+      "color": {
+        "a": 1,
+        "rgb": 9757397
+      }
+    },
+    {
+      "query": "path:\"80 Decisions\"",
+      "color": {
+        "a": 1,
+        "rgb": 15961000
+      }
+    },
+    {
+      "query": "path:\"10 Project\"",
+      "color": {
+        "a": 1,
+        "rgb": 11845374
+      }
+    },
+    {
+      "query": "path:\"90 Meta/Claude\"",
+      "color": {
+        "a": 1,
+        "rgb": 16106215
+      }
+    },
+    {
+      "query": "path:\"00 Inbox\"",
+      "color": {
+        "a": 1,
+        "rgb": 9673138
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.5,
+  "repelStrength": 12,
+  "linkStrength": 1,
+  "linkDistance": 220,
+  "scale": 1,
+  "close": true
+}

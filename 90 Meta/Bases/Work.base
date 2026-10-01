@@ -1,0 +1,63 @@
+filters:
+  and:
+    - file.inFolder("20 Work")
+    - type == "work"
+formulas:
+  lane: 'if(status == "doing", "1 · Doing", if(status == "review", "2 · Review", if(status == "todo", "3 · To do", if(status == "blocked", "4 · Blocked", if(status == "backlog", "5 · Backlog", "6 · Done")))))'
+  flag: 'if(status != "done" && due && due < today(), "⚠ overdue", "")'
+properties:
+  file.name:
+    displayName: Work
+  formula.lane:
+    displayName: Lane
+  formula.flag:
+    displayName: " "
+views:
+  - type: table
+    name: Board
+    groupBy:
+      property: formula.lane
+      direction: ASC
+    order:
+      - file.name
+      - owner
+      - priority
+      - due
+      - formula.flag
+      - area
+      - pack
+  - type: table
+    name: By owner
+    filters:
+      and:
+        - status != "done"
+    groupBy:
+      property: owner
+      direction: ASC
+    order:
+      - file.name
+      - status
+      - priority
+      - due
+      - formula.flag
+  - type: table
+    name: Claude queue
+    filters:
+      and:
+        - owner == "claude"
+        - status != "done"
+    order:
+      - file.name
+      - status
+      - priority
+      - due
+  - type: cards
+    name: Cards
+    filters:
+      and:
+        - status != "done"
+    order:
+      - file.name
+      - owner
+      - status
+      - due

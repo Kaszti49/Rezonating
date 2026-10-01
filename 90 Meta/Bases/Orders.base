@@ -1,0 +1,18 @@
+filters:
+  and:
+    - file.inFolder("30 Hardware/Orders")
+    - type == "order"
+properties:
+  file.name:
+    displayName: Order
+views:
+  - type: table
+    name: All orders
+    order:
+      - file.name
+      - status
+      - date
+      - ordered
+      - delivered
+      - supplier
+      - paid_by

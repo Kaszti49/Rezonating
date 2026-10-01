@@ -31,7 +31,9 @@ node detects: who is walking, a fall, a failing washing machine.
 ## Repo layout
 
 ```
-docs/        decisions, recording protocols, first order
+Home.md      vault dashboard (open the folder as an Obsidian vault)
+00–90 …/     Obsidian vault: work, hardware, packs, experiments, decisions, …
+docs/        recording protocols
 schemas/     head descriptor, pack manifest, sidecar   (Tier 1)
 firmware/    ESP-IDF project for the ESP32-S3 node     (core = Tier 1)
 packs/       one folder per pack
@@ -42,9 +44,19 @@ data/        dataset manifest + sidecars only; WAV files live outside git
 scratch/     Tier 3 experiments: never imported by anything else
 ```
 
+## Getting the vault
+
+```bash
+git clone --recurse-submodules https://github.com/Kaszti49/Rezonating.git
+```
+
+Open the folder as a vault in Obsidian, turn on community plugins, then in
+Templater's settings switch on **Trigger Templater on new file creation**
+(it's a per-device setting). Rules: `10 Project/Vault rules.md`.
+
 ## Quality tiers
 
-- **Tier 1 (load-bearing, change only with a decision entry):** `schemas/`,
+- **Tier 1 (load-bearing, change only with a decision note in `80 Decisions/`):** `schemas/`,
   firmware core (acquire, buffer, timestamps, pack loader), shared feature code.
 - **Tier 2 (replaceable):** packs, models, training scripts, tools, PCBs.
 - **Tier 3 (throwaway):** `scratch/`, breadboard rigs, test enclosures.

@@ -1,0 +1,10 @@
+{
+  "enableDataviewJs": true,
+  "enableInlineDataviewJs": true,
+  "prettyRenderInlineFields": true,
+  "taskCompletionTracking": true,
+  "taskCompletionUseEmojiShorthand": true,
+  "defaultDateFormat": "yyyy-MM-dd",
+  "refreshEnabled": true,
+  "refreshInterval": 2500
+}

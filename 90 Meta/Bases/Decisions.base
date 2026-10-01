@@ -1,0 +1,16 @@
+filters:
+  and:
+    - file.inFolder("80 Decisions")
+    - type == "decision"
+properties:
+  file.name:
+    displayName: Decision
+views:
+  - type: table
+    name: Log
+    order:
+      - file.name
+      - status
+      - tier
+      - date
+      - decided_by

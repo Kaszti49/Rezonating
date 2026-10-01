@@ -1,0 +1,68 @@
+{
+  "data_version": 2,
+  "command_timeout": 5,
+  "templates_folder": "90 Meta/Templates",
+  "templates_pairs": [],
+  "trigger_on_file_creation_mode": "folder",
+  "auto_jump_to_cursor": true,
+  "jump_to_cursor_after_file_name": false,
+  "shell_path": "",
+  "user_scripts_folder": "",
+  "folder_templates": [
+    {
+      "folder": "00 Inbox",
+      "template": "90 Meta/Templates/Inbox.md"
+    },
+    {
+      "folder": "20 Work",
+      "template": "90 Meta/Templates/Work.md"
+    },
+    {
+      "folder": "30 Hardware/Parts",
+      "template": "90 Meta/Templates/Part.md"
+    },
+    {
+      "folder": "30 Hardware/Orders",
+      "template": "90 Meta/Templates/Order.md"
+    },
+    {
+      "folder": "30 Hardware/Builds",
+      "template": "90 Meta/Templates/Build.md"
+    },
+    {
+      "folder": "40 Packs",
+      "template": "90 Meta/Templates/Pack.md"
+    },
+    {
+      "folder": "50 Experiments",
+      "template": "90 Meta/Templates/Experiment.md"
+    },
+    {
+      "folder": "60 Research",
+      "template": "90 Meta/Templates/Research.md"
+    },
+    {
+      "folder": "70 Journal/Daily",
+      "template": "90 Meta/Templates/Daily.md"
+    },
+    {
+      "folder": "70 Journal/Weekly",
+      "template": "90 Meta/Templates/Weekly.md"
+    },
+    {
+      "folder": "80 Decisions",
+      "template": "90 Meta/Templates/Decision.md"
+    }
+  ],
+  "file_templates": [],
+  "syntax_highlighting": true,
+  "syntax_highlighting_mobile": false,
+  "enabled_templates_hotkeys": [],
+  "startup_templates": [],
+  "intellisense_render": "1",
+  "ignore_folders_on_creation": [
+    {
+      "folder": "90 Meta/Templates"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "type": "file",
+      "ctime": 1790881200000,
+      "path": "Home.md",
+      "title": "Home"
+    },
+    {
+      "type": "file",
+      "ctime": 1790881200001,
+      "path": "20 Work/Work board.md",
+      "title": "Work board"
+    },
+    {
+      "type": "file",
+      "ctime": 1790881200002,
+      "path": "90 Meta/Claude/Handoff.md",
+      "title": "Claude handoff"
+    },
+    {
+      "type": "file",
+      "ctime": 1790881200003,
+      "path": "10 Project/Vault rules.md",
+      "title": "Vault rules"
+    }
+  ]
+}

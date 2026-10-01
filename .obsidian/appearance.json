@@ -1,0 +1,9 @@
+{
+  "theme": "obsidian",
+  "cssTheme": "AnuPpuccin",
+  "enabledCssSnippets": [
+    "rezonating"
+  ],
+  "baseFontSize": 16,
+  "showRibbon": true
+}

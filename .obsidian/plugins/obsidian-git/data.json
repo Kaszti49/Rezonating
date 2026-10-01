@@ -1,0 +1,14 @@
+{
+  "commitMessage": "vault: {{date}}",
+  "autoCommitMessage": "vault: {{date}}",
+  "autoSaveInterval": 0,
+  "autoPushInterval": 0,
+  "autoPullInterval": 0,
+  "autoPullOnBoot": true,
+  "disablePush": false,
+  "pullBeforePush": true,
+  "syncMethod": "merge",
+  "showStatusBar": true,
+  "refreshSourceControl": true,
+  "disablePopupsForNoChanges": true
+}

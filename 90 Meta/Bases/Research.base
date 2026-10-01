@@ -1,0 +1,18 @@
+filters:
+  and:
+    - file.inFolder("60 Research")
+    - type == "research"
+properties:
+  file.name:
+    displayName: Title
+views:
+  - type: table
+    name: Library
+    groupBy:
+      property: kind
+      direction: ASC
+    order:
+      - file.name
+      - relevance
+      - status
+      - url

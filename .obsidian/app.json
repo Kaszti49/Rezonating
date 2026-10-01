@@ -1,0 +1,18 @@
+{
+  "newFileLocation": "folder",
+  "newFileFolderPath": "00 Inbox",
+  "attachmentFolderPath": "90 Meta/Attachments",
+  "alwaysUpdateLinks": true,
+  "useMarkdownLinks": false,
+  "newLinkFormat": "shortest",
+  "propertiesInDocument": "visible",
+  "showLineNumber": false,
+  "readableLineLength": true,
+  "userIgnoreFilters": [
+    "/^(firmware|ml|tools|schemas|packs|hardware|data|scratch|\\.github)\\//"
+  ],
+  "promptDelete": true,
+  "trashOption": "local",
+  "showInlineTitle": false,
+  "foldHeading": true
+}

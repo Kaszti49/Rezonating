@@ -1,0 +1,29 @@
+filters:
+  and:
+    - file.inFolder("30 Hardware/Parts")
+    - type == "part"
+formulas:
+  line_total: 'if(price_eur, price_eur * qty, 0)'
+properties:
+  file.name:
+    displayName: Part
+  formula.line_total:
+    displayName: Line €
+  price_eur:
+    displayName: Each €
+views:
+  - type: table
+    name: By status
+    groupBy:
+      property: status
+      direction: DESC
+    order:
+      - file.name
+      - qty
+      - price_eur
+      - formula.line_total
+      - supplier
+      - order
+      - price_note
+    summaries:
+      formula.line_total: Sum
