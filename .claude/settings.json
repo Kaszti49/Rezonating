@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
+    "PYTHONUTF8": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch)",
+      "Bash(git ls-files *)",
+      "Bash(python tools/validate.py)",
+      "Bash(python .claude/scripts/vault_schema.py *)",
+      "Bash(python .claude/scripts/checks.py)",
+      "Bash(python .claude/scripts/checks.py *)",
+      "Bash(python .claude/scripts/ledger.py *)",
+      "Bash(python tools/local/*)",
+      "Bash(ruff check *)",
+      "Bash(ruff format *)",
+      "Bash(python -m pytest *)",
+      "Bash(idf.py build)",
+      "Bash(idf.py -C firmware build)",
+      "Bash(eim run \"idf.py -C firmware build\")",
+      "mcp__esp-idf__build_project",
+      "mcp__esp-idf__set_target",
+      "mcp__espressif-docs"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(idf.py *flash*)",
+      "Bash(eim run *flash*)",
+      "Bash(npx skills add *)",
+      "mcp__esp-idf__flash_project",
+      "Edit(/.claude/**)",
+      "Edit(/CLAUDE.md)",
+      "Edit(/**/CLAUDE.md)",
+      "Edit(/.mcp.json)",
+      "Edit(/schemas/**)",
+      "Edit(/.github/**)",
+      "Edit(/.obsidian/**)",
+      "Edit(/.gitattributes)",
+      "Edit(/.gitignore)",
+      "Edit(/.githooks/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./data/private/**)",
+      "Edit(/data/raw/**)",
+      "Edit(/data/private/**)",
+      "Edit(**/*.wav)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(rm -rf *)",
+      "Bash(npx skills add * -g*)",
+      "Bash(npx skills add * --global*)",
+      "Bash(npx skills add * -y*)",
+      "Bash(npx skills add * --yes*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session_start.py"], "timeout": 20}
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/pre_edit.py"], "timeout": 15}
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "if": "Bash(git *)", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/commit_guard.py"], "timeout": 20}
+        ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {"type": "command", "if": "PowerShell(git *)", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/commit_guard.py"], "timeout": 20}
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/post_edit.py"], "timeout": 90}
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_report.py"], "timeout": 15}
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "firmware-dev|ml-dev|deep-engineer|researcher|writer|vault-keeper|curator|verifier",
+        "hooks": [
+          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent_gate.py"], "timeout": 600, "statusMessage": "Rezonating gate: checking the agent's work"}
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_gate.py"], "timeout": 60}
+        ]
+      }
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "obsidian-skills": {
+      "source": {"source": "github", "repo": "kepano/obsidian-skills"}
+    }
+  },
+  "enabledPlugins": {
+    "obsidian@obsidian-skills": true
+  }
+}

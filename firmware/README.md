@@ -1,6 +1,6 @@
 # Firmware
 
-ESP-IDF (v5.3+) project for the ESP32-S3 node, in C/C++.
+ESP-IDF (v6.0+) project for the ESP32-S3 node, in C/C++.
 
 ```bash
 idf.py set-target esp32s3

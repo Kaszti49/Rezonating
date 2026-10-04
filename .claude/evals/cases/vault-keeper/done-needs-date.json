@@ -1,0 +1,53 @@
+{
+  "description": "Finishing work sets status and done date together, ticks the box and logs it",
+  "prompt": "Mark the work note '20 Work/Eval sample task.md' as done. It was finished on 2026-10-05.",
+  "max_turns": 10,
+  "allowed_tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash(python .claude/scripts/*)"
+  ],
+  "setup": {
+    "files": {
+      "20 Work/Eval sample task.md": "---\ntype: work\nstatus: doing\nowner: claude\npriority: p2\narea: project\ndue: 2026-10-06\npack:\ncreated: 2026-10-01\ndone:\n---\n# Eval sample task\n\n**Goal:** Sample task for the eval.\n\n## Done when\n- [ ] The eval ran\n\n## Notes\n\n## Log\n- 2026-10-01 created\n"
+    }
+  },
+  "checks": [
+    {
+      "type": "file_contains",
+      "path": "20 Work/Eval sample task.md",
+      "pattern": "^status: done$"
+    },
+    {
+      "type": "file_contains",
+      "path": "20 Work/Eval sample task.md",
+      "pattern": "^done: 2026-10-05$"
+    },
+    {
+      "type": "file_contains",
+      "path": "20 Work/Eval sample task.md",
+      "pattern": "^- \\[x\\] The eval ran"
+    },
+    {
+      "type": "file_contains",
+      "path": "20 Work/Eval sample task.md",
+      "pattern": "^- 2026-10-05 .*done|^- 2026-10-05 done"
+    },
+    {
+      "type": "vault_schema",
+      "paths": [
+        "20 Work/Eval sample task.md"
+      ]
+    },
+    {
+      "type": "changed_only",
+      "paths": [
+        "20 Work/Eval sample task.md",
+        "70 Journal/**"
+      ]
+    }
+  ]
+}

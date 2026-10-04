@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "espressif-docs": {
+      "type": "http",
+      "url": "https://mcp.espressif.com/docs"
+    },
+    "esp-idf": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/tools/mcp/idf_mcp.py"]
+    }
+  }
+}

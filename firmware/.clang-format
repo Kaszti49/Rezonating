@@ -1,0 +1,15 @@
+# Rezonating firmware style (close to the ESP-IDF style guide). Applied by the edit hook.
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+BreakBeforeBraces: Linux
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+IndentCaseLabels: true
+PointerAlignment: Right
+SortIncludes: Never
+AlignConsecutiveMacros: Consecutive
+SpaceAfterCStyleCast: false

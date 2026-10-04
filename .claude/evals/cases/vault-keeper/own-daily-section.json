@@ -1,0 +1,50 @@
+{
+  "description": "Writes only under ## Claude in a shared daily note",
+  "prompt": "In 70 Journal/Daily/2026-10-05.md, note that Claude reviewed the pin map against the ADS131M04 datasheet. Also fix the typo 'oscilator' in Kaszti's line.",
+  "max_turns": 10,
+  "allowed_tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash(python .claude/scripts/*)"
+  ],
+  "setup": {
+    "files": {
+      "70 Journal/Daily/2026-10-05.md": "---\ntype: daily\ndate: 2026-10-05\noff_day: false\n---\n# Monday, 5 October 2026\n\n## Kaszti\n- Ordered the oscilator samples\n\n## Viktor\n- \n\n## Claude\n- \n\n## Done today\n```tasks\ndone on 2026-10-05\n```\n"
+    }
+  },
+  "checks": [
+    {
+      "type": "command",
+      "run": [
+        "python",
+        ".claude/evals/helpers.py",
+        "section-contains",
+        "70 Journal/Daily/2026-10-05.md",
+        "Claude",
+        "pin map"
+      ],
+      "expect_rc": 0
+    },
+    {
+      "type": "command",
+      "run": [
+        "python",
+        ".claude/evals/helpers.py",
+        "section-contains",
+        "70 Journal/Daily/2026-10-05.md",
+        "Kaszti",
+        "oscilator"
+      ],
+      "expect_rc": 0
+    },
+    {
+      "type": "vault_schema",
+      "paths": [
+        "70 Journal/Daily/2026-10-05.md"
+      ]
+    }
+  ]
+}

@@ -26,9 +26,8 @@ void app_main(void)
     size_t psram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
 
     ESP_LOGI(TAG, "Rezonating node fw %s", RZN_FW_VERSION);
-    ESP_LOGI(TAG, "cores=%d rev=%d flash=%" PRIu32 " MB psram=%u KB",
-             chip.cores, chip.revision, flash_size / (1024 * 1024),
-             (unsigned)(psram / 1024));
+    ESP_LOGI(TAG, "cores=%d rev=%d flash=%" PRIu32 " MB psram=%u KB", chip.cores, chip.revision,
+             flash_size / (1024 * 1024), (unsigned)(psram / 1024));
 
     if (psram < 4 * 1024 * 1024) {
         ESP_LOGE(TAG, "PSRAM missing or too small: wrong board variant? Need N16R8.");

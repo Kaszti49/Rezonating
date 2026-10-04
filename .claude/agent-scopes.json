@@ -1,0 +1,11 @@
+{
+  "_comment": "Where each agent may write with Edit/Write (repo-relative globs). Enforced by .claude/hooks/pre_edit.py. The main session (orchestrator) and agents not listed here are not restricted. Changing this file is an agent-system change: propose it, don't just edit it.",
+  "firmware-dev": ["firmware/**", "packs/**", "docs/**", "tools/**", "scratch/**"],
+  "ml-dev": ["ml/**", "tools/**", "packs/**", "docs/**", "data/**", "scratch/**"],
+  "deep-engineer": ["firmware/**", "ml/**", "tools/**", "packs/**", "docs/**", "schemas/**", "data/**", "scratch/**"],
+  "researcher": ["60 Research/**", "00 Inbox/**", "90 Meta/Attachments/**"],
+  "writer": ["docs/**", "README.md", "**/README.md", "00 Inbox/**", "10 Project/**"],
+  "vault-keeper": ["00 Inbox/**", "10 Project/**", "20 Work/**", "30 Hardware/**", "40 Packs/**", "50 Experiments/**", "60 Research/**", "70 Journal/**", "80 Decisions/**", "90 Meta/Claude/**", "90 Meta/Attachments/**", "Home.md"],
+  "curator": ["90 Meta/Agents/Proposals/**", "90 Meta/Agents/Retros/**", "90 Meta/Agents/Evals/**", ".claude/evals/cases/**"],
+  "verifier": []
+}

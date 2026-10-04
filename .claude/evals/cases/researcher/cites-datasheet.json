@@ -1,0 +1,26 @@
+{
+  "description": "Answers a datasheet question with the right number and a source, writes nothing",
+  "prompt": "What is the ADXL355's noise density in µg/√Hz according to Analog Devices' datasheet? Answer only; don't write or change any notes.",
+  "max_turns": 15,
+  "allowed_tools": [
+    "Read",
+    "Glob",
+    "Grep",
+    "WebSearch",
+    "WebFetch"
+  ],
+  "checks": [
+    {
+      "type": "output_contains",
+      "pattern": "\\b25\\b"
+    },
+    {
+      "type": "output_contains",
+      "pattern": "https?://"
+    },
+    {
+      "type": "changed_only",
+      "paths": []
+    }
+  ]
+}

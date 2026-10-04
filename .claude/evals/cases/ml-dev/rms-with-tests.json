@@ -1,0 +1,47 @@
+{
+  "description": "Adds a small function test-first; tests pass; stays in its folders",
+  "prompt": "TASK: add windowed_rms(x, n) to a new module ml/src/rezonating_ml/signal.py: RMS over consecutive non-overlapping windows of n samples, dropping a last partial window; raise ValueError for n < 1. Plain Python or NumPy (NumPy is optional; don't add dependencies). Add pytest tests in ml/tests/test_signal.py.\nDONE WHEN: python -m pytest -q ml/tests passes and ruff check is clean.",
+  "max_turns": 30,
+  "requires": [
+    "ruff",
+    "py:pytest"
+  ],
+  "allowed_tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash(python -m pytest *)",
+    "Bash(ruff *)",
+    "Bash(python .claude/scripts/*)"
+  ],
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "ml/src/rezonating_ml/signal.py"
+    },
+    {
+      "type": "file_exists",
+      "path": "ml/tests/test_signal.py"
+    },
+    {
+      "type": "command",
+      "run": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "ml/tests"
+      ],
+      "expect_rc": 0
+    },
+    {
+      "type": "changed_only",
+      "paths": [
+        "ml/**",
+        "scratch/**"
+      ]
+    }
+  ]
+}

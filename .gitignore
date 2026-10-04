@@ -33,3 +33,10 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Claude Code: per-machine state, eval scratch, personal settings
+.claude/state/
+.claude/evals/work/
+.claude/evals/results/
+.claude/settings.local.json
+CLAUDE.local.md

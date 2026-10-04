@@ -12,8 +12,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r tools/requirements.txt
+      - run: pip install -r tools/requirements.txt ruff
       - run: python tools/validate.py
+      - run: ruff check ml tools .claude
+      - run: python .claude/scripts/vault_schema.py --all
+      - run: python -m unittest discover -s .claude/tests -v
 
   firmware:
     runs-on: ubuntu-latest
@@ -21,6 +24,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.3
+          esp_idf_version: v6.0
           target: esp32s3
           path: firmware

@@ -1,0 +1,49 @@
+{
+  "description": "Turns repeated flags into one evidenced proposal; ignores the single low flag",
+  "prompt": "Run the weekly retro for 2026-W41. Use the ledger (python .claude/scripts/ledger.py stats and list).",
+  "max_turns": 30,
+  "allowed_tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash(python .claude/scripts/*)"
+  ],
+  "setup": {
+    "files": {
+      "90 Meta/Agents/Ledger/flags.jsonl": "{\"ev\": \"flag\", \"id\": \"F-261005-aa01\", \"ts\": \"2026-10-05T10:00:00+02:00\", \"agent\": \"vault-keeper\", \"kind\": \"gate-fail\", \"level\": \"L0\", \"severity\": \"high\", \"summary\": \"vault-schema still failing after 2 fixes: status is done, so 'done' needs the finishing date\", \"files\": [\"20 Work/A.md\"]}\n{\"ev\": \"flag\", \"id\": \"F-261005-aa02\", \"ts\": \"2026-10-05T15:00:00+02:00\", \"agent\": \"vault-keeper\", \"kind\": \"verifier-flag\", \"level\": \"L1\", \"severity\": \"med\", \"summary\": \"work note set to done without a done date\", \"files\": [\"20 Work/B.md\"]}\n{\"ev\": \"flag\", \"id\": \"F-261006-aa03\", \"ts\": \"2026-10-06T11:00:00+02:00\", \"agent\": \"vault-keeper\", \"kind\": \"gate-fail\", \"level\": \"L0\", \"severity\": \"high\", \"summary\": \"vault-schema still failing after 2 fixes: status is done, so 'done' needs the finishing date\", \"files\": [\"20 Work/C.md\"]}\n{\"ev\": \"flag\", \"id\": \"F-261006-aa04\", \"ts\": \"2026-10-06T12:00:00+02:00\", \"agent\": \"researcher\", \"kind\": \"verifier-flag\", \"level\": \"L1\", \"severity\": \"low\", \"summary\": \"price without date checked\", \"files\": [\"60 Research/X.md\"]}\n"
+    }
+  },
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "90 Meta/Agents/Retros/2026-W41.md"
+    },
+    {
+      "type": "vault_schema",
+      "paths": [
+        "90 Meta/Agents/Retros/**",
+        "90 Meta/Agents/Proposals/**"
+      ]
+    },
+    {
+      "type": "command",
+      "run": [
+        "python",
+        "-c",
+        "import glob,sys; fs=glob.glob('90 Meta/Agents/Proposals/P-*.md'); t=' '.join(open(f,encoding='utf-8').read() for f in fs); sys.exit(0 if fs and len(fs)<=3 and 'vault-keeper' in t and 'aa01' in t else 1)"
+      ],
+      "expect_rc": 0
+    },
+    {
+      "type": "changed_only",
+      "paths": [
+        "90 Meta/Agents/Retros/**",
+        "90 Meta/Agents/Proposals/**",
+        "90 Meta/Agents/Evals/**",
+        ".claude/evals/cases/**"
+      ]
+    }
+  ]
+}

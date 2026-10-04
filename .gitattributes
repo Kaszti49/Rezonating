@@ -6,3 +6,7 @@
 *.pdf binary
 *.kicad_pcb text
 *.kicad_sch text
+# Agent ledger: append-only JSON lines; union merge keeps both machines' lines
+*.jsonl text eol=lf merge=union
+# Hook scripts must keep LF line endings
+.githooks/* text eol=lf

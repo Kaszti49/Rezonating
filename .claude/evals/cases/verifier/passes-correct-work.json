@@ -1,0 +1,27 @@
+{
+  "description": "Doesn't invent problems in correct work (false-positive check)",
+  "prompt": "SUBJECT: ml-dev\nTASK: add tools/eval_rms.py with windowed_rms(x, n) exactly as its docstring says.\nDONE WHEN: the function matches its docstring for any input.\nCHANGED FILES: tools/eval_rms.py\nAGENT REPORT: STATUS: done. CHANGED: tools/eval_rms.py. CHECKED: ruff clean.\nVerify this work.",
+  "max_turns": 20,
+  "allowed_tools": [
+    "Read",
+    "Glob",
+    "Grep",
+    "Bash(python *)",
+    "Bash(git *)"
+  ],
+  "setup": {
+    "files": {
+      "tools/eval_rms.py": "\"\"\"Windowed RMS for eval cases.\"\"\"\n\nimport math\n\n\ndef windowed_rms(x: list[float], n: int) -> list[float]:\n    \"\"\"RMS of x over consecutive, non-overlapping windows of n samples.\n\n    The last window is dropped if it has fewer than n samples. n must be >= 1.\n    \"\"\"\n    if n < 1:\n        raise ValueError(\"n must be >= 1\")\n    out = []\n    for i in range(0, len(x) - n + 1, n):\n        w = x[i : i + n]\n        out.append(math.sqrt(sum(v * v for v in w) / n))\n    return out\n"
+    }
+  },
+  "checks": [
+    {
+      "type": "output_contains",
+      "pattern": "VERDICT:\\W*PASS"
+    },
+    {
+      "type": "changed_only",
+      "paths": []
+    }
+  ]
+}

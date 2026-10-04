@@ -42,6 +42,7 @@ tools/       validators, recorder, labeling helpers
 hardware/    node and head designs, pinouts
 data/        dataset manifest + sidecars only; WAV files live outside git
 scratch/     Tier 3 experiments: never imported by anything else
+.claude/     Claude Code agents, skills, hooks and evals (see "Working with Claude")
 ```
 
 ## Getting the vault
@@ -68,13 +69,27 @@ Templater's settings switch on **Trigger Templater on new file creation**
 pip install -r tools/requirements.txt
 python tools/validate.py
 
-# Build the firmware (ESP-IDF v5.3+)
-cd firmware
-idf.py set-target esp32s3
-idf.py build flash monitor
+# Build the firmware (ESP-IDF v6.0+, target set in sdkconfig.defaults)
+idf.py -C firmware build
+idf.py -C firmware -p COM5 flash monitor
+
+# Once per clone: refuse commits with raw recordings
+git config core.hooksPath .githooks
+```
+
+## Working with Claude
+
+The repo is set up for [Claude Code](https://code.claude.com/docs): run `claude` in the repo
+folder. The main session routes work to specialist agents (`.claude/agents/`) with fixed models
+and write scopes; hooks (`.claude/hooks/`) check every agent's work automatically, and a verifier
+agent reviews code before it counts as done. Rules for Claude: [`CLAUDE.md`](CLAUDE.md).
+
+```bash
+python .claude/scripts/checks.py             # the same checks the hooks run, on your changes
+python .claude/scripts/run_evals.py --list   # agent test cases
 ```
 
 ## Team
 
 - Kaszti Benedek — design, management
-- Szabó Viktor — firmware and code
+- Szabó Viktor — programming and electronics

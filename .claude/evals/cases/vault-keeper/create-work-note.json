@@ -1,0 +1,52 @@
+{
+  "description": "Creates a valid work note from a plain request",
+  "prompt": "Create a work note for Viktor: 'Calibrate geophone gain'. Area hardware, priority p2, due 2026-10-13, for the footstep-id pack. Goal: find the ADC gain that keeps a heel strike at 1 m below clipping. Done when: a gain value is written in the note and tested on the bare floor.",
+  "max_turns": 15,
+  "allowed_tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash(python .claude/scripts/*)"
+  ],
+  "checks": [
+    {
+      "type": "file_exists",
+      "path": "20 Work/Calibrate geophone gain.md"
+    },
+    {
+      "type": "file_contains",
+      "path": "20 Work/Calibrate geophone gain.md",
+      "pattern": "^owner: viktor$"
+    },
+    {
+      "type": "file_contains",
+      "path": "20 Work/Calibrate geophone gain.md",
+      "pattern": "^due: 2026-10-13$"
+    },
+    {
+      "type": "file_contains",
+      "path": "20 Work/Calibrate geophone gain.md",
+      "pattern": "^pack: \"\\[\\[footstep-id\\]\\]\"$"
+    },
+    {
+      "type": "file_not_contains",
+      "path": "20 Work/Calibrate geophone gain.md",
+      "pattern": "<%"
+    },
+    {
+      "type": "vault_schema",
+      "paths": [
+        "20 Work/Calibrate geophone gain.md"
+      ]
+    },
+    {
+      "type": "changed_only",
+      "paths": [
+        "20 Work/**",
+        "70 Journal/**"
+      ]
+    }
+  ]
+}

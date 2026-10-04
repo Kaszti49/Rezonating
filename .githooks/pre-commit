@@ -1,0 +1,13 @@
+#!/bin/sh
+# Rezonating pre-commit hook: refuses commits that contain raw recordings
+# (*.wav, data/raw/, data/private/). Enable once per clone:
+#   git config core.hooksPath .githooks
+# Fails open: without a working Python it prints a note and lets the commit through.
+root="$(git rev-parse --show-toplevel)"
+for py in python python3 py; do
+  if command -v "$py" >/dev/null 2>&1 && "$py" -c "import sys" >/dev/null 2>&1; then
+    exec "$py" "$root/.claude/hooks/commit_guard.py" --git-hook
+  fi
+done
+echo "Rezonating pre-commit: no working Python found, commit not checked" >&2
+exit 0

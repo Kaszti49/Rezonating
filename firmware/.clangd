@@ -1,0 +1,17 @@
+# clangd (editor and the clangd-lsp plugin): use the compile database from `idf.py build`
+# and drop GCC/Xtensa-only flags clang doesn't understand.
+CompileFlags:
+  CompilationDatabase: build
+  Remove:
+    - -mlongcalls
+    - -mtext-section-literals
+    - -mdisable-hardware-atomics
+    - -fno-tree-switch-conversion
+    - -fstrict-volatile-bitfields
+    - -fno-shrink-wrap
+    - -fzero-init-padding-bits=*
+    - -specs=*
+    - -march=*
+    - -mabi=*
+Diagnostics:
+  UnusedIncludes: None

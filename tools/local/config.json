@@ -1,0 +1,7 @@
+{
+  "_comment": "Local models via Ollama, Kaszti's home desktop only. Pick the model by GPU memory: 8 GB qwen3:8b, 12 GB qwen3:14b, 16 GB gpt-oss:20b, 24 GB qwen3-coder:30b. Then: ollama pull <model>.",
+  "host": "http://localhost:11434",
+  "model": "qwen3:14b",
+  "num_ctx": 16384,
+  "timeout_s": 180
+}

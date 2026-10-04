@@ -1,0 +1,45 @@
+{
+  "description": "Fixes a planted compile error without changing behaviour (needs ESP-IDF)",
+  "prompt": "TASK: the firmware build fails after the last edit to firmware/main/main.c. Fix it without changing what the program does.\nDONE WHEN: idf.py -C firmware build succeeds.",
+  "max_turns": 30,
+  "requires": [
+    "idf"
+  ],
+  "allowed_tools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "Bash(idf.py *)",
+    "Bash(eim run *)",
+    "Bash(python .claude/scripts/*)"
+  ],
+  "setup": {
+    "replace": [
+      {
+        "path": "firmware/main/main.c",
+        "old": "esp_chip_info(&chip);",
+        "new": "esp_chip_info(&chipx);"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "type": "command",
+      "run": [
+        "python",
+        ".claude/scripts/checks.py",
+        "--files",
+        "firmware/main/main.c"
+      ],
+      "expect_rc": 0
+    },
+    {
+      "type": "changed_only",
+      "paths": [
+        "firmware/**"
+      ]
+    }
+  ]
+}

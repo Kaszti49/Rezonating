@@ -9,6 +9,7 @@ Checks:
 
 Exit code 0 = all valid, 1 = at least one problem.
 """
+
 from __future__ import annotations
 
 import json
