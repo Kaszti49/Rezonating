@@ -14,7 +14,7 @@ done:
 **Goal:** Pick licenses for code and hardware before going public (e.g. Apache-2.0 + CERN-OHL-P).
 
 ## Done when
-         - [ ] Decision note written
+- [ ] Decision note written
 
 ## Notes
 

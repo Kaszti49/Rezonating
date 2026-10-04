@@ -14,7 +14,7 @@ done:
 **Goal:** Find EU suppliers (TME, Mouser, DigiKey) for ADS131M04IPWR and an 8.192 MHz 3.3 V CMOS oscillator, with an invoice for the company.
 
 ## Done when
-         - [ ] Supplier, price and stock written into both part notes
+- [ ] Supplier, price and stock written into both part notes
 - [ ] Ready-made ADS131M04 modules checked as a fallback
 
 ## Notes

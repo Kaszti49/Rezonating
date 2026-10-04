@@ -22,6 +22,8 @@ These rules keep the vault readable for all three of us. The **properties are th
 | `70 Journal/Weekly` | meeting | Weekly meeting | `YYYY-Www` |
 | `80 Decisions` | decision | Decision that's expensive to change | `D-### few words` |
 | `90 Meta` | — | Templates, Bases, dashboard code, Claude | — |
+| `90 Meta/Agents/Proposals` | proposal | Change to the agent system | `P-### few words` |
+| `90 Meta/Agents/Retros` | retro | Weekly agent retro | `YYYY-Www` |
 
 New notes in each folder get the right template automatically (Templater).
 
@@ -39,20 +41,29 @@ New notes in each folder get the right template automatically (Templater).
 | experiment `result` | `pass`, `fail`, `partial` |
 | decision `status` | `proposed` (Claude only proposes), `accepted`, `superseded` |
 | research `status` | `to-read`, `read` |
+| proposal `status` | `proposed`, `accepted`, `rejected`, `applied` |
+| daily `off_day` | `true` on days other than Monday and Tuesday (the template sets it) |
 | dates | `YYYY-MM-DD` |
 | links in properties | `"[[Note name]]"`, in quotes |
 
 When a work item is finished: `status: done` **and** `done: <date>`. The dashboard's velocity and heatmap use `done`.
 
 ## Rhythm
+We work on **Monday and Tuesday**. Project work on another day is fine but rare; its daily note gets `off_day: true`.
+
 - **Daily:** one line each in today's daily note (Calendar on the right sidebar, click today).
 - **Weekly:** meeting note (click the week number in the Calendar): empty the inbox, check the board, set next week's focus.
 - **Decisions:** anything Tier 1 gets a `D-###` note before it's built.
+- **Agent retro:** Tuesday after the work, `/retro` in Claude Code ([[Agent system]]).
+
+## Checking
+`python .claude/scripts/vault_schema.py --all` checks every note against this page. Claude's edits are checked automatically.
 
 ## Git
 - Obsidian Git **pulls when Obsidian starts**. Commit and push with the Git panel, never automatically.
 - The repo also holds code: before you commit from Obsidian, check you're not committing Viktor's half-finished code.
 - Pull before you start, push when you stop. Two people editing the same note at once makes merge conflicts.
+- Once per clone: `git config core.hooksPath .githooks`. The pre-commit hook refuses raw recordings.
 
 ## Open source
 Before the repo goes public, every numbered vault folder (`00`–`90`), `Home.md` and `.obsidian/` are removed from it ([[D-012 Obsidian vault in the repo]]).

@@ -59,5 +59,10 @@
   "packs": "LiPuzzle",
   "hardware": "LiCircuitBoard",
   "data": "LiHardDrive",
-  "scratch": "LiEraser"
+  "scratch": "LiEraser",
+  "90 Meta/Agents": "LiNetwork",
+  "90 Meta/Agents/Ledger": "LiScrollText",
+  "90 Meta/Agents/Proposals": "LiLightbulb",
+  "90 Meta/Agents/Retros": "LiRotateCcw",
+  "90 Meta/Agents/Evals": "LiFlaskConical"
 }

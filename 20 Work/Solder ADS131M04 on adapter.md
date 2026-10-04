@@ -14,7 +14,7 @@ done:
 **Goal:** Get the ADC onto a TSSOP-to-DIP adapter and confirm it powers up with its clock.
 
 ## Done when
-         - [ ] Chip soldered, no bridges
+- [ ] Chip soldered, no bridges
 - [ ] 8.192 MHz clock seen on CLKIN with the oscilloscope
 - [ ] Build note in `30 Hardware/Builds`
 

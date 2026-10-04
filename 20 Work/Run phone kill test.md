@@ -14,7 +14,7 @@ done:
 **Goal:** Find out for free whether our floors carry footsteps far enough. See [[EXP-001 Phone kill test]].
 
 ## Done when
-         - [ ] 3 people recorded at 1, 3 and 5 m
+- [ ] 3 people recorded at 1, 3 and 5 m
 - [ ] Result written into EXP-001
 - [ ] Go / no-go for buying geophones
 

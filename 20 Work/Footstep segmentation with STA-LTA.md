@@ -14,7 +14,7 @@ done:
 **Goal:** Find single footsteps in a continuous recording.
 
 ## Done when
-         - [ ] Works on FootprintID recordings
+- [ ] Works on FootprintID recordings
 - [ ] Parameters written into `packs/footstep-id/pack.json`
 
 ## Notes

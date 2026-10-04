@@ -14,7 +14,7 @@ done:
 **Goal:** Make sure `firmware/README.md` and `hardware/README.md` match the ADS131M04 and ESP32-S3 datasheets before anyone solders.
 
 ## Done when
-         - [ ] Every pin cross-checked
+- [ ] Every pin cross-checked
 - [ ] Supply and decoupling notes confirmed
 - [ ] Differences fixed in the repo
 

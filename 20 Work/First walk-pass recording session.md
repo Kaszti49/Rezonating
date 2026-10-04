@@ -14,7 +14,7 @@ done:
 **Goal:** First real dataset on our own floor, following `docs/protocols/walk-pass-v1.md`.
 
 ## Done when
-         - [ ] Consent forms signed
+- [ ] Consent forms signed
 - [ ] 3 people × full protocol recorded
 - [ ] Sidecars committed
 

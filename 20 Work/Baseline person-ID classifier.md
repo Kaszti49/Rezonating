@@ -14,7 +14,7 @@ done:
 **Goal:** First scikit-learn classifier on FootprintID, evaluated with a split by session.
 
 ## Done when
-         - [ ] Accuracy and confusion matrix recorded in a new experiment note
+- [ ] Accuracy and confusion matrix recorded in a new experiment note
 - [ ] Pack `best_value` updated
 
 ## Notes

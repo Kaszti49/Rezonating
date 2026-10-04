@@ -14,7 +14,7 @@ done:
 **Goal:** Order everything in [[ORD-001 First rig]] after the kill test passes.
 
 ## Done when
-         - [ ] Company approved the order
+- [ ] Company approved the order
 - [ ] Order status set to `ordered` with the date
 - [ ] Each part note set to `ordered`
 

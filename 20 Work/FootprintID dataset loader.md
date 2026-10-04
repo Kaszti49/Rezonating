@@ -14,7 +14,7 @@ done:
 **Goal:** Turn the public [[FootprintID dataset]] into our WAV + sidecar format so the whole ML pipeline can start before any hardware arrives.
 
 ## Done when
-         - [ ] Loader in `ml/`
+- [ ] Loader in `ml/`
 - [ ] Sidecars pass `tools/validate.py`
 - [ ] Short README of what was converted
 

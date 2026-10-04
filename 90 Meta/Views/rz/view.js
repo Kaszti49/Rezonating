@@ -1,7 +1,7 @@
 // Rezonating dashboard views for Dataview. Tier 2: replaceable, but keep sections stable.
 // Usage in a note:  ```dataviewjs  await dv.view("90 Meta/Views/rz", {section: "dashboard"})  ```
 // Sections: dashboard, header, kpis, activity, workload, pipeline, milestones, budget, upnext,
-//           claude, recent, orderLines, packCard, packWork, weekReview
+//           claude, recent, orderLines, packCard, packWork, weekReview, agents
 // Reads only note properties, so every number here can be traced back to a note.
 
 const { DateTime } = dv.luxon;
@@ -84,6 +84,27 @@ const decs = pages('"80 Decisions"').filter(p => p.type === "decision");
 const inbox = pages('"00 Inbox"').filter(p => p.type === "inbox" && p.file.name !== "Read me");
 const charter = dv.page("10 Project/Charter") || {};
 const roadmap = dv.page("10 Project/Roadmap") || {};
+const proposals = pages('"90 Meta/Agents/Proposals"').filter(p => p.type === "proposal");
+
+// Agent ledger: append-only JSONL written by .claude/hooks and .claude/scripts/ledger.py
+const LEDGER = "90 Meta/Agents/Ledger";
+const jsonl = async path => {
+  let txt = "";
+  try { txt = String((await dv.io.load(path)) || ""); } catch (e) { txt = ""; }
+  return txt.split("\n").map(l => { try { return l.trim() ? JSON.parse(l) : null; } catch (e) { return null; } }).filter(Boolean);
+};
+const loadLedger = async () => {
+  const ev = await jsonl(`${LEDGER}/flags.jsonl`);
+  const byId = {};
+  ev.filter(e => e.ev === "flag" && e.id).forEach(e => { if (!byId[e.id]) byId[e.id] = { ...e, status: "open" }; });
+  ev.filter(e => e.ev === "resolve" && byId[e.id]).forEach(e => Object.assign(byId[e.id], { status: "resolved", how: e.how, resolved: e.ts }));
+  const flags = Object.values(byId).sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  const rl = await jsonl(`${LEDGER}/runs.jsonl`);
+  const tele = Object.fromEntries(rl.filter(e => e.ev === "telemetry").map(e => [e.agent_id, e]));
+  const runs = rl.filter(e => e.ev === "run").map(r => ({ ...r, model: (tele[r.agent_id] || {}).model || "" }));
+  return { flags, open: flags.filter(f => f.status === "open"), runs };
+};
+const SEV = { high: "var(--color-red)", med: "var(--color-yellow)", low: "var(--text-faint)" };
 
 const open = work.filter(p => p.status !== "done");
 const due = p => toDT(p.due);
@@ -296,11 +317,13 @@ S.claude = async () => {
       last = `<div class="rz-cl-last"><div class="rz-small">Last session · ${esc(sec[0].trim())}</div><ul>${bullets}</ul></div>`;
     }
   } catch (e) { last = ""; }
+  const L = await loadLedger();
   const items = [...q.map(p => `<div class="rz-row">${pill(p.status)}<span class="rz-row-t">${plink(p)}</span><span class="rz-due">${due(p) ? rel(due(p)) : ""}</span></div>`),
-    ...asks.map(p => `<div class="rz-row"><span class="rz-pill" style="--c:var(--color-pink)">Ask</span><span class="rz-row-t">${plink(p)}</span></div>`)].join("");
-  const body = `<div class="rz-cl"><div class="rz-cl-id">${avatar("claude")}<div><b>Claude</b><div class="rz-small">${q.length} in queue · ${asks.length} asks</div></div></div>
+    ...asks.map(p => `<div class="rz-row"><span class="rz-pill" style="--c:var(--color-pink)">Ask</span><span class="rz-row-t">${plink(p)}</span></div>`),
+    ...L.open.slice(0, 3).map(f => `<div class="rz-row"><span class="rz-pill" style="--c:${SEV[f.severity] || SEV.med}">Flag</span><span class="rz-row-t" title="${esc(f.id)}">${esc(f.agent)}: ${esc(String(f.summary || "").slice(0, 80))}</span></div>`)].join("");
+  const body = `<div class="rz-cl"><div class="rz-cl-id">${avatar("claude")}<div><b>Claude</b><div class="rz-small">${q.length} in queue · ${asks.length} asks · ${L.open.length} open agent flags</div></div></div>
     ${items || empty("Queue empty. Tag an inbox note #ask-claude or set owner: claude.")}${last}
-    <div class="rz-cl-links">${link("90 Meta/Claude/Handoff", "Handoff")}${link("90 Meta/Claude/Session log", "Session log")}${link("90 Meta/Claude/Claude", "How Claude works")}</div></div>`;
+    <div class="rz-cl-links">${link("90 Meta/Claude/Handoff", "Handoff")}${link("90 Meta/Claude/Session log", "Session log")}${link("90 Meta/Agents/Agent system", "Agents")}${link("90 Meta/Claude/Claude", "How Claude works")}</div></div>`;
   return card("Claude", body, "rz-span-5 rz-claude");
 };
 
@@ -365,6 +388,27 @@ S.weekReview = () => {
     ${card(`Due by end of week, still open (${late.length})`, list(late, p => `<div class="rz-row">${avatar(p.owner)}<span class="rz-row-t">${plink(p)}</span>${pill(p.status)}</div>`))}
     ${card(`Experiments (${ex.length})`, list(ex, p => `<div class="rz-li">${plink(p)}<span>${esc(p.result || p.status || "")}</span></div>`))}
     ${card(`Decisions (${dc.length})`, list(dc, p => `<div class="rz-li">${plink(p)}</div>`))}</div>`;
+};
+
+S.agents = async () => {
+  const L = await loadLedger();
+  const since = TODAY.minus({ days: 14 }).toISODate();
+  const recent = L.runs.filter(r => String(r.ts || "").slice(0, 10) >= since);
+  const gated = recent.filter(r => r.gate === "pass" || r.gate === "fail");
+  const passRate = gated.length ? Math.round(100 * gated.filter(r => r.gate === "pass").length / gated.length) + "%" : "—";
+  const verdicts = recent.filter(r => r.agent === "verifier");
+  const kpi = (t, v, sub) => card(t, `<div class="rz-big">${v}</div><div class="rz-small">${sub}</div>`, "rz-kpi");
+  const kpis = `<div class="rz-kpis">${kpi("Runs", recent.length, "last 14 days")}${kpi("Gate pass", passRate, `${gated.length} gated runs`)}${kpi("Verifier", verdicts.filter(v => v.verdict === "PASS").length + "/" + verdicts.length, "passed / reviews")}${kpi("Open flags", L.open.length, `${L.flags.length} all time`)}${kpi("Proposals", proposals.filter(p => ["proposed", "accepted"].includes(p.status)).length, "waiting for a person")}</div>`;
+  const agents = [...new Set([...recent.map(r => r.agent), ...L.open.map(f => f.agent)])].sort();
+  const rows = agents.map(a => {
+    const rs = recent.filter(r => r.agent === a);
+    const models = [...new Set(rs.map(r => r.model).filter(Boolean))].join(", ");
+    return `<tr><td>${esc(a)}</td><td>${rs.length}</td><td>${rs.filter(r => r.gate === "pass").length}</td><td>${rs.filter(r => r.gate === "fail").length}</td><td>${L.open.filter(f => f.agent === a).length}</td><td>${esc(models)}</td></tr>`;
+  }).join("");
+  const table = agents.length ? `<table class="rz-table"><thead><tr><th>Agent</th><th>Runs</th><th>Gate pass</th><th>Gate fail</th><th>Open flags</th><th>Models</th></tr></thead><tbody>${rows}</tbody></table>` : empty("No agent runs recorded yet.");
+  const flagRows = L.open.map(f => `<div class="rz-row"><span class="rz-pill" style="--c:${SEV[f.severity] || SEV.med}">${esc(f.severity || "")}</span><span class="rz-row-t" title="${esc(f.id)}">${esc(f.agent)} · ${esc(f.kind)}: ${esc(String(f.summary || "").slice(0, 140))}</span><span class="rz-due">${esc(String(f.ts || "").slice(0, 10))}</span></div>`).join("");
+  const props = [...proposals].sort((a, b) => String(b.id).localeCompare(String(a.id))).map(p => `<div class="rz-li">${plink(p)}<span>${esc(p.status || "")}</span></div>`).join("");
+  return `${kpis}<div class="rz-grid rz-sub2">${card("By agent (14 days)", table)}${card("Proposals", props || empty("No proposals yet. /retro creates them."))}</div>${card(`Open flags (${L.open.length})`, flagRows || empty("No open flags."))}`;
 };
 
 // ---------- render

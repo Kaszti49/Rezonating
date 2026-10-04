@@ -14,7 +14,7 @@ done:
 **Goal:** Two-page project plan submitted to the Győr regional qualifier (closes 1 November, midnight).
 
 ## Done when
-         - [ ] Plan written
+- [ ] Plan written
 - [ ] Submitted
 - [ ] Confirmation saved
 

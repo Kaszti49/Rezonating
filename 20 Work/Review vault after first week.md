@@ -14,7 +14,7 @@ done:
 **Goal:** Use the vault for a week, then cut what nobody used and fix what was annoying.
 
 ## Done when
-         - [ ] Changes noted in the weekly note
+- [ ] Changes noted in the weekly note
 - [ ] Claude updated the rules and templates
 
 ## Notes
