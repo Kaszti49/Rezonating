@@ -30,6 +30,25 @@
       "mcp__esp-idf__set_target",
       "mcp__espressif-docs"
     ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./data/private/**)",
+      "Edit(/data/raw/**)",
+      "Edit(/data/private/**)",
+      "Edit(**/*.wav)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(rm -rf *)",
+      "Bash(npx skills add * -g*)",
+      "Bash(npx skills add * --global*)",
+      "Bash(npx skills add * -y*)",
+      "Bash(npx skills add * --yes*)"
+    ],
     "ask": [
       "Bash(git commit *)",
       "Bash(git push *)",
@@ -49,25 +68,6 @@
       "Edit(/.gitattributes)",
       "Edit(/.gitignore)",
       "Edit(/.githooks/**)"
-    ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./data/private/**)",
-      "Edit(/data/raw/**)",
-      "Edit(/data/private/**)",
-      "Edit(**/*.wav)",
-      "Bash(git push --force*)",
-      "Bash(git push -f*)",
-      "Bash(git push * --force*)",
-      "Bash(git push * -f*)",
-      "Bash(git reset --hard*)",
-      "Bash(git clean *)",
-      "Bash(rm -rf *)",
-      "Bash(npx skills add * -g*)",
-      "Bash(npx skills add * --global*)",
-      "Bash(npx skills add * -y*)",
-      "Bash(npx skills add * --yes*)"
     ]
   },
   "hooks": {
@@ -75,7 +75,14 @@
       {
         "matcher": "startup|resume|clear|compact",
         "hooks": [
-          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session_start.py"], "timeout": 20}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/session_start.py"
+            ],
+            "timeout": 20
+          }
         ]
       }
     ],
@@ -83,19 +90,42 @@
       {
         "matcher": "Write|Edit",
         "hooks": [
-          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/pre_edit.py"], "timeout": 15}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre_edit.py"
+            ],
+            "timeout": 15
+          }
         ]
       },
       {
         "matcher": "Bash",
         "hooks": [
-          {"type": "command", "if": "Bash(git *)", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/commit_guard.py"], "timeout": 20}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/commit_guard.py"
+            ],
+            "if": "Bash(git *)",
+            "timeout": 20
+          }
         ]
       },
       {
         "matcher": "PowerShell",
         "hooks": [
-          {"type": "command", "if": "PowerShell(git *)", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/commit_guard.py"], "timeout": 20}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/commit_guard.py"
+            ],
+            "if": "PowerShell(git *)",
+            "timeout": 20
+          }
         ]
       }
     ],
@@ -103,13 +133,27 @@
       {
         "matcher": "Write|Edit",
         "hooks": [
-          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/post_edit.py"], "timeout": 90}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/post_edit.py"
+            ],
+            "timeout": 90
+          }
         ]
       },
       {
         "matcher": "Agent",
         "hooks": [
-          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_report.py"], "timeout": 15}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_report.py"
+            ],
+            "timeout": 15
+          }
         ]
       }
     ],
@@ -117,24 +161,42 @@
       {
         "matcher": "firmware-dev|ml-dev|deep-engineer|researcher|writer|vault-keeper|curator|verifier",
         "hooks": [
-          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent_gate.py"], "timeout": 600, "statusMessage": "Rezonating gate: checking the agent's work"}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent_gate.py"
+            ],
+            "timeout": 600,
+            "statusMessage": "Rezonating gate: checking the agent's work"
+          }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          {"type": "command", "command": "python", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_gate.py"], "timeout": 60}
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_gate.py"
+            ],
+            "timeout": 60
+          }
         ]
       }
     ]
   },
-  "extraKnownMarketplaces": {
-    "obsidian-skills": {
-      "source": {"source": "github", "repo": "kepano/obsidian-skills"}
-    }
-  },
   "enabledPlugins": {
     "obsidian@obsidian-skills": true
+  },
+  "extraKnownMarketplaces": {
+    "obsidian-skills": {
+      "source": {
+        "source": "github",
+        "repo": "kepano/obsidian-skills"
+      }
+    }
   }
 }
