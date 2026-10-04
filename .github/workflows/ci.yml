@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r tools/requirements.txt ruff
+      - run: pip install -r tools/requirements.txt ruff==0.16.10
       - run: python tools/validate.py
       - run: ruff check ml tools .claude
       - run: python .claude/scripts/vault_schema.py --all
