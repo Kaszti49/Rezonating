@@ -1,9 +1,11 @@
 ---
 type: decision
 id: D-014
-status: proposed
+status: accepted
 date: 2026-10-03
-decided_by: []
+decided_by:
+  - kaszti
+  - viktor
 tier: 2
 supersedes: "[[D-011 Roles]]"
 ---

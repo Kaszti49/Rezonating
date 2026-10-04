@@ -1,9 +1,11 @@
 ---
 type: decision
 id: D-011
-status: accepted
+status: superseded
 date: 2026-10-01
-decided_by: [kaszti, viktor]
+decided_by:
+  - kaszti
+  - viktor
 tier: 2
 supersedes:
 ---

@@ -1,9 +1,11 @@
 ---
 type: decision
 id: D-013
-status: proposed
+status: accepted
 date: 2026-10-03
-decided_by: []
+decided_by:
+  - kaszti
+  - viktor
 tier: 1
 supersedes:
 ---
