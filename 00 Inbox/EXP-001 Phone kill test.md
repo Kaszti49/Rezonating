@@ -1,18 +1,10 @@
 ---
-type: experiment
-id: EXP-001
-status: planned
-date: 2026-10-04
-owner: kaszti
-pack: "[[footstep-id]]"
-protocol: kill-test-phone
-floor:
-people: 3
-sessions: []
-metric: steps visible at 3 m
-metric_value:
-result:
+type: inbox
+created: 2026-10-01
 ---
+> [!info] Dropped 2026-10-05
+> Kaszti dropped the phone kill test. The first rig's geophones answer the floor question directly (Master plan, risk 1). Kept here only as a record.
+
 # EXP-001 Phone kill test
 
 **Question:** do footsteps on our floors produce a vibration a sensor can see?

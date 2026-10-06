@@ -4,7 +4,7 @@ status: backlog
 owner: viktor
 priority: p2
 area: ml
-due: 2026-10-31
+due: 2026-11-03
 pack: "[[footstep-id]]"
 created: 2026-10-01
 done:
@@ -21,3 +21,4 @@ done:
 
 ## Log
 - 2026-10-01 created
+- 2026-10-05 Claude: due 2026-10-31 → 2026-11-03 (work days are Mon/Tue, schedule recounted at Kaszti's request)

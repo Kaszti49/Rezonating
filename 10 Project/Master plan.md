@@ -14,6 +14,7 @@ Heads identify themselves (EEPROM descriptor) → packs declare what they need (
 - **ADC:** ADS131M04, 4 simultaneous channels, 24-bit, needs an 8.192 MHz clock on CLKIN.
 - **Head ports:** RJ45. Pins 1–2 analog ±, 3–6 I2C, 4–5 +3.3 V, 7–8 GND. Label them "not Ethernet".
 - **Heads:** SM-24 geophone (direct to ADC, gain 32–64), ADXL355 (I2C), piezo (buffer + clamp, mandatory).
+- **First prototype:** 2 SM-24 geophones on an ADC 15 Click (ADS131M02, 2 channels, own clock) + 1 ADXL355 on I2C, wired directly to the ESP32-S3 and recording to microSD ([[ORD-001 First rig]], [[D-015 Prototype ADC on ADC 15 Click]], proposed). The 4-channel ADS131M04 comes back on our own PCB.
 
 ## Engines
 | Engine | Used by |
@@ -27,7 +28,7 @@ Heads identify themselves (EEPROM descriptor) → packs declare what they need (
 Dataset format and sidecar schema · head descriptor and pack manifest schemas · firmware core (acquire, buffer, timestamps, pack loader) · shared feature code.
 
 ## Top risks
-1. Concrete slabs damp footsteps: the [[EXP-001 Phone kill test]] answers it for free.
+1. Concrete slabs damp footsteps: the first rig's first recordings answer it (the phone kill test was dropped on 2026-10-05).
 2. Person ID weaker in a real home (one student replication reached 67%).
 3. Fall false alarms.
-4. Hand-soldering the 0.65 mm-pitch ADC: three chips ordered.
+4. ADC 15 Click stock is thin and some shops list it as retired: buy 2 if possible. (The hand-soldering risk is gone with the ready-made board.)

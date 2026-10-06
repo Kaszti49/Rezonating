@@ -9,7 +9,7 @@ name (Windows: `echo %COMPUTERNAME%`), so keep the first column exact.
 | Machine | Who | Where | Role | ESP-IDF v6 | Ollama | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | desktop-db0e1qv | Kaszti | home | vault manager; only machine with local models | not yet | to set up | used rarely for project work, and that's an off-day |
-| (company PC, name on Monday) | Kaszti, Viktor | company | main machine on Monday and Tuesday | Monday | no | set up 2026-10-05 |
+| pc-10 | Kaszti, Viktor | company | main machine on Monday and Tuesday | v6.0 (`C:\esp\v6.0`) | no | set up 2026-10-05; repo in `Desktop\EP_RezonatingProject\Rezonating`; Python 3.12 per user; build from PowerShell, not Git Bash (idf.py refuses MSYS) |
 | (Viktor's PC, if used) | Viktor | home | optional | ? | no | add a row when it's used |
 
 ## Setting up a machine

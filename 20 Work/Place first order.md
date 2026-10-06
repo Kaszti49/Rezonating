@@ -11,7 +11,7 @@ done:
 ---
 # Place first order
 
-**Goal:** Order everything in [[ORD-001 First rig]] after the kill test passes.
+**Goal:** Order everything in [[ORD-001 First rig]].
 
 ## Done when
 - [ ] Company approved the order
@@ -22,3 +22,4 @@ done:
 
 ## Log
 - 2026-10-01 created
+- 2026-10-05 Claude: kill-test gate removed (Kaszti dropped it); ADXL355 added to the order

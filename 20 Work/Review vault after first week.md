@@ -4,7 +4,7 @@ status: todo
 owner: kaszti
 priority: p3
 area: project
-due: 2026-10-08
+due: 2026-10-12
 pack:
 created: 2026-10-01
 done:
@@ -21,3 +21,4 @@ done:
 
 ## Log
 - 2026-10-01 created
+- 2026-10-05 Claude: due 2026-10-08 → 2026-10-12 (work days are Mon/Tue, schedule recounted at Kaszti's request)

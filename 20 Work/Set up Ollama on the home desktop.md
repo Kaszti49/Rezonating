@@ -4,7 +4,7 @@ status: todo
 owner: kaszti
 priority: p3
 area: project
-due: 2026-10-10
+due: 2026-10-13
 pack:
 created: 2026-10-03
 done:
@@ -22,3 +22,4 @@ Off-day task: only when convenient.
 
 ## Log
 - 2026-10-03 created by Claude with the agent system (due date is a proposal)
+- 2026-10-05 Claude: due 2026-10-10 → 2026-10-13 (work days are Mon/Tue, schedule recounted at Kaszti's request)
