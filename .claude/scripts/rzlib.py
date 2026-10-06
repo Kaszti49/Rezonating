@@ -43,11 +43,11 @@ def rel(path: str | os.PathLike, root: Path | None = None) -> str | None:
     p = Path(path)
     if not p.is_absolute():
         p = root / p
-    a = os.path.normcase(os.path.abspath(p))
-    b = os.path.normcase(os.path.abspath(root))
+    a = os.path.normcase(os.path.realpath(p))
+    b = os.path.normcase(os.path.realpath(root))
     if a != b and not a.startswith(b.rstrip("\\/") + os.sep):
         return None
-    return Path(os.path.relpath(os.path.abspath(p), os.path.abspath(root))).as_posix()
+    return Path(os.path.relpath(os.path.realpath(p), os.path.realpath(root))).as_posix()
 
 
 def is_vault_note(relpath: str) -> bool:

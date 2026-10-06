@@ -23,6 +23,13 @@ later packs unless asked. The team works **Monday and Tuesday**; other days are 
 - **One feature implementation, two languages.** A Python feature change needs the matching
   firmware change and updated test vectors.
 - Run `python tools/validate.py` before committing schema, pack or sidecar changes.
+- **Vision changes are confirmed first.** When a person asks to change the vision, scope or a
+  function (what the product does, the packs, Roadmap gates, a decision), ask whether they really
+  want it. Once they confirm, update every note that states the old version (`Charter`, `Master
+  plan`, `Roadmap`, the pack notes, decisions). If something isn't written in the vault, ask right
+  away; never assume it.
+- **Dates count work days.** Due dates fall on a Monday or Tuesday, and durations are estimated at
+  two work days per week. External deadlines (OTIO) stay as given.
 
 ## Orchestration (main session only)
 
