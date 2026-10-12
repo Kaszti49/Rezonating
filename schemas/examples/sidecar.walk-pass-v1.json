@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "session": "2026-11-17_lab_bench_01",
+  "node": "rzn-a1b2c3",
+  "firmware": "0.1.0",
+  "start_utc": "2026-11-17T09:14:02.000Z",
+  "sample_rate": 2016,
+  "sample_rate_nominal": 2000,
+  "sample_rate_measured": 2016.13,
+  "stream": "adc_raw",
+  "clock": "ltc6903",
+  "first_sample": 0,
+  "t_dev_us": 51234567,
+  "loss": { "device": 0, "link": 0, "host": 0 },
+  "link": "usb",
+  "kind": "continuous",
+  "channels": [
+    {
+      "ch": 0,
+      "port": 1,
+      "head": "geophone/sm24",
+      "serial": "G-0001",
+      "units": "V",
+      "scale": 4.470348358154297e-09,
+      "gain": 32,
+      "mount": "spike",
+      "surface": "laminate on concrete slab",
+      "position_m": [0.0, 0.0]
+    },
+    {
+      "ch": 1,
+      "port": 2,
+      "head": "geophone/sm24",
+      "serial": "G-0002",
+      "units": "V",
+      "scale": 4.470348358154297e-09,
+      "gain": 32,
+      "mount": "spike",
+      "surface": "laminate on concrete slab",
+      "position_m": [2.0, 0.0]
+    }
+  ],
+  "protocol": "walk-pass-v1",
+  "labels": [
+    { "t0": 0.0, "t1": 60.0, "i0": 0, "i1": 120960, "src": "key", "label": "silence" },
+    {
+      "t0": 72.5,
+      "t1": 79.75,
+      "i0": 146160,
+      "i1": 160776,
+      "src": "phone",
+      "unc_ms": 40,
+      "label": "walk",
+      "person": "P2",
+      "shoes": true,
+      "pace": "normal"
+    }
+  ]
+}

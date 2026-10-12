@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://rezonating.com/schemas/sidecar/v0",
+  "$id": "https://rezonating.com/schemas/sidecar/v1",
   "title": "Rezonating recording sidecar",
-  "description": "JSON file next to every WAV recording (same base name). Describes setup and labels. DRAFT v0 - Tier 1.",
+  "description": "JSON file next to every WAV recording (same base name). Describes setup, sample accounting and labels. v1 (D-019); v0 files stay valid. Tier 1.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "session", "node", "firmware", "start_utc", "sample_rate", "channels", "protocol"],
   "properties": {
-    "schema": { "const": 0 },
+    "schema": { "enum": [0, 1] },
     "session": {
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}_[a-z0-9-]+_[a-z0-9-]+_\\d{2}$",
@@ -16,7 +16,33 @@
     "node": { "type": "string" },
     "firmware": { "type": "string" },
     "start_utc": { "type": "string", "format": "date-time" },
-    "sample_rate": { "type": "integer", "minimum": 1 },
+    "sample_rate": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Rate in the WAV header. v1: round(sample_rate_measured)."
+    },
+    "sample_rate_nominal": { "type": "integer", "minimum": 1, "description": "v1: rate the node was set to, e.g. 2000." },
+    "sample_rate_measured": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "v1: measured rate in Hz (DRDY counted against the ESP32 timer), e.g. 2016.13."
+    },
+    "stream": { "enum": ["adc_raw", "adc_dec", "accel"], "description": "v1: node stream in this WAV (D-018, D-020)." },
+    "clock": { "enum": ["ltc6903", "adxl355", "crystal"], "description": "v1: what clocks the samples." },
+    "first_sample": { "type": "integer", "minimum": 0, "description": "v1: node sample index of the WAV's first frame." },
+    "t_dev_us": { "type": "integer", "minimum": 0, "description": "v1: node microsecond clock at the first frame." },
+    "loss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["device", "link", "host"],
+      "description": "v1: samples lost in acquisition, in the node's send queue, and as gaps seen on the PC. Missing samples are zeros in the WAV.",
+      "properties": {
+        "device": { "type": "integer", "minimum": 0 },
+        "link": { "type": "integer", "minimum": 0 },
+        "host": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "link": { "enum": ["usb", "wifi", "sd"], "description": "v1: how the samples reached the PC." },
     "kind": { "enum": ["continuous", "event"], "default": "continuous" },
     "channels": {
       "type": "array",
@@ -47,8 +73,12 @@
         "type": "object",
         "required": ["t0", "t1", "label"],
         "properties": {
-          "t0": { "type": "number", "minimum": 0 },
+          "t0": { "type": "number", "minimum": 0, "description": "Seconds from the WAV start = i0 / sample_rate." },
           "t1": { "type": "number", "minimum": 0 },
+          "i0": { "type": "integer", "minimum": 0, "description": "v1: start as a sample index within this WAV." },
+          "i1": { "type": "integer", "minimum": 0 },
+          "src": { "enum": ["key", "phone", "review", "auto"], "description": "v1: where the mark came from." },
+          "unc_ms": { "type": "number", "minimum": 0, "description": "v1: timing uncertainty of a live mark." },
           "label": { "type": "string" },
           "person": { "type": "string", "pattern": "^P\\d+$", "description": "Pseudonym only, never a name." },
           "shoes": { "type": "boolean" },
@@ -56,5 +86,39 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "schema": { "const": 1 } } },
+      "then": {
+        "required": ["sample_rate_nominal", "sample_rate_measured", "stream", "clock", "first_sample", "t_dev_us", "loss", "link"],
+        "properties": { "labels": { "items": { "required": ["i0", "i1", "src"] } } }
+      }
+    },
+    {
+      "if": { "properties": { "stream": { "const": "accel" } }, "required": ["stream"] },
+      "then": { "properties": { "clock": { "const": "adxl355" } } }
+    },
+    {
+      "if": { "properties": { "stream": { "enum": ["adc_raw", "adc_dec"] } }, "required": ["stream"] },
+      "then": { "properties": { "clock": { "enum": ["ltc6903", "crystal"] } } }
+    },
+    {
+      "if": { "properties": { "schema": { "const": 0 } } },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["sample_rate_nominal"] },
+            { "required": ["sample_rate_measured"] },
+            { "required": ["stream"] },
+            { "required": ["clock"] },
+            { "required": ["first_sample"] },
+            { "required": ["t_dev_us"] },
+            { "required": ["loss"] },
+            { "required": ["link"] }
+          ]
+        }
+      }
+    }
+  ]
 }

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "session": "2026-11-17_lab_bench_01",
+  "node": "rzn-a1b2c3",
+  "firmware": "0.1.0",
+  "start_utc": "2026-11-17T09:14:02.000Z",
+  "sample_rate": 1999,
+  "sample_rate_nominal": 2000,
+  "sample_rate_measured": 1998.87,
+  "stream": "accel",
+  "clock": "adxl355",
+  "first_sample": 0,
+  "t_dev_us": 51234890,
+  "loss": { "device": 12, "link": 0, "host": 0 },
+  "link": "usb",
+  "kind": "continuous",
+  "channels": [
+    { "ch": 0, "head": "accelerometer/adxl355", "serial": "A-0001", "units": "g", "scale": 3.90625e-06, "mount": "magnet" },
+    { "ch": 1, "head": "accelerometer/adxl355", "serial": "A-0001", "units": "g", "scale": 3.90625e-06, "mount": "magnet" },
+    { "ch": 2, "head": "accelerometer/adxl355", "serial": "A-0001", "units": "g", "scale": 3.90625e-06, "mount": "magnet" }
+  ],
+  "protocol": "walk-pass-v1",
+  "notes": "Example: 12 samples lost to an ADXL355 FIFO overflow."
+}
