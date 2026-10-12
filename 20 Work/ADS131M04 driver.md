@@ -23,3 +23,4 @@ done:
 - 2026-10-01 created
 - 2026-10-05 Claude: due 2026-10-31 → 2026-11-03 (work days are Mon/Tue, schedule recounted at Kaszti's request)
 - 2026-10-06 Claude: goal updated for the ADC 15 Click (ADS131M02 + LTC6903); file name kept so links stay valid
+- 2026-10-06 Claude: acquisition rate is 2 kSPS, DRDY active low (falling edge), discard the first two samples, measure the real rate ([[D-016 ADC records at 2 kSPS]], proposed)

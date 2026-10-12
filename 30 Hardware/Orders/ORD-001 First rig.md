@@ -20,4 +20,4 @@ await dv.view("90 Meta/Views/rz", {section: "orderLines"})
 
 ## Notes
 - Prices with a link were checked on 2026-10-01; the rest are estimates. ADC, oscillator and ADXL355 rechecked 2026-10-06.
-- **2026-10-06:** ADC changed to the ADC 15 Click from Farnell (Kaszti, after talking with the boss); the TSSOP and oscillator adapters are no longer needed. The ADXL355 chip's I²C is verified; still check the EVAL-ADXL355Z header table in UG-1030 (search "SCL"/"ASEL", not "I2C").
+- **2026-10-06:** ADC changed to the ADC 15 Click from Farnell (Kaszti, after talking with the boss); the TSSOP and oscillator adapters are no longer needed. ADXL355 I²C at 2000 Hz confirmed by Kaszti. [[D-015 Prototype ADC on ADC 15 Click]] accepted.
