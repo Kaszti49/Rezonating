@@ -10,7 +10,7 @@ microSD, recording real floor and machine data as early as possible.
   on our own PCB.
 - Clock: the board's LTC6903 programmable oscillator, set to 8.192 MHz by the
   firmware over SPI mode 0 (chip select CS2 = mikroBUS PWM pin) before the ADC
-  is read in SPI mode 1. It is a silicon oscillator, not a crystal (0.5 % typ, 1.1 % max): measure
+  is read in SPI mode 1. It is a silicon oscillator, not a crystal (0.5 % typ, 1.1 % max at 25 °C, up to 1.65 % over temperature): measure
   the real sample rate and record it. DRDY is active low (falling edge).
 - Wiring, mikroBUS → ESP32-S3: SCK, SDO (MISO), SDI (MOSI), CS, INT (DRDY, to an
   interrupt-capable GPIO), RST, PWM (oscillator CS2), 3V3, GND. 3.3 V only.

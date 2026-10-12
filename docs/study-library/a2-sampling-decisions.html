@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A2 · Recording at 2 kSPS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  --bg: #eef1f2;
+  --panel: #fafbfb;
+  --ink: #14202a;
+  --muted: #4f5f6b;
+  --line: #bcc7ce;
+  --grid: #dfe5e8;
+  --acc: #0a7480;
+  --acc2: #a8520a;
+  --acc-soft: #d7ecee;
+  --acc2-soft: #f6e6d6;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1519;
+    --panel: #152027;
+    --ink: #dce6ea;
+    --muted: #93a4ae;
+    --line: #2e3e48;
+    --grid: #17232a;
+    --acc: #4fc3cf;
+    --acc2: #f0a54a;
+    --acc-soft: #12313a;
+    --acc2-soft: #3a2a17;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1519;
+  --panel: #152027;
+  --ink: #dce6ea;
+  --muted: #93a4ae;
+  --line: #2e3e48;
+  --grid: #17232a;
+  --acc: #4fc3cf;
+  --acc2: #f0a54a;
+  --acc-soft: #12313a;
+  --acc2-soft: #3a2a17;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 64px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 1180px; margin-inline: auto; padding-inline: 16px; padding-block: 20px 72px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 1000px) { .layout { grid-template-columns: 250px minmax(0, 1fr); gap: 40px; } }
+
+/* header block */
+.mast { border-bottom: 3px solid var(--ink); padding-bottom: 16px; margin-bottom: 20px; }
+.mast .kicker { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 6px; }
+.mast h1 { font-family: var(--display); font-weight: 700; font-size: clamp(40px, 8vw, 72px); line-height: 0.95; letter-spacing: 0.01em; text-transform: uppercase; margin: 0; }
+.mast p.sub { margin: 10px 0 0; max-width: 62ch; color: var(--muted); }
+
+/* contents */
+nav#toc { min-width: 0; font-size: 14px; }
+nav#toc .label { display: none; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 8px; }
+nav#toc ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+nav#toc li { flex: 0 0 auto; }
+nav#toc a { display: block; padding: 6px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; white-space: nowrap; border-radius: 2px; }
+nav#toc a .n { font-family: var(--mono); color: var(--acc); margin-right: 6px; font-variant-numeric: tabular-nums; }
+nav#toc a[aria-current="true"] { border-color: var(--acc); background: var(--acc-soft); }
+nav#toc a.done .n::after { content: "\2713"; margin-left: 3px; color: var(--acc2); }
+nav#toc a:hover { border-color: var(--ink); }
+@media (max-width: 999px) {
+  nav#toc { position: sticky; top: 0; z-index: 20; background: var(--bg); padding-block: 8px; margin-inline: -16px; padding-inline: 16px; border-bottom: 1px solid var(--line); }
+}
+@media (min-width: 1000px) {
+  nav#toc { position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 32px); overflow-y: auto; }
+  nav#toc .label { display: block; }
+  nav#toc ol { flex-direction: column; gap: 2px; overflow: visible; }
+  nav#toc a { border-color: transparent; background: transparent; white-space: normal; padding: 5px 8px; }
+  nav#toc a[aria-current="true"] { border-left: 3px solid var(--acc); border-color: var(--acc); background: var(--acc-soft); }
+}
+a { color: var(--acc); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid var(--acc2); outline-offset: 2px; }
+
+/* main column */
+main { min-width: 0; max-width: 860px; }
+section.sec { padding-block: 28px 12px; border-top: 1px solid var(--line); }
+section.sec:first-of-type { border-top: 0; padding-top: 4px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+.sec-head .num { font-family: var(--mono); font-weight: 500; font-size: 15px; color: var(--bg); background: var(--ink); padding: 2px 8px; border-radius: 2px; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+h2 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 42px); line-height: 1.02; text-transform: uppercase; letter-spacing: 0.01em; margin: 0; }
+h3 { font-size: 20px; line-height: 1.25; margin: 30px 0 6px; font-weight: 600; }
+h3 .sub { font-family: var(--mono); font-size: 14px; color: var(--acc); margin-right: 8px; font-weight: 500; }
+h4 { font-size: 15px; margin: 18px 0 4px; font-weight: 600; }
+p, ul, ol { margin: 0 0 14px; }
+p, li { max-width: 68ch; }
+li { margin-bottom: 4px; }
+code, kbd, .mono { font-family: var(--mono); font-size: 0.92em; }
+code { background: var(--acc-soft); padding: 1px 5px; border-radius: 2px; overflow-wrap: anywhere; }
+pre { font-family: var(--mono); font-size: 13.5px; line-height: 1.5; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--acc); padding: 12px 14px; overflow-x: auto; margin: 0 0 16px; }
+pre code { background: none; padding: 0; }
+.lede { font-size: 19px; line-height: 1.5; max-width: 62ch; }
+.eq { font-family: var(--mono); font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ink); padding: 8px 14px; margin: 0 0 16px; overflow-x: auto; max-width: 100%; }
+.eq .m { display: block; white-space: nowrap; }
+
+/* tags that mark where a number comes from */
+.tag { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 5px; border: 1px solid currentColor; border-radius: 2px; vertical-align: 1px; white-space: nowrap; }
+.tag.d { color: var(--acc); }
+.tag.r { color: var(--ink); }
+.tag.c { color: var(--acc2); }
+.tag.a { color: var(--muted); border-style: dashed; }
+
+/* tables */
+.tw { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--line); background: var(--panel); max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+td.m, td code { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+caption { caption-side: top; text-align: left; padding: 8px 10px; font-weight: 600; font-size: 14px; }
+
+/* figures */
+figure { margin: 6px 0 20px; max-width: 100%; }
+.svgwrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); padding: 8px; max-width: 100%; }
+svg.dg { display: block; width: 100%; height: auto; color: var(--ink); }
+svg.dg text.tx { font-family: var(--sans); }
+svg.dg text.mono { font-family: var(--mono); }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; max-width: 68ch; }
+
+/* boxes */
+.say { border: 2px solid var(--acc); background: var(--acc-soft); padding: 12px 16px 4px; margin: 22px 0; max-width: 100%; }
+.say h4 { margin: 0 0 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--acc); }
+.say p { font-size: 18px; line-height: 1.5; }
+.worked { border-left: 4px solid var(--acc2); background: var(--panel); padding: 10px 16px 2px; margin: 18px 0; border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.worked h4 { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--acc2); }
+.worked .eq { background: var(--bg); }
+.try { border: 1px dashed var(--ink); padding: 10px 16px 2px; margin: 18px 0; background: var(--panel); }
+.try h4 { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.pending { border: 2px dashed var(--acc2); background: var(--acc2-soft); padding: 10px 16px 4px; margin: 18px 0; }
+.pending h4 { margin: 0 0 6px; color: var(--acc2); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.warn { border-left: 4px solid var(--acc2); background: var(--acc2-soft); padding: 8px 14px 2px; margin: 16px 0; }
+.warn h4 { margin: 0 0 4px; color: var(--acc2); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.selfcheck { margin: 22px 0 8px; border-top: 3px solid var(--ink); padding-top: 4px; }
+.selfcheck h4 { font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 6px 0 8px; }
+details { background: var(--panel); border: 1px solid var(--line); margin: 0 0 6px; max-width: 100%; }
+summary { cursor: pointer; padding: 8px 12px; font-weight: 500; list-style-position: inside; }
+details[open] > summary { border-bottom: 1px solid var(--line); background: var(--bg); }
+details > p, details > ul, details > div { padding-inline: 14px; padding-top: 8px; }
+.jq summary { font-weight: 600; }
+
+/* progress + calculators */
+.prog { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 16px; margin: 10px 0 8px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); }
+.prog label { display: flex; gap: 8px; align-items: baseline; font-size: 15px; cursor: pointer; min-width: 0; }
+.prog input { accent-color: var(--acc); width: 16px; height: 16px; flex: 0 0 auto; transform: translateY(2px); }
+.meter { height: 8px; background: var(--line); margin: 8px 0 4px; }
+.meter > i { display: block; height: 100%; width: 0; background: var(--acc); }
+.calc { border: 2px solid var(--ink); background: var(--panel); padding: 14px 16px; margin: 20px 0; }
+.calc h4 { margin: 0 0 10px; font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.calc .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; margin-bottom: 12px; }
+.calc label { display: block; font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.calc select, .calc input[type="number"] { width: 100%; font: inherit; font-family: var(--mono); font-size: 15px; padding: 6px 8px; background: var(--bg); color: var(--ink); border: 1px solid var(--ink); border-radius: 0; }
+.calc dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; margin: 0; font-size: 15px; }
+.calc dt { color: var(--muted); }
+.calc dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.calc .flag { color: var(--acc2); font-weight: 600; }
+.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 24px; }
+.cols2 > div { min-width: 0; }
+.small { font-size: 14px; color: var(--muted); }
+.gl dt { font-weight: 600; margin-top: 10px; }
+.gl dd { margin: 0 0 0 0; max-width: 68ch; }
+.gl dt .mono { color: var(--acc); }
+@media (max-width: 520px) { body { font-size: 16px; } .lede { font-size: 17.5px; } }
+/* chapter additions */
+.libbar { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; padding: 10px 16px; background: var(--ink); color: var(--bg); font-family: var(--mono); font-size: 13px; }
+.libbar a { color: var(--bg); }
+.libbar .t { letter-spacing: 0.04em; text-transform: uppercase; }
+.changed { border: 2px solid var(--acc2); background: var(--acc2-soft); padding: 12px 16px 4px; margin: 0 0 22px; }
+.changed h2 { font-size: 24px; margin-bottom: 6px; }
+.tocl { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; padding: 0; list-style: none; }
+.tocl a { display: block; padding: 5px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; font-size: 14px; border-radius: 2px; }
+.tocl .n { font-family: var(--mono); color: var(--acc); margin-right: 6px; }
+svg.dg .b { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
+svg.dg .ba { fill: var(--acc-soft); stroke: var(--acc); stroke-width: 1.5; }
+svg.dg .bo { fill: var(--acc2-soft); stroke: var(--acc2); stroke-width: 1.5; }
+svg.dg .la { stroke: var(--acc); stroke-width: 2; fill: none; }
+svg.dg .lo { stroke: var(--acc2); stroke-width: 2; fill: none; }
+svg.dg .li { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+svg.dg .ld { stroke: var(--muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+svg.dg .gr { stroke: var(--line); stroke-width: 1; fill: none; }
+svg.dg text { fill: var(--ink); font-size: 13px; }
+svg.dg text.mu { fill: var(--muted); font-size: 12px; }
+svg.dg text.hd { font-weight: 600; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="libbar"><a href="../index.html">← Study guide</a><a href="adc15-click.html">A1 · ADC 15 Click</a><span class="t">Chapter A2 · Recording at 2 kSPS</span></div>
+<div class="wrap"><header class="mast"><p class="kicker">Study library · add-on chapter A2</p><h1>Recording at 2 kSPS and the ADXL355 at 2000 Hz</h1>
+<p class="sub">Two sampling decisions the team made on 2026-10-06, and the reasons behind them. Read it after chapter A1. The same source tags apply: <span class="tag d">datasheet</span> <span class="tag r">repo</span> <span class="tag c">calculated</span> <span class="tag a">assumed</span>.</p></header>
+
+<div class="changed"><h2>What changed (2026-10-06)</h2>
+<ul>
+<li><strong>ADC rate:</strong> the study guide (section 5) and chapter A1 called "record at 4 kSPS, decimate to 1 kSPS" an open recommendation. The team chose <strong>2 kSPS</strong> instead. The firmware low-pass filters the 2 kSPS stream with a sharp FIR and decimates by 2 to 1 kSPS.</li>
+<li><strong>ADXL355:</strong> Kaszti confirmed that the EVAL-ADXL355Z works over I²C and reaches the 2000 Hz that the <code>appliance</code> pack asks for.</li>
+<li><strong>Unchanged:</strong> <code>footstep-id</code> and <code>fall</code> still work at 1 kSPS after decimation. The 4-channel ADS131M04 stays the PCB target.</li>
+<li><strong>Status:</strong> a decision, not a measurement. The board is not in the lab yet, so the filter response below is calculated from the datasheet formula, not measured. The FIR design (tap count, window) is not decided.</li>
+</ul></div>
+
+<ol class="tocl"><li><a href="#b1"><span class="n">1</span>The decision</a></li><li><a href="#b2"><span class="n">2</span>Why it works</a></li><li><a href="#b3"><span class="n">3</span>FIR and decimation</a></li><li><a href="#b4"><span class="n">4</span>Data and cost</a></li><li><a href="#b5"><span class="n">5</span>Measured rate</a></li><li><a href="#b6"><span class="n">6</span>ADXL355 at 2000 Hz</a></li><li><a href="#b7"><span class="n">7</span>Glossary</a></li><li><a href="#b8"><span class="n">8</span>Sources</a></li></ol>
+
+<main>
+<section class="sec" id="b1">
+<div class="sec-head"><span class="num">1</span><h2>The decision</h2></div>
+<p class="lede">The ADC records at 2 kSPS. The firmware filters and keeps every second sample, so the packs see 1 kSPS.</p>
+<h3>The chain</h3>
+<div class="tw"><table>
+<thead><tr><th>Step</th><th>What happens</th><th>Rate out</th></tr></thead>
+<tbody>
+<tr><td>1. ADC modulator</td><td>f<sub>MOD</sub> = 4.096 MHz (the 8.192 MHz clock divided by 2) <span class="tag d">datasheet</span></td><td class="m">4.096 MHz</td></tr>
+<tr><td>2. ADC filter</td><td>OSR 2048, built as sinc3 at OSR 1024 followed by sinc1 ×2 <span class="tag d">datasheet</span></td><td class="m">2 kSPS</td></tr>
+<tr><td>3. Firmware FIR</td><td>Sharp low-pass, pass band to 400 Hz</td><td class="m">2 kSPS</td></tr>
+<tr><td>4. Decimate by 2</td><td>Keep every second sample</td><td class="m">1 kSPS</td></tr>
+</tbody></table></div>
+<p>Check the numbers: 4 096 000 / 2048 = 2000. <span class="tag c">calculated</span> The 1 kSPS stream is what <code>footstep-id</code> and <code>fall</code> ask for.</p>
+<h3>What was open before</h3>
+<p>The study guide and chapter A1 showed that the ADC's own filter removes only 4.4 dB at the Nyquist frequency when it records at 1 kSPS. They proposed recording at 4 kSPS and decimating by 4. That was a recommendation, and the team has now chosen 2 kSPS. The reasons are in section 2. Pages that still say "4 kSPS" describe the earlier proposal.</p>
+<div class="say"><h4>Say it to a judge</h4>
+<p>We record at 2 kSPS, filter in firmware with a sharp low-pass and keep every second sample. That gives the 1 kSPS our two first packs need, and the filter does the job that the ADC's own gentle filter cannot do alone.</p></div>
+<div class="selfcheck"><h4>Self-check</h4>
+<details><summary>1. What are the two sample rates in the chain?</summary><p>2 kSPS from the ADC, 1 kSPS after the FIR and decimation by 2.</p></details>
+<details><summary>2. How is the ADC's 2 kSPS made?</summary><p>f<sub>MOD</sub> 4.096 MHz / OSR 2048 = 2000 SPS. The filter is sinc3 at OSR 1024 followed by sinc1 ×2.</p></details>
+<details><summary>3. What did the study guide recommend before, and what did the team choose?</summary><p>It suggested 4 kSPS, then decimation to 1 kSPS. The team chose 2 kSPS.</p></details>
+</div></section>
+
+<section class="sec" id="b2">
+<div class="sec-head"><span class="num">2</span><h2>Why it works</h2></div>
+<p class="lede">At 2 kSPS the ADC filter is already gentle enough in the band we care about, and it is strong where unwanted signals would fold into that band.</p>
+<h3>The ADC filter at 2 kSPS</h3>
+<p>The team computed the response from the datasheet's sinc3 formula (Eq. 7, N = 1024) times the sinc1 average of 2 (Table 8-3). <span class="tag c">calculated</span> The values are in the table and the figure.</p>
+<div class="tw"><table>
+<caption>ADC filter response at 2 kSPS (gain relative to DC) <span class="tag c">calculated</span></caption>
+<thead><tr><th class="num">Frequency</th><th class="num">Response</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td class="num">240 Hz</td><td class="num">−0.3 dB</td><td></td></tr>
+<tr><td class="num">400 Hz</td><td class="num">−0.9 dB</td><td>top of the band of interest</td></tr>
+<tr><td class="num">500 Hz</td><td class="num">−1.4 dB</td><td>Nyquist of the 1 kSPS stream</td></tr>
+<tr><td class="num">800 Hz</td><td class="num">−3.6 dB</td><td></td></tr>
+<tr><td class="num">1000 Hz</td><td class="num">−5.7 dB</td><td>Nyquist of the 2 kSPS stream</td></tr>
+<tr><td class="num">1200 Hz</td><td class="num">−8.6 dB</td><td></td></tr>
+<tr><td class="num">1600 Hz</td><td class="num">−17.5 dB</td><td>folds to 400 Hz</td></tr>
+<tr><td class="num">2000 Hz</td><td class="num">notch</td><td>folds to 0 Hz; the filter has a zero at the sample rate</td></tr>
+<tr><td class="num">2400 Hz</td><td class="num">−28.0 dB</td><td>folds to 400 Hz</td></tr>
+</tbody></table></div>
+<p>For comparison, at 1 kSPS the same kind of filter gives −2.7 dB at 400 Hz and −4.4 dB at 500 Hz. <span class="tag c">calculated</span> At 2 kSPS the droop at 400 Hz is 0.9 dB, so the band of interest passes with little change.</p>
+<figure>
+<div class="svgwrap">
+<svg class="dg" viewBox="0 0 720 380" style="min-width:600px" role="img" aria-labelledby="fr-t fr-d" xmlns="http://www.w3.org/2000/svg"><title id="fr-t">ADC filter response at 2 kSPS, 0 to 3000 Hz</title><desc id="fr-d">Frequency axis from 0 to 3000 hertz. The ADC filter response falls from 0 dB to minus 5.7 dB at 1000 hertz, minus 17.5 dB at 1600 hertz, has a notch at 2000 hertz and is minus 28.0 dB at 2400 hertz. The band of interest 0 to 400 hertz, the Nyquist frequency at 1000 hertz and the folding region 1600 to 2400 hertz are marked.</desc>
+<rect class="ba" x="60.0" y="40" width="85.3" height="240" opacity="0.55"/>
+<rect class="bo" x="401.3" y="40" width="170.7" height="240" opacity="0.55"/>
+<line class="gr" x1="60" y1="40.0" x2="700" y2="40.0"/><text class="mu" x="8" y="44.0">0 dB</text>
+<line class="gr" x1="60" y1="110.0" x2="700" y2="110.0"/><text class="mu" x="8" y="114.0">-10 dB</text>
+<line class="gr" x1="60" y1="180.0" x2="700" y2="180.0"/><text class="mu" x="8" y="184.0">-20 dB</text>
+<line class="gr" x1="60" y1="250.0" x2="700" y2="250.0"/><text class="mu" x="8" y="254.0">-30 dB</text>
+<line class="li" x1="60" y1="280" x2="700" y2="280"/>
+<line class="li" x1="60.0" y1="280" x2="60.0" y2="285"/><text class="mu" x="60.0" y="299" text-anchor="middle">0</text>
+<line class="li" x1="166.7" y1="280" x2="166.7" y2="285"/><text class="mu" x="166.7" y="299" text-anchor="middle">500</text>
+<line class="li" x1="273.3" y1="280" x2="273.3" y2="285"/><text class="mu" x="273.3" y="299" text-anchor="middle">1000</text>
+<line class="li" x1="380.0" y1="280" x2="380.0" y2="285"/><text class="mu" x="380.0" y="299" text-anchor="middle">1500</text>
+<line class="li" x1="486.7" y1="280" x2="486.7" y2="285"/><text class="mu" x="486.7" y="299" text-anchor="middle">2000</text>
+<line class="li" x1="593.3" y1="280" x2="593.3" y2="285"/><text class="mu" x="593.3" y="299" text-anchor="middle">2500</text>
+<line class="li" x1="700.0" y1="280" x2="700.0" y2="285"/><text class="mu" x="700.0" y="299" text-anchor="middle">3000</text>
+<text class="mu" x="700" y="316" text-anchor="end">frequency (Hz), linear scale</text>
+<line class="ld" x1="273.3" y1="30" x2="273.3" y2="280"/><text class="hd" x="273.3" y="24" text-anchor="middle">Nyquist 1000 Hz</text>
+<line class="ld" x1="166.7" y1="52" x2="166.7" y2="280"/><text class="mu" x="170.7" y="64">500 Hz</text>
+<path class="la" d="M60.0,40.0 C68.5,40.4 97.0,41.1 111.2,42.1 C125.4,43.1 136.1,45.0 145.3,46.3 C154.6,47.6 152.4,46.6 166.7,49.8 C180.9,52.9 212.9,60.2 230.7,65.2 C248.4,70.2 259.1,74.1 273.3,79.9 C287.6,85.7 294.7,86.4 316.0,100.2 C337.3,114.0 387.1,152.1 401.3,162.5"/>
+<path class="lo" d="M401.3,162.5 L486.7,278 L572.0,236.0"/>
+<circle cx="111.2" cy="42.1" r="3" fill="currentColor"/>
+<circle cx="145.3" cy="46.3" r="3" fill="currentColor"/>
+<circle cx="166.7" cy="49.8" r="3" fill="currentColor"/>
+<circle cx="230.7" cy="65.2" r="3" fill="currentColor"/>
+<circle cx="273.3" cy="79.9" r="3" fill="currentColor"/>
+<circle cx="316.0" cy="100.2" r="3" fill="currentColor"/>
+<circle cx="401.3" cy="162.5" r="3" fill="currentColor"/>
+<circle cx="572.0" cy="236.0" r="3" fill="currentColor"/>
+<text class="mu" x="153.3" y="38.3" >−0.9 dB</text>
+<text class="mu" x="236.7" y="57.2" >−3.6 dB</text>
+<text class="mu" x="279.3" y="69.9" >−5.7 dB</text>
+<text class="mu" x="322.0" y="92.2" >−8.6 dB</text>
+<text class="mu" x="393.3" y="154.5" text-anchor="end">−17.5 dB</text>
+<text class="mu" x="566.0" y="226.0" text-anchor="end">−28.0 dB</text>
+<text class="hd" x="486.7" y="268" text-anchor="middle">notch</text>
+<text class="mu" x="433.3" y="56" text-anchor="middle">ADC filter</text>
+<rect class="ba" x="60.0" y="322" width="85.3" height="18"/><text class="tx" x="153.3" y="335">FIR pass band 0–400 Hz (band of interest)</text>
+<rect class="bo" x="401.3" y="346" width="170.7" height="18"/><text class="tx" x="393.3" y="359" text-anchor="end">folding region 1600–2400 Hz (folds onto 0–400 Hz)</text>
+</svg>
+</div>
+<figcaption>Figure 2.1. The ADC filter response at 2 kSPS, drawn to scale from the table (dots are the calculated points, the line between them is smoothed). The notch at 2000 Hz is drawn as a straight dip and its depth is not to scale; only the points are calculated. The response above 2400 Hz is not computed here. Teal band: 0–400 Hz, the band of interest and the FIR pass band. Amber band: 1600–2400 Hz, the part of the spectrum that folds into the band of interest.</figcaption>
+</figure>
+<h3>Folding in plain words</h3>
+<p>A sampler at 2000 SPS cannot tell a frequency <em>f</em> from a frequency that differs by a multiple of 2000. Content at <em>f</em> shows up at |<em>f</em> − 2000·<em>k</em>|, for the whole number <em>k</em> that gives the lowest result. This is aliasing. <span class="tag c">calculated</span></p>
+<div class="worked"><h4>Worked example: where things land at 2 kSPS</h4>
+<div class="eq"><span class="m">1600 Hz → |1600 − 2000| = 400 Hz</span><span class="m">2000 Hz → |2000 − 2000| = 0 Hz</span><span class="m">2400 Hz → |2400 − 2000| = 400 Hz</span><span class="m">1200 Hz → |1200 − 2000| = 800 Hz</span><span class="m">1000 Hz → 1000 Hz (Nyquist, stays)</span></div>
+<p>So what lands inside 0–400 Hz comes mainly from 1600–2400 Hz; the higher bands (around 4000 Hz, 6000 Hz, …) are attenuated even more. The ADC filter has already pushed that region down by at least 17.5 dB (−17.5 dB at 1600 Hz, a notch at 2000 Hz, −28.0 dB at 2400 Hz). <span class="tag c">calculated</span></p></div>
+<p>What lands in 400–1000 Hz comes from 1000–1600 Hz, where the ADC filter removes less (−5.7 to −17.5 dB). That is outside our band, but it is still in the 2 kSPS stream. The FIR removes it before decimation.</p>
+<h3>The second step: decimation</h3>
+<p>After decimation by 2 the stream has a Nyquist frequency of 500 Hz. Anything between 600 and 1000 Hz would fold into 400–0 Hz. That is the region the FIR must remove. So the FIR needs a pass band to 400 Hz and a stop band that starts at 600 Hz or lower. In the 400–600 Hz transition band, 400–500 Hz stays where it is and 500–600 Hz folds onto 500–400 Hz, which the packs do not use. <span class="tag c">calculated</span> The exact stop-band start and attenuation are not fixed yet (section 3).</p>
+<div class="say"><h4>Say it to a judge</h4>
+<p>At 2 kSPS the part of the spectrum that folds into our 0 to 400 Hz band sits at 1600 to 2400 Hz, where the ADC's own filter is at least 17.5 dB down. The rest, between 1000 and 1600 Hz, our own sharp filter removes before we throw away every second sample.</p></div>
+<div class="selfcheck"><h4>Self-check</h4>
+<details><summary>1. A signal at 1700 Hz is sampled at 2 kSPS. Where does it appear?</summary><p>|1700 − 2000| = 300 Hz, inside the band of interest. It lies in the folding region, where the ADC filter is at least 17.5 dB down.</p></details>
+<details><summary>2. Why is the notch at 2000 Hz useful?</summary><p>Content at exactly 2000 Hz would fold to 0 Hz. The filter has a zero there, so that content is removed.</p></details>
+<details><summary>3. Why must the FIR remove 600–1000 Hz even though the pack only uses 0–400 Hz?</summary><p>After decimation by 2 the Nyquist is 500 Hz, so 600–1000 Hz would fold into 400–0 Hz. The FIR must remove it first.</p></details>
+<details><summary>4. How much do 400 Hz and 500 Hz drop at 2 kSPS compared with 1 kSPS?</summary><p>At 2 kSPS: −0.9 dB and −1.4 dB. At 1 kSPS: −2.7 dB and −4.4 dB.</p></details>
+</div></section>
+
+<section class="sec" id="b3">
+<div class="sec-head"><span class="num">3</span><h2>Decimation and the FIR in plain words</h2></div>
+<p class="lede">A FIR filter is a weighted sum of the last few samples. Decimation keeps every second result. The order matters: filter first.</p>
+<h3>What a FIR filter is</h3>
+<p>FIR stands for finite impulse response. For every new sample, the filter multiplies the last N samples by N fixed numbers (the taps, or coefficients) and adds the products. The result is one filtered sample. Choose the numbers well and the sum lets low frequencies through and cancels high ones.</p>
+<div class="eq"><span class="m">y[n] = h[0]·x[n] + h[1]·x[n−1] + … + h[N−1]·x[n−N+1]</span></div>
+<h3>Why "sharp" costs taps</h3>
+<p>We want to keep everything up to 400 Hz and remove everything from about 600 Hz. That is a narrow transition band: 200 Hz out of a 2000 Hz sample rate. A narrow transition needs a longer filter. More taps mean more multiplications per sample and more memory. A gentle filter is short, a sharp one is long. The tap count is <strong>to design</strong>. <span class="tag a">not decided</span></p>
+<div class="pending"><h4>Not decided yet</h4>
+<p>Number of taps, design method or window, stop-band attenuation, and the number format in firmware. One saving is certain: only every second output is kept, so the firmware needs to compute only every second output. These need a design step and a test on the real board.</p></div>
+<h3>Why filter before dropping samples</h3>
+<p>Dropping every second sample halves the rate. It also moves the Nyquist frequency from 1000 Hz to 500 Hz, and everything above 500 Hz folds back (section 2). If you drop samples without filtering, the folded content looks like real signal and cannot be removed afterwards. So the filter comes first.</p>
+<h3>One feature implementation, two languages</h3>
+<p>The models are trained in Python and run in the firmware. Both must see the same samples. So the Python training pipeline must apply the <strong>exact same FIR and the same decimation</strong> as the firmware: the same coefficients, the same order of steps, the same rounding. This is the project rule "one feature implementation, two languages". <span class="tag r">repo</span> The check is a set of test vectors: a fixed input and the expected output from the Python code, compared with what the firmware produces.</p>
+<div class="say"><h4>Say it to a judge</h4>
+<p>A FIR filter is a weighted sum of the last few samples. We filter first and only then keep every second sample, because otherwise high frequencies would fold into our band. The same filter runs in the training code and on the device, and test vectors prove that they agree.</p></div>
+<div class="selfcheck"><h4>Self-check</h4>
+<details><summary>1. What does a FIR filter compute?</summary><p>A weighted sum of the last N input samples, using N fixed coefficients (taps).</p></details>
+<details><summary>2. Why does a sharper filter need more taps?</summary><p>A narrow transition between pass band and stop band needs a longer impulse response, which means more taps.</p></details>
+<details><summary>3. What goes wrong if you decimate without filtering?</summary><p>Content above the new Nyquist (500 Hz) folds into the band of interest and cannot be removed afterwards.</p></details>
+<details><summary>4. How do we know the Python and firmware filters agree?</summary><p>Test vectors: the same input through both, with the same expected output. The tap count and coefficients are still to design.</p></details>
+</div></section>
+
+<section class="sec" id="b4">
+<div class="sec-head"><span class="num">4</span><h2>Data and cost</h2></div>
+<p class="lede">Recording at 2 kSPS doubles the data of 1 kSPS. Whether we store the 2 kSPS or the 1 kSPS stream is not decided.</p>
+<p>The repo's WAV format stores each sample in 4 bytes. <span class="tag r">repo</span> The prototype has 2 analog channels.</p>
+<div class="worked"><h4>Worked example: bytes per second and per hour</h4>
+<div class="eq"><span class="m">before decimation: 2 ch × 4 B × 2000 S/s = 16 000 B/s = 16 kB/s</span><span class="m">per hour: 16 000 × 3600 = 57 600 000 B ≈ 57.6 MB/h</span><span class="m">after decimation: 2 ch × 4 B × 1000 S/s = 8 000 B/s = 8 kB/s</span><span class="m">per hour: 8 000 × 3600 = 28 800 000 B ≈ 28.8 MB/h</span></div>
+<p><span class="tag c">calculated</span> The sidecar and the WAV header are small and are not counted.</p></div>
+<div class="pending"><h4>Not decided yet</h4>
+<p>Which stream goes to the microSD card: the full 2 kSPS recording (twice the data, but it keeps the option to change the filter later) or the filtered 1 kSPS stream (half the data, the same as what the pack sees). This is not written down as a decision.</p></div>
+<p>The FIR also costs processor time. With N taps, one output per two inputs and 2 channels, the firmware does about N × 1000 × 2 multiply-adds per second. For example, N = 100 would be about 200 000 per second. <span class="tag c">calculated</span> N = 100 is only an example for the arithmetic, not a plan. <span class="tag a">assumed</span></p>
+<div class="say"><h4>Say it to a judge</h4>
+<p>Two channels at 2 kSPS with 4-byte samples is 16 kilobytes per second, about 57.6 megabytes an hour. After decimation it is half of that. Which of the two we store, we have not decided yet.</p></div>
+<div class="selfcheck"><h4>Self-check</h4>
+<details><summary>1. How many bytes per second do 2 channels × 4 bytes × 2000 S/s make?</summary><p>16 000 B/s, which is 57.6 MB per hour.</p></details>
+<details><summary>2. And after decimation to 1 kSPS?</summary><p>8 000 B/s, 28.8 MB per hour.</p></details>
+<details><summary>3. Is it decided which stream we store?</summary><p>No.</p></details>
+</div></section>
+
+<section class="sec" id="b5">
+<div class="sec-head"><span class="num">5</span><h2>The measured sample rate</h2></div>
+<p class="lede">The 2 kSPS is nominal. The real rate follows the LTC6903 clock, which is accurate to 0.5 % typically; the maximum is 1.1 % at 25 °C and 2.7 V, and up to 1.65 % over temperature (C grade).</p>
+<p>Chapter A1 explains the clock. Its accuracy is 0.5 % typ; 1.1 % max at 25 °C and 2.7 V, 1.6 % max at 5.5 V, and 1.65 % (2.7 V) to 2 % (5.5 V) over temperature for the C grade <span class="tag d">datasheet</span>. The datasheet gives no separate figure for 3.3 V, as given in the LTC6903 datasheet. The ADC's output rate is the clock divided by a fixed number, so it has the same relative error.</p>
+<div class="worked"><h4>Worked example: the real rate</h4>
+<div class="eq"><span class="m">typical, ±0.5 %: 2000 × 0.995 = 1990 and 2000 × 1.005 = 2010 S/s</span><span class="m">25 °C maximum, ±1.1 %: 1978 to 2022 S/s</span><span class="m">over temperature, ±1.65 %: 2000 × 0.9835 ≈ 1967 and 2000 × 1.0165 ≈ 2033 S/s</span><span class="m">FIR cut-off 400 Hz scales with the rate: 400 × 0.0165 ≈ 6.6 Hz at worst</span></div>
+<p><span class="tag c">calculated</span> Which grade of LTC6903 the Click uses is not confirmed; the I and H grades have wider limits.</p></div>
+<p>The FIR coefficients are fixed numbers. They filter relative to the real sample rate, so if the rate is 1 % low, the cut-off is 1 % low too: 400 Hz becomes about 396 Hz. For a footstep band this is negligible. Time-based features, such as the stride interval, do use the real rate, which is why we measure it.</p>
+<p>The plan: the firmware counts data-ready pulses against the ESP32-S3 timer and records the measured rate in the recording's sidecar, next to the nominal one. This needs a sidecar schema change (today `sample_rate` is a single integer), which has not been made yet <span class="tag a">planned</span>. A slow clock is not a dropped sample, and dropped samples are still counted separately.</p>
+<div class="say"><h4>Say it to a judge</h4>
+<p>Our nominal 2 kSPS can really be 1990 to 2010 samples a second, and about 1967 to 2033 in the worst case over temperature, because the clock chip is not a crystal. The filter cut-off moves by the same fraction, a few hertz at most, which does not matter here. We plan to measure the real rate and store it with every recording.</p></div>
+<div class="selfcheck"><h4>Self-check</h4>
+<details><summary>1. What is the typical range of the real rate?</summary><p>1990 to 2010 S/s (±0.5 %). At 25 °C the maximum is 1.1 % (1978 to 2022 S/s); over temperature up to 1.65 % (about 1967 to 2033 S/s).</p></details>
+<details><summary>2. Why does the FIR cut-off barely matter?</summary><p>It scales with the real rate. Even a 1.65 % change moves 400 Hz by only about 6.6 Hz.</p></details>
+<details><summary>3. Where is the measured rate recorded?</summary><p>The plan is the sidecar of each recording; the sidecar schema still needs a field for it.</p></details>
+</div></section>
+
+<section class="sec" id="b6">
+<div class="sec-head"><span class="num">6</span><h2>The ADXL355 at 2000 Hz over I²C</h2></div>
+<p class="lede">The accelerometer does not use the ADC. It sends numbers over I²C, and the bus must be fast enough to carry 2000 samples a second.</p>
+<p>Kaszti confirmed that the EVAL-ADXL355Z works over I²C and reaches the 2000 Hz that the <code>appliance</code> pack asks for. <span class="tag a">team statement</span> This section works out how much the bus has to carry and what that means for the bus speed. Nothing here is measured on the board.</p>
+<h3>How much data</h3>
+<p>Each axis value is 20 bits wide and is read from 3 registers, so one sample is 3 bytes per axis. With 3 axes, one sample set is 9 bytes.</p>
+<div class="worked"><h4>Worked example: payload</h4>
+<div class="eq"><span class="m">3 axes × 3 bytes = 9 bytes per sample set</span><span class="m">9 B × 2000 sets/s = 18 000 B/s = 18 kB/s</span></div>
+<p><span class="tag c">calculated</span></p></div>
+<h3>What I²C adds</h3>
+<p>I²C sends every byte as 8 data bits followed by one acknowledge bit, so a byte takes 9 clock cycles. A transaction also has a start condition, the device address (one byte), often a register address, and a stop condition. These are overhead on top of the data.</p>
+<div class="worked"><h4>Worked example: the bus at 400 kHz</h4>
+<div class="eq"><span class="m">data bits alone: 18 000 B/s × 9 = 162 000 clocks/s = 162 kbit/s</span><span class="m">one sample set, read on its own: address+W 9 + register 9 + address+R 9 + 9 bytes × 9 = 108 clocks</span><span class="m">108 clocks × 2000 = 216 000 clocks/s ≈ 216 kbit/s, plus start and stop</span><span class="m">at 400 kHz: 216 / 400 ≈ 54 % of the bus time</span><span class="m">at 100 kHz: 108 clocks take 1.08 ms, but a new set arrives every 0.5 ms: does not fit</span></div>
+<p><span class="tag c">calculated</span> These are ideal figures. They ignore the pauses between transactions and any clock stretching, so the real load is higher. <span class="tag a">assumed</span></p></div>
+<h3>Burst reads from the FIFO</h3>
+<p>The ADXL355 has a FIFO (depth: see datasheet). The firmware can let samples collect there and then read several sample sets in one transaction. The address and register bytes are then sent once for many samples.</p>
+<div class="worked"><h4>Worked example: 10 sample sets per transaction</h4>
+<div class="eq"><span class="m">clocks per transaction: 27 (address, register, address) + 10 × 81 = 837</span><span class="m">per sample set: 837 / 10 = 83.7 clocks</span><span class="m">83.7 × 2000 ≈ 167 000 clocks/s ≈ 167 kbit/s</span><span class="m">at 400 kHz: ≈ 42 %    at 800 kHz: ≈ 21 %</span></div>
+<p><span class="tag c">calculated</span> 10 sets is only an example. How many sets the FIFO can hold, and exactly how burst reads work, comes from the ADXL355 datasheet and is not checked here. <span class="tag a">to confirm</span></p></div>
+<h3>Which bus speed</h3>
+<div class="tw"><table>
+<thead><tr><th>Device</th><th>I²C speeds</th></tr></thead>
+<tbody>
+<tr><td>ADXL355</td><td>100 kHz, 400 kHz, 1 MHz and 3.4 MHz <span class="tag d">datasheet Rev. 0</span></td></tr>
+<tr><td>ESP32-S3</td><td>Standard mode (100 kbit/s), Fast mode (400 kbit/s) and up to 800 kbit/s, "constrained by SCL and SDA pull-up strength" <span class="tag d">datasheet</span></td></tr>
+</tbody></table></div>
+<p>The bus can only go as fast as its slowest part. A 1 MHz Fast-mode Plus bus would leave the most margin, and the ADXL355 supports it. But the ESP32-S3 datasheet lists nothing above 800 kbit/s, so we cannot count on 1 MHz with this microcontroller. What the ESP32-S3 can do is 400 kHz or 800 kHz. <span class="tag d">datasheet</span></p>
+<div class="warn"><h4>Recommendation, not decided</h4>
+<p>Start the firmware at 400 kHz and read the FIFO in bursts: that is about 42 % of the bus in the example above. Keep 800 kHz as the reserve, but only with pull-up resistors strong enough for it. The pull-up values on the evaluation board are still to confirm (chapter A1). If a faster bus is ever wanted, the plan is to check the 1 MHz option on the ESP32-S3 first; this chapter does not claim that it works.</p></div>
+<div class="say"><h4>Say it to a judge</h4>
+<p>The accelerometer sends 9 bytes per sample, 2000 times a second: 18 kilobytes a second of data. I²C adds a bit for every byte and some addressing, so on a 400 kHz bus it needs about half the bus time when read one sample at a time, and less when we read the FIFO in bursts. The microcontroller's own limit is 800 kHz.</p></div>
+<div class="selfcheck"><h4>Self-check</h4>
+<details><summary>1. How many bytes per second does the ADXL355 send at 2000 Hz?</summary><p>3 axes × 3 bytes × 2000 = 18 000 B/s.</p></details>
+<details><summary>2. How many clock cycles does one byte take on I²C?</summary><p>9: eight data bits and one acknowledge bit.</p></details>
+<details><summary>3. Does the data fit on a 100 kHz bus?</summary><p>No. 18 000 B/s × 9 = 162 kbit/s is already more than 100 kbit/s, before any overhead.</p></details>
+<details><summary>4. Why not just use the ADXL355's 1 MHz option?</summary><p>The ESP32-S3 datasheet lists up to 800 kbit/s only. The bus runs at the speed both parts allow.</p></details>
+</div></section>
+
+<section class="sec" id="b7">
+<div class="sec-head"><span class="num">7</span><h2>New glossary terms</h2></div>
+<dl class="gl">
+<dt>kSPS</dt><dd>Thousand samples per second. 2 kSPS is 2000 samples per second.</dd>
+<dt>Decimation</dt><dd>Keeping every M-th sample and discarding the rest, which lowers the sample rate by M. Always preceded by a low-pass filter.</dd>
+<dt>FIR filter</dt><dd>Finite impulse response filter. Each output is a weighted sum of the last N inputs.</dd>
+<dt>Tap</dt><dd>One of the N weights (coefficients) of a FIR filter. More taps allow a sharper filter.</dd>
+<dt>Pass band, stop band, transition band</dt><dd>The frequencies a filter keeps, the frequencies it removes, and the gap in between. A narrow gap needs more taps.</dd>
+<dt>Aliasing, folding</dt><dd>A frequency above half the sample rate shows up as a lower one: f appears at |f − k × sample rate|.</dd>
+<dt>Nyquist frequency</dt><dd>Half the sample rate. 1000 Hz at 2 kSPS, 500 Hz at 1 kSPS.</dd>
+<dt>OSR</dt><dd>Oversampling ratio. The modulator rate divided by the output sample rate. Here 4.096 MHz / 2048 = 2 kSPS.</dd>
+<dt>sinc filter</dt><dd>The simple averaging-type low-pass filter inside a delta-sigma ADC. sinc3 has three stages. It droops slowly and has notches at multiples of the output rate.</dd>
+<dt>Notch</dt><dd>A frequency where a filter's response drops to zero. The ADC filter has one at 2000 Hz.</dd>
+<dt>dB (decibel)</dt><dd>A logarithmic ratio. −6 dB is about half the amplitude; −20 dB is one tenth.</dd>
+<dt>Test vector</dt><dd>A fixed input with its expected output, used to prove that two implementations agree.</dd>
+<dt>FIFO</dt><dd>First in, first out buffer. The ADXL355 stores samples in one so the firmware can read many at once.</dd>
+<dt>Burst read</dt><dd>Reading many bytes in one bus transaction, so the addressing overhead is paid once.</dd>
+<dt>Fast-mode, Fast-mode Plus (I²C)</dt><dd>I²C speed classes of 400 kbit/s and 1 Mbit/s.</dd>
+</dl></section>
+
+<section class="sec" id="b8">
+<div class="sec-head"><span class="num">8</span><h2>Sources</h2></div>
+<ul>
+<li>ADS131M02 datasheet (filter structure, OSR, Table 8-3, sinc3 formula Eq. 7): <a href="https://www.ti.com/lit/ds/symlink/ads131m02.pdf">https://www.ti.com/lit/ds/symlink/ads131m02.pdf</a></li>
+<li>LTC6903 datasheet (clock accuracy): <a href="https://download.mikroe.com/documents/datasheets/LTC6903_datasheet.pdf">https://download.mikroe.com/documents/datasheets/LTC6903_datasheet.pdf</a></li>
+<li><a href="https://www.analog.com/media/en/technical-documentation/data-sheets/adxl354_adxl355.pdf">ADXL354/ADXL355 datasheet</a> (Analog Devices): data registers, FIFO, I²C speeds</li>
+<li><a href="https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf">ESP32-S3 Series Datasheet</a> v2.2 (Espressif), section 4.2.1.2 I2C Interface</li>
+<li>Chapter A1 (this library) and the study guide, section 5</li>
+</ul>
+<h3>What is not yet confirmed</h3>
+<ul>
+<li>The FIR design: tap count, stop-band attenuation, number format.</li>
+<li>Which stream (2 kSPS or 1 kSPS) is stored on the microSD card.</li>
+<li>The ADXL355's FIFO depth and burst-read details, and the I²C pull-up values on the evaluation board.</li>
+<li>Everything measured on the real board: the true sample rate, the actual filter response and the bus load.</li>
+</ul>
+</section>
+</main>
+</div>
+</body>
+</html>

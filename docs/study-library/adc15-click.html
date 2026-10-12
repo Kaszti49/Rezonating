@@ -213,7 +213,7 @@ svg.dg text.hd { font-weight: 600; font-size: 14px; }
 </style>
 </head>
 <body>
-<div class="libbar"><a href="../index.html">← Study guide</a><span class="t">Chapter A1 · The ADC 15 Click and direct wiring</span></div>
+<div class="libbar"><a href="../index.html">← Study guide</a><a href="a2-sampling-decisions.html">A2 · Recording at 2 kSPS →</a><span class="t">Chapter A1 · The ADC 15 Click and direct wiring</span></div>
 <div class="wrap"><header class="mast"><p class="kicker">Study library · add-on chapter A1</p><h1>The ADC 15 Click and direct wiring</h1>
 <p class="sub">What changed in the first prototype on 2026-10-06, and how the new parts work. Read it after the study guide. The same source tags apply: <span class="tag d">datasheet</span> <span class="tag r">repo</span> <span class="tag c">calculated</span> <span class="tag a">assumed</span>.</p></header>
 
@@ -320,13 +320,13 @@ svg.dg text.hd { font-weight: 600; font-size: 14px; }
 <tbody>
 <tr><td>Frequency set by</td><td>The crystal's cut</td><td>OCT and DAC words over SPI</td></tr>
 <tr><td>Start-up</td><td>Runs when powered</td><td>Firmware must program it first</td></tr>
-<tr><td>Accuracy and drift</td><td>Typically tens of ppm or better</td><td>0.5 % typ, 1.1 % max (2.7 V; 1.6 % max at 5.5 V); 10 ppm/°C; 0.05 %/V <span class="tag d">datasheet</span></td></tr>
+<tr><td>Accuracy and drift</td><td>Typically tens of ppm or better</td><td>0.5 % typ; 1.1 % max at 25 °C and 2.7 V (1.6 % at 5.5 V); 1.65–2 % max over temperature (C grade); 10 ppm/°C; 0.05 %/V <span class="tag d">datasheet</span></td></tr>
 </tbody></table></div>
 <h3>Why it matters to us</h3>
 <p>The ADC's sample rate is the clock divided by a fixed number. If the clock is a given amount low, every sample rate is the same amount low. Nothing breaks, but the real rate is not exactly the nominal one. Time-based features, such as a frequency scale or the stride interval of footsteps, use the sample rate. And "count every sample" means we should know the true rate, not assume it.</p>
 <div class="worked"><h4>Worked example: clock error at 1 kSPS over one hour</h4>
 <div class="eq"><span class="m">samples in 1 h = 1000 × 3600 = 3 600 000</span><span class="m">setting rounding, 60 ppm: 3 600 000 × 60 × 10<sup>-6</sup> = 216 samples</span><span class="m">chip accuracy, 0.5 % typ: 3 600 000 × 0.005 = 18 000 samples</span><span class="m">chip accuracy, 1.1 % max: 3 600 000 × 0.011 = 39 600 samples</span></div>
-<p>The 60 ppm rounding alone is 216 samples an hour (0.216 s). The chip's own accuracy dominates: typically about 18 000 samples (18 s), at worst about 39 600. Over a short footstep window the effect is small. Over an hour of timestamps against the wall clock it adds up. Even +1.6 % (about 8.32 MHz) stays inside the ADC's 0.3 to 8.4 MHz CLKIN range. <span class="tag c">calculated</span></p></div>
+<p>The 60 ppm rounding alone is 216 samples an hour (0.216 s). The chip's own accuracy dominates: typically about 18 000 samples (18 s), about 39 600 at the 25 °C maximum (1.1 %), and up to about 59 400 over temperature (1.65 %). Over a short footstep window the effect is small. Over an hour of timestamps against the wall clock it adds up. Even +2 % (about 8.36 MHz, the over-temperature maximum at 5.5 V) stays inside the ADC's 0.3 to 8.4 MHz CLKIN range. <span class="tag c">calculated</span></p></div>
 <h3>What we do about it</h3>
 <ol>
 <li>Count the DRDY pulses over a known time against the ESP32-S3 timer. The ratio is the measured sample rate.</li>
@@ -338,7 +338,7 @@ svg.dg text.hd { font-weight: 600; font-size: 14px; }
 <p>The Click makes its clock with a programmable chip, not a crystal, so the real sample rate can be off by up to about 1 % (0.5 % typical) from the nominal value. That is why we measure it. We measure it by counting data-ready pulses against the microcontroller timer and store the measured rate with every recording.</p></div>
 <div class="selfcheck"><h4>Self-check</h4>
 <details><summary>1. How does a programmable oscillator choose its frequency?</summary><p>An internal oscillator is divided by a power of two (octave) and fine-tuned by a DAC value. Both come from a word written over SPI.</p></details>
-<details><summary>2. What does the Mikroe driver set, and what is the error?</summary><p>OCT 12 and DAC 984, 8 191 507 Hz, about −60 ppm. That is only the setting's rounding error; the chip itself is 0.5 % typical, 1.1 % max.</p></details>
+<details><summary>2. What does the Mikroe driver set, and what is the error?</summary><p>OCT 12 and DAC 984, 8 191 507 Hz, about −60 ppm. That is only the setting's rounding error; the chip itself is 0.5 % typical, 1.1 % max at 25 °C and up to 1.65 % over temperature.</p></details>
 <details><summary>3. How many samples off in one hour at 1 kSPS with 60 ppm error, and with 0.5 %?</summary><p>3 600 000 × 60 × 10<sup>-6</sup> = 216 samples; 3 600 000 × 0.005 = 18 000 samples.</p></details>
 <details><summary>4. How do we measure the real sample rate?</summary><p>Count DRDY pulses against the ESP32 timer over a known time, and write the result into the sidecar.</p></details>
 </div></section>

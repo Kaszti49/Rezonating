@@ -40,4 +40,5 @@ Build order for Year 1: `acquire` → `storage` (record real data early) →
 | RESET / SYNC | 8 | SYNC/RESET |
 | — | — | CLKIN ← 8.192 MHz oscillator |
 
-GPIO 35, 36 and 37 are used by the octal PSRAM: never assign them.
+GPIO 33, 34, 35, 36 and 37 are used by the octal PSRAM (ESP32-S3 datasheet Table 2-14):
+never assign them.

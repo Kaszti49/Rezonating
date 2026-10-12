@@ -8,7 +8,9 @@ not a tool: it owns work items like everyone else.
 A vibration-sensing platform built by two people: **Kaszti Benedek** (design, management and
 everything else) and **Szabó Viktor** (programming and electronics). One ESP32-S3 node reads up
 to four sensor heads through an ADS131M04 ADC (plus I2C for digital heads). Software packs, not
-firmware changes, decide what a node detects.
+firmware changes, decide what a node detects. The first prototype uses an ADC 15 Click board
+(ADS131M02, 2 channels) wired directly to the ESP32-S3 (D-015); the 4-channel ADS131M04 comes
+back on our own PCB.
 
 Scope is **Year 1 only**: `footstep-id`, then `fall`, then `appliance`. Don't plan or build for
 later packs unless asked. The team works **Monday and Tuesday**; other days are off-days.
@@ -114,11 +116,17 @@ Agent configuration never changes without that approval.
 
 ## Hardware facts that bite
 
-- ADS131M04 needs a continuous 8.192 MHz clock on CLKIN (no internal oscillator). All 4 channels
-  share one data rate (500 SPS to 64 kSPS).
-- ADS131M04 inputs survive only AGND −1.6 V to AVDD +0.3 V: piezo heads must be clamped and buffered.
-- ADXL355 is digital (SPI/I2C) and does not go through the ADC.
-- ESP32-S3-N16R8 uses octal PSRAM: GPIO 35, 36 and 37 are taken.
+- ADS131M02/M04 need a continuous 8.192 MHz clock on CLKIN (no internal oscillator). All channels
+  share one data rate (250 SPS to 64 kSPS). On the ADC 15 Click the clock is an LTC6903 that the
+  firmware must program first (SPI mode 0, CS2 = mikroBUS PWM; the ADC itself is SPI mode 1). It
+  is only 0.5 % typ accurate (1.1 % max at 25 °C, up to 1.65 % over temperature): measure the real sample rate and record it.
+- The ADC records at 2 kSPS; firmware FIR low-pass + decimation gives the packs 1 kSPS (D-016).
+  DRDY is active low (falling edge).
+- ADS131M0x inputs survive only AGND −1.6 V to AVDD +0.3 V (at gain ≥ 8, keep inputs between
+  AGND −1.3 V and AVDD −1.8 V): piezo heads must be clamped and buffered.
+- ADXL355 is digital and does not go through the ADC. It runs on I2C (SCLK/VSSIO to ground,
+  address 0x1D or 0x53) at 2000 Hz for the appliance pack.
+- ESP32-S3-N16R8 uses octal PSRAM: GPIO 33, 34, 35, 36 and 37 are taken (datasheet Table 2-14).
 
 ## Commands
 
