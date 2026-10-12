@@ -1,38 +1,36 @@
 ---
 type: handoff
-updated: 2026-10-06
+updated: 2026-10-12
 ---
 # Handoff
 
 **Read this first every session.** It's the current state in under a page. Rewrite it at the end of each session; don't append.
 
-## Where we are (2026-10-06)
-- **Company PC (pc-10) is ready** ([[Workstations]]): Python 3.12, ruff, `ml[dev,export]`, ESP-IDF v6.0 (`firmware/` builds from PowerShell), hooks and tests pass. The esp-idf MCP server connects.
-- **Prototype changed (Kaszti + boss):** no breadboard; boards are wired directly. ADC = [[ADC 15 Click board]] (ADS131M02, 2 channels, LTC6903 clock) from Farnell, [[D-015 Prototype ADC on ADC 15 Click]] accepted. The ADC records at 2 kSPS, FIR + decimation to 1 kSPS ([[D-016 ADC records at 2 kSPS]], proposed); ADXL355 on I²C at 2000 Hz. The ADS131M04 returns on our PCB. Oscillator, breadboard kit, microSD breakout and card are already in the lab (`have`). The TSSOP and oscillator adapters are not needed (in `00 Inbox`).
-- **LTC6903 clock is only 0.5 % typ accurate (1.1 % max at 25 °C, up to 1.65 % over temperature):** the firmware must measure the real sample rate (count DRDY against the ESP32 timer) and record it (sidecar field still to add).
-- **ORD-001 not placed yet.** Remaining lines: ESP32-S3 boards, ADC 15 Click (Farnell, price/stock to check, buy 2 if possible), 2 × SM-24, EVAL-ADXL355Z, passives, flux pen.
-- **Study library:** https://claude.ai/artifact/RNLzHhbCq3iyigThGJJnCC = the guide (`docs/study-guide.html`, unchanged apart from a library link bar) + chapters A1 (ADC 15 Click) and A2 (2 kSPS, ADXL355 at 2000 Hz) in `docs/study-library/`. New material goes in new chapter pages; don't edit the guide's content.
-- Earlier the same day: kill test dropped, dates recounted on Mon/Tue, CLAUDE.md rules for vision changes and work days.
+## Where we are (2026-10-12)
+- **Rezonating Lab started** ([[D-017 Rezonating Lab bench tool]], accepted). It is a local web app in `tools/lab/` (FastAPI + Svelte) for live data, recording, labelling, the pack bench and experiments. **Copy-paste prompts for every remaining phase: [[Lab build prompts]].**
+- **Phase 1 done** (commit `734b59b`):
+  - link protocol spec `tools/lab/PROTOCOL.md` ([[D-018 Node link protocol v0]], accepted);
+  - codec, 56 golden vectors, loss accounting;
+  - simulator `rzlab sim` and the connection test `rzlab tail`;
+  - 280 tests, verifier PASS.
+  - **No browser UI yet:** that is phase 2 ([[Lab 2 Live and Device pages]], due 2026-10-27).
+- **Sidecar schema v1** ([[D-019 Sidecar v1]], accepted): measured rate, loss counters, stream, clock, label sample indices. v0 files stay valid.
+- [[D-020 Recordings keep the 2 kSPS ADC stream]] is proposed. Kaszti chose `adc_raw` in chat.
+- Hardware is unchanged since 2026-10-06: ADC 15 Click (ADS131M02) at 2 kSPS, ADXL355 on I²C at 2000 Hz. **[[ORD-001 First rig]] is still not placed, and there are no ESP32 boards yet.**
 
 ## Next up
 | Who | What |
 | --- | --- |
-| Kaszti | Accept D-016; place [[ORD-001 First rig]] at Farnell (D-015 accepted, ADXL355 I²C confirmed) |
-| Kaszti + Viktor | Study guide + chapters A1 and A2; the open questions below |
-| Viktor | [[FootprintID dataset loader]] (2026-10-20); [[Wire the first rig]] once parts arrive |
-| Claude | [[Run the first agent eval baseline]]; [[Check pin map against ADS131M04 datasheet]] (now: Click + ADXL355 + microSD, no GPIO 33–37) |
+| Kaszti | Accept or reject D-020 (and D-016 if still open); place ORD-001 |
+| Claude | Lab phase 2: paste the phase 2 prompt from [[Lab build prompts]] |
+| Viktor | [[FootprintID dataset loader]] (2026-10-20); STA/LTA by 2026-11-03 (the pack bench needs it) |
 
 ## Open questions
-- Accept or reject [[D-016 ADC records at 2 kSPS]] in Obsidian (Kaszti chose 2 kSPS in chat).
-- The measured sample rate needs a field in the sidecar schema (`sample_rate` is one integer today): Tier 1, needs a decision.
-- Which stream goes to the microSD: 2 kSPS raw or 1 kSPS decimated?
+- Push to GitHub: commits up to `f654b7b` and later are local only; nobody has said to push.
 - License for open source (backlog); which GPU the home desktop has.
 
-## Open flags
-- F-261006-646c (note): the researcher may only write in `60 Research`; part-note edits go through vault-keeper or the main session. For `/retro` on 2026-10-13.
-
 ## Watch out
+- Git Bash on pc-10 has no coreutils or python on PATH. Use full paths: Python `C:\Users\benedek.kaszti\AppData\Local\Programs\Python\Python312\python.exe`, git `C:\Program Files\Git\cmd\git.exe`. Or use PowerShell.
 - `idf.py` refuses Git Bash (MSYS); build from PowerShell or the EIM shortcut.
-- Git Bash on pc-10 sometimes crashes at start-up ("add_item … errno 1") while agents run; retry.
-- Hooks call `python`: Python must be on PATH on every machine.
-- Due dates Claude set are proposals; adjust freely.
+- Accepted decisions are hook-locked. To change one, propose a new decision with `supersedes`.
+- Two things only the real board can confirm: that ROM print output can be switched off on USB-Serial/JTAG, and that the node can't see a USB port close.
