@@ -53,6 +53,8 @@ from .marker import (
     resolve_bind,
 )
 from .naming import SessionNameError, reserve_session, slugify
+from .protocol import ProtocolError, check_listed, load_named
+from .runner import ProtocolRunner, RunnerError, runner_off
 from .sidecars import (
     LINK_BY_KIND,
     SensorProblem,
@@ -71,6 +73,9 @@ START_TIMEOUT_S = 15.0
 STOP_TIMEOUT_S = 20.0
 
 STATES = ("idle", "starting", "recording", "stopping", "finalizing")
+
+
+RIGCHECK_RUNNING = "Rig checks are running. Wait for them or cancel them (Device page), then start the recording."
 
 
 class RecordError(DeviceError):
@@ -104,9 +109,12 @@ class Recorder:
         cfg: LabConfig,
         now: Callable[[], datetime] = datetime.now,
         epoch_now: Callable[[], float] = time.time,
+        timed_scale: float = 1.0,
     ) -> None:
+        """``timed_scale`` shortens the protocol runner's timed steps (``duration_s / timed_scale``): tests only."""
         self.mgr = mgr
         self.cfg = cfg
+        self._timed_scale = timed_scale
         self._now = now
         self._epoch_now = epoch_now
         self._lock = threading.RLock()
@@ -116,12 +124,15 @@ class Recorder:
         self._listeners: list[Callable[[dict], None]] = []
         self.label_state = LabelState()
         self.last: dict | None = None
+        # Set by the server once the rig checks exist (they are built after the recorder): True while checks run.
+        self.rig_running: Callable[[], bool] = lambda: False
         self._reset_session()
 
     # ------------------------------------------------------------------------------------ state
 
     def _reset_session(self) -> None:
         self.form: SessionForm | None = None
+        self._label_cache: dict[str, tuple[int, tuple[str, ...]]] = {}
         self.session: str | None = None
         self._ctx: dict | None = None
         self._plans: dict[int, _Plan] = {}
@@ -137,6 +148,9 @@ class Recorder:
         self._closed_at_stop = 0
         self._ended_by = "stop"
         self._lost: tuple[dict[int, dict], str] | None = None  # (snapshot, reason) when the link died
+        self.runner: ProtocolRunner | None = None
+        self._countdown_timer: threading.Timer | None = None
+        self._runner_summary: dict | None = None
 
     @property
     def active(self) -> bool:
@@ -186,6 +200,8 @@ class Recorder:
             blockers.append({"code": "not_connected", "message": "Connect to a node first (Device page)."})
         if self.state != "idle":
             blockers.append({"code": "recording_active", "message": "A recording is already running."})
+        if self.rig_running():
+            blockers.append({"code": "rigcheck_running", "message": RIGCHECK_RUNNING})
         if self.cfg.schema_path is None or not self.cfg.schema_path.is_file():
             blockers.append({"code": "no_schema", "message": "schemas/sidecar.schema.json was not found."})
         node = None
@@ -229,6 +245,7 @@ class Recorder:
             "person_pattern": PSEUDONYM_RE.pattern,
             "node": node,
             "label_state": self.label_state.model_dump(),
+            "labels_allowed": self.labels_allowed(),
             "marker": {
                 "bind": resolve_bind(self.cfg.marker_bind),
                 "port": self.cfg.marker_port,
@@ -244,6 +261,8 @@ class Recorder:
         with self._lock:
             if self.state != "idle":
                 raise RecordError("recording_active", "A recording is already running; stop it first.")
+            if self.rig_running():
+                raise RecordError("rigcheck_running", RIGCHECK_RUNNING)
             self.state = "starting"
             self._done.clear()
             self._reset_session()
@@ -283,6 +302,8 @@ class Recorder:
                 http=422,
                 details=[{"loc": ["protocol"], "msg": f"unknown protocol; one of {', '.join(protocols)}"}],
             )
+        allowed = self.label_list(form.protocol)
+        runner = self._make_runner(form.protocol, form.persons) if form.runner else None
         try:
             bind = choose_bind(self.cfg.marker_bind, form.marker_host)
         except MarkerHostError as exc:
@@ -297,6 +318,9 @@ class Recorder:
             raise RecordError("invalid_request", msg, http=422, details=[{"loc": ["streams"], "msg": msg}])
         if self.label_state.person and form.persons and self.label_state.person not in form.persons:
             self.label_state = LabelState()  # a person from an earlier session; not in this one
+        if self.label_state.label not in allowed:  # a label of another protocol: start from this one's list
+            first = "walk" if "walk" in allowed else allowed[0]
+            self.label_state = self.label_state.model_copy(update={"label": first})
         channels: dict[str, list[dict]] = {}
         try:
             for name in wanted:
@@ -346,6 +370,9 @@ class Recorder:
             self._start_marker(bind)
         with self._lock:
             self.state = "recording"
+            self.runner = runner
+        if runner is not None:
+            self._publish_runner()
         self._ticker = threading.Thread(target=self._tick_loop, name="rzlab-rec-progress", daemon=True)
         self._ticker.start()
 
@@ -411,29 +438,195 @@ class Recorder:
         rtt_ms: float | None = None,
         overrides: LabelOverrides | None = None,
     ) -> dict:
-        """Apply a mark edge. ``edge`` is ``start``, ``end`` or ``toggle``; ``arrival_us`` is the server's stamp."""
+        """Apply a mark edge. ``edge`` is ``start``, ``end`` or ``toggle``; ``arrival_us`` is the server's stamp.
+
+        While the protocol runner is active the label fields come from its current step, a completed mark counts as
+        one pass, and a timed step's mark is ended by the countdown, not by hand (WEB_API.md section 10)."""
         with self._lock:
             if self.state != "recording":
                 raise RecordError("not_recording", "No recording is running; start one before marking.")
             e = self._edge(src, arrival_us, rtt_ms)
             open_mark = self.labels.open_mark()
             action = ("end" if open_mark else "start") if edge == "toggle" else edge
+            runner = self.runner
             if action == "start":
                 if open_mark is not None:
                     raise RecordError("mark_open", "A mark is already open; end it first.")
-                st = self.label_state.model_copy(update=overrides.model_dump(exclude_none=True) if overrides else {})
+                update = overrides.model_dump(exclude_none=True) if overrides else {}
+                if runner is not None:
+                    try:
+                        update = runner.tags_for_start(update)
+                    except RunnerError as exc:
+                        raise RecordError(exc.code, exc.message, exc.http) from exc
+                st = self.label_state.model_copy(update=update)
                 form = self.form
+                self._check_listed(st.label, form.protocol if form else DEFAULT_PROTOCOL)
                 if st.person and form and form.persons and st.person not in form.persons:
                     raise RecordError("invalid_request", "That pseudonym is not one of this session's persons.", 422)
                 m = self.labels.start(e, st.label, st.person, st.pace, st.shoes)
+                if runner is not None:
+                    countdown_s = runner.started(m.id)
+                    if countdown_s is not None:
+                        self._arm_countdown(m.id, countdown_s)
             else:
                 if open_mark is None:
                     raise RecordError("no_open_mark", "No mark is open; start one first.")
+                if runner is not None:
+                    try:
+                        runner.check_end(open_mark.id, by_timer=False)
+                    except RunnerError as exc:
+                        raise RecordError(exc.code, exc.message, exc.http) from exc
                 m = self.labels.end(e)
+                if runner is not None:
+                    runner.ended(m.id)
             view = self._mark_view(m)
         self.mgr.publish({"type": "label", "action": action, "mark": view, "n_labels": len(self.labels)})
+        if runner is not None:
+            self._publish_runner()
         self._notify()
         return {"action": action, "mark": view}
+
+    # ----------------------------------------------------------------------------- protocol runner
+
+    def _make_runner(self, protocol: str, persons: list[str]) -> ProtocolRunner:
+        """Load ``docs/protocols/<protocol>.yaml`` and lay out its steps for these persons, or a 422."""
+        try:
+            proto = load_named(self.cfg.repo_root, protocol)
+        except ProtocolError as exc:
+            raise RecordError(
+                "invalid_request",
+                f"the protocol {protocol} cannot be run: " + "; ".join(exc.problems),
+                http=422,
+                details=[{"loc": ["protocol"], "msg": p} for p in exc.problems],
+            ) from exc
+        try:
+            return ProtocolRunner(proto, persons, timed_scale=self._timed_scale)
+        except ProtocolError as exc:
+            raise RecordError(
+                "invalid_request",
+                "; ".join(exc.problems),
+                http=422,
+                details=[{"loc": ["persons"], "msg": p} for p in exc.problems],
+            ) from exc
+
+    def runner_view(self) -> dict:
+        with self._lock:
+            return self.runner.view() if self.runner is not None else runner_off()
+
+    def runner_event(self) -> dict:
+        return {"type": "runner", **self.runner_view()}
+
+    def _publish_runner(self) -> None:
+        """Build and publish the runner view under the lock, so views go out in the order the state changed: the
+        countdown ticker can never publish a view older than the one the countdown's end published."""
+        with self._lock:
+            self.mgr.publish(self.runner_event())
+
+    def _require_runner(self) -> ProtocolRunner:
+        if self.state != "recording":
+            raise RecordError("not_recording", "The protocol runner works while a recording runs.")
+        if self.runner is None:
+            raise RecordError("runner_off", "The protocol runner is not running; start it first.")
+        return self.runner
+
+    def runner_start(self, protocol: str | None = None) -> dict:
+        """Start the runner in a running recording (the session's protocol and persons unless named)."""
+        with self._lock:
+            if self.state != "recording" or self.form is None:
+                raise RecordError("not_recording", "The protocol runner works while a recording runs.")
+            if self.runner is not None:
+                raise RecordError("runner_active", "The protocol runner is already running; stop it first.")
+            if self.labels.open_mark() is not None:
+                raise RecordError("mark_open", "A mark is open; end it before starting the runner.")
+            if protocol is not None and protocol != self.form.protocol:
+                raise RecordError(
+                    "protocol_mismatch",
+                    f"This session records protocol {self.form.protocol!r}; the runner can only run that one "
+                    f"(the sidecar's protocol field would not match {protocol!r}).",
+                )
+            self.runner = self._make_runner(self.form.protocol, list(self.form.persons))
+            view = self.runner.view()
+        self._publish_runner()
+        return view
+
+    def runner_stop(self) -> dict:
+        """Leave the runner: marks take the label form's fields again. Refused while a pass or countdown is open."""
+        with self._lock:
+            runner = self._require_runner()
+            try:
+                runner._busy()
+            except RunnerError as exc:
+                raise RecordError(exc.code, exc.message, exc.http) from exc
+            self.runner = None
+            self._runner_summary = runner.summary()  # the result reports the last run, even one left by hand
+            view = runner_off()
+        self._publish_runner()
+        return view
+
+    def runner_move(self, action: str, index: int | None = None) -> dict:
+        """``next``, ``back``, ``skip`` or ``goto`` (with ``index``)."""
+        with self._lock:
+            runner = self._require_runner()
+            try:
+                if action == "next":
+                    runner.next()
+                elif action == "back":
+                    runner.back()
+                elif action == "skip":
+                    runner.skip()
+                elif action == "goto" and index is not None:
+                    runner.goto(index)
+                else:  # pragma: no cover - the routes only pass these
+                    raise RunnerError("invalid_request", f"unknown runner action {action!r}", 422)
+            except RunnerError as exc:
+                raise RecordError(exc.code, exc.message, exc.http) from exc
+            view = runner.view()
+        self._publish_runner()
+        return view
+
+    def runner_cancel(self) -> dict:
+        """Cancel a running countdown: its open label is deleted and the step can be started again."""
+        with self._lock:
+            runner = self._require_runner()
+            try:
+                mark_id = runner.cancel_countdown()
+            except RunnerError as exc:
+                raise RecordError(exc.code, exc.message, exc.http) from exc
+            self._disarm_countdown()
+            self.labels.delete(mark_id)
+            view = runner.view()
+        self.mgr.publish({"type": "label", "action": "delete", "mark": {"id": mark_id}, "n_labels": len(self.labels)})
+        self._publish_runner()
+        self._notify()
+        return view
+
+    def _arm_countdown(self, mark_id: int, seconds: float) -> None:
+        self._disarm_countdown()
+        t = threading.Timer(seconds, self._countdown_fired, args=(mark_id,))
+        t.daemon = True
+        t.name = "rzlab-runner-countdown"
+        self._countdown_timer = t
+        t.start()
+
+    def _disarm_countdown(self) -> None:
+        t, self._countdown_timer = self._countdown_timer, None
+        if t is not None:
+            t.cancel()
+
+    def _countdown_fired(self, mark_id: int) -> None:
+        """Timer thread: the timed step is over, end its label now (stamped on the server clock)."""
+        with self._lock:
+            runner = self.runner
+            if self.state != "recording" or runner is None or not runner.countdown_due(mark_id):
+                return
+            now = float(self.mgr.host_us())
+            m = self.labels.end(lab.Edge("auto", now, now, None, lab.KEY_ALLOWANCE_MS))
+            runner.ended(m.id)
+            self._countdown_timer = None
+            view = self._mark_view(m)
+        self.mgr.publish({"type": "label", "action": "end", "mark": view, "n_labels": len(self.labels)})
+        self._publish_runner()
+        self._notify()
 
     def mark_from_phone(self, edge: str, arrival_us: float, rtt_ms: float) -> dict:
         """Called by the marker listener (any thread)."""
@@ -448,14 +641,59 @@ class Recorder:
             if self.state != "recording":
                 raise RecordError("not_recording", "Labels can only be removed while the recording runs.")
             m = self.labels.delete(mark_id)
+            runner_changed = False
+            if m is not None and self.runner is not None:
+                was_countdown = self.runner.counting_down and self.runner.open_mark == mark_id
+                runner_changed = self.runner.deleted(mark_id)
+                if was_countdown:
+                    self._disarm_countdown()
         if m is None:
             raise RecordError("not_found", f"No label with id {mark_id}.", http=404)
         self.mgr.publish({"type": "label", "action": "delete", "mark": {"id": mark_id}, "n_labels": len(self.labels)})
+        if runner_changed:
+            self._publish_runner()
         self._notify()
         return {"deleted": mark_id}
 
+    def label_list(self, protocol: str) -> tuple[str, ...]:
+        """The fixed label list of ``protocol`` (its YAML's ``labels`` plus the shared ones), or a 422."""
+        path = (self.cfg.repo_root / "docs" / "protocols" / f"{protocol}.yaml") if self.cfg.repo_root else None
+        try:
+            stamp = path.stat().st_mtime_ns if path is not None else None
+        except OSError:
+            stamp = None
+        cached = self._label_cache.get(protocol)
+        if cached is not None and stamp is not None and cached[0] == stamp:
+            return cached[1]
+        try:
+            labels = load_named(self.cfg.repo_root, protocol).labels
+            if stamp is not None:
+                self._label_cache[protocol] = (stamp, labels)
+            return labels
+        except ProtocolError as exc:
+            raise RecordError(
+                "invalid_request",
+                f"the protocol {protocol} gives no label list: " + "; ".join(exc.problems),
+                http=422,
+                details=[{"loc": ["protocol"], "msg": p} for p in exc.problems],
+            ) from exc
+
+    def _check_listed(self, label: str, protocol: str) -> None:
+        try:
+            check_listed(label, self.label_list(protocol), protocol)
+        except ValueError as exc:
+            raise RecordError("invalid_label", str(exc), 422, details=[{"loc": ["label"], "msg": str(exc)}]) from exc
+
+    def labels_allowed(self) -> list[str]:
+        """The label list the label form offers: the current (or last) session's protocol, else the default one."""
+        try:
+            return list(self.label_list(self.form.protocol if self.form else DEFAULT_PROTOCOL))
+        except RecordError:
+            return []
+
     def set_label_state(self, st: LabelState) -> LabelState:
         form = self.form
+        self._check_listed(st.label, form.protocol if form else DEFAULT_PROTOCOL)
         if st.person and form and form.persons and st.person not in form.persons and self.state != "idle":
             raise RecordError("invalid_request", "That pseudonym is not one of this session's persons.", 422)
         self.label_state = st
@@ -558,6 +796,7 @@ class Recorder:
             "n_labels": len(self.labels),
             "marking": self.labels.open_mark() is not None,
             "label_state": self.label_state.model_dump(),
+            "labels_allowed": self.labels_allowed(),
             "marker": None if marker is None else {"active": True, "port": marker.port},
             "marker_error": self._marker_error,
             "last": self.last,
@@ -567,13 +806,24 @@ class Recorder:
         while not self._ticker_stop.wait(PROGRESS_PERIOD_S):
             with contextlib.suppress(Exception):
                 self.mgr.publish(self.status())
+                with self._lock:  # checked and published under the lock: an ended countdown is never re-sent
+                    runner = self.runner
+                    if runner is not None and runner.counting_down:
+                        self._publish_runner()  # the countdown's remaining seconds, for a page opened meanwhile
 
     # ------------------------------------------------------------------------------------- stop
 
     def _quiesce(self) -> None:
-        """No more marks, no phone, no progress events; an open mark ends now."""
+        """No more marks, no phone, no progress events, no runner; an open mark ends now."""
         self._stop_marker()
         self._ticker_stop.set()
+        with self._lock:
+            self._disarm_countdown()
+            runner, self.runner = self.runner, None
+            if runner is not None:
+                self._runner_summary = runner.summary()
+        if runner is not None:
+            self._publish_runner()
         now = self.mgr.host_us()
         open_mark = self.labels.open_mark()
         if open_mark is not None:
@@ -773,6 +1023,7 @@ class Recorder:
             "path": str(final_path),
             "streams": streams_out,
             "n_labels": len(marks),
+            "runner": self._runner_summary,
             "sidecars_copied": copied,
             "sidecars_copy_skipped": skip_reason,
             "validation": validation,
@@ -832,6 +1083,7 @@ class Recorder:
                 self.stop()
         self._stop_marker()
         self._ticker_stop.set()
+        self._disarm_countdown()
 
 
 def root_path(cfg: LabConfig) -> Path:

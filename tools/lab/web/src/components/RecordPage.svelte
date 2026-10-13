@@ -7,6 +7,7 @@
   import LabelPanel from './LabelPanel.svelte';
   import MarkerPanel from './MarkerPanel.svelte';
   import RecordResult from './RecordResult.svelte';
+  import RunnerPanel from './RunnerPanel.svelte';
   import { api, ApiError } from '../lib/api';
   import { app } from '../lib/store.svelte';
   import { recForm } from '../lib/recform.svelte';
@@ -152,6 +153,8 @@
       <div class="empty">Loading the recorder options…</div>
     {/if}
   {/if}
+
+  {#if active && rec}<RunnerPanel protocol={rec.protocol} />{/if}
 
   <div class="grid2">
     <LabelPanel persons={active ? sessionPersons : recForm.persons} />

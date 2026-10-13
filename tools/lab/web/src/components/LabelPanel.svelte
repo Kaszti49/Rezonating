@@ -10,7 +10,7 @@
   let { persons }: { persons: string[] } = $props();
 
   const LABEL_RE = /^[a-z0-9 _.-]{1,40}$/;
-  const SUGGEST = ['walk', 'silence'];
+  const FALLBACK = ['walk', 'silence'];
 
   let label = $state('walk');
   let person = $state('');
@@ -20,11 +20,17 @@
   let saved = $state(true);
 
   const recording = $derived(app.recording?.state === 'recording');
+  /** The protocol runner sets label, person, pace and shoes from its current step; the form below waits meanwhile. */
+  const byRunner = $derived(recording && app.runnerOn);
+  /** A timed step (the silence) is running: the server ends its label when the time is over (WEB_API.md 10.5). */
+  const countdownOwns = $derived(byRunner && app.runner?.state === 'countdown');
   const open = $derived(app.marks.find((m) => m.state === 'open') ?? null);
   const marking = $derived(open !== null || app.recording?.marking === true);
   const openFor = $derived(open && app.recording?.elapsed_s != null ? Math.max(0, app.recording.elapsed_s - open.start_s) : null);
   const list = $derived(app.marks.slice().reverse());
   const personChoices = $derived(person && !persons.includes(person) ? [...persons, person] : persons);
+  /** The protocol's fixed label list (its YAML's labels plus noise, other, bad): the only labels the server accepts. */
+  const allowed = $derived(app.recording?.labels_allowed?.length ? app.recording.labels_allowed : FALLBACK);
 
   function fill(l: LabelState): void {
     label = l.label;
@@ -87,7 +93,7 @@
   function onKeyDown(e: KeyboardEvent): void {
     if (!isSpace(e) || !recording || typing(e.target) || e.ctrlKey || e.altKey || e.metaKey) return;
     e.preventDefault(); // no page scroll, and no click on a focused button (e.g. Stop)
-    if (e.repeat) return;
+    if (e.repeat || countdownOwns) return; // the countdown ends its own label; the runner card offers Cancel
     void toggle();
   }
 
@@ -145,8 +151,12 @@
         {#if openFor != null}<span class="mono muted" aria-live="off">({fmtFixed(openFor, 0, ' s')})</span>{/if}
       {/if}
       <span class="grow" style="flex:1"></span>
-      <span>Press <kbd>Space</kbd> to end it</span>
-      <button onclick={toggle}>End mark</button>
+      {#if countdownOwns}
+        <span>The countdown ends it (cancel it on the runner card)</span>
+      {:else}
+        <span>Press <kbd>Space</kbd> to end it</span>
+        <button onclick={toggle}>End mark</button>
+      {/if}
     {:else}
       <span class="big muted">no mark open</span>
       <span class="grow" style="flex:1"></span>
@@ -158,30 +168,27 @@
     <div class="muted" style="margin:-4px 0 10px">Space does nothing while the cursor is in a text field or a list: click on an empty part of the page first.</div>
   {/if}
 
+  {#if byRunner}
+    <div class="banner" style="margin:0 0 8px">The protocol runner sets label, person, pace and shoes from its current step. The fields below apply again when the runner is stopped.</div>
+  {/if}
   <div class="row">
     <label class="field" style="min-width:150px">
       <span>Label</span>
-      <input
-        class="mono"
-        bind:value={label}
-        list="rz-label-suggest"
-        maxlength="40"
-        onchange={changed}
-        oninput={() => (saved = false)}
-        aria-invalid={!!errs.label}
-      />
-      <datalist id="rz-label-suggest">{#each SUGGEST as s (s)}<option value={s}></option>{/each}</datalist>
+      <select class="mono" bind:value={label} onchange={picked} disabled={byRunner} aria-invalid={!!errs.label}>
+        {#each allowed as s (s)}<option value={s}>{s}</option>{/each}
+        {#if label && !allowed.includes(label)}<option value={label} disabled>{label} (not in the list)</option>{/if}
+      </select>
     </label>
     <label class="field">
       <span>Person</span>
-      <select bind:value={person} onchange={picked} aria-invalid={!!errs.person}>
+      <select bind:value={person} onchange={picked} disabled={byRunner} aria-invalid={!!errs.person}>
         <option value="">none</option>
         {#each personChoices as p (p)}<option value={p}>{p}</option>{/each}
       </select>
     </label>
     <label class="field">
       <span>Pace</span>
-      <select bind:value={pace} onchange={picked}>
+      <select bind:value={pace} onchange={picked} disabled={byRunner}>
         <option value="">—</option>
         <option value="slow">slow</option>
         <option value="normal">normal</option>
@@ -190,7 +197,7 @@
     </label>
     <label class="field">
       <span>Shoes</span>
-      <select bind:value={shoes} onchange={picked}>
+      <select bind:value={shoes} onchange={picked} disabled={byRunner}>
         <option value="">—</option>
         <option value="yes">yes</option>
         <option value="no">no</option>

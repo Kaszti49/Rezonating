@@ -506,7 +506,9 @@ def test_link_drops_use_no_seq_and_corruption_does():
     assert pc.rx.bad_frames == pc.rx.lost_frames == inj.corrupt_packets
 
 
-def test_adc_dec_placeholder_takes_every_second_raw_sample():
+def test_adc_dec_equals_rezonating_ml_decimator2_on_the_raw_stream():
+    from rezonating_ml.dsp import Decimator2, to_adc_dec_codes
+
     node, clock = make_node(faults=FaultConfig())
     pc = started(node, clock)
     pc.send(Start(0b011))
@@ -522,10 +524,12 @@ def test_adc_dec_placeholder_takes_every_second_raw_sample():
         return out
 
     raw, dec = rebuild(0), rebuild(1)
-    assert len(dec) == len(raw) // 2 or len(dec) == len(raw) // 2 + 0
+    assert len(dec) in (len(raw) // 2, len(raw) // 2 + 1) or len(dec) == (len(raw) + 1) // 2
     n = min(len(dec), len(raw) // 2)
-    assert np.array_equal(dec[:n], raw[1 : 2 * n : 2])
-    # dec timestamps are the raw sample's DRDY time
+    for ch in range(2):
+        want = to_adc_dec_codes(Decimator2().process(raw[:, ch]))
+        assert np.array_equal(dec[:n, ch], want[:n])
+    # dec timestamps are the DRDY time of raw sample 2k + 1
     d1 = datas(frames, 1)[0]
     d0 = datas(frames, 0)[0]
     period_us = 1e6 / 2016.0
@@ -741,29 +745,32 @@ def test_set_check_order_unknown_key_then_tcp_only_then_value_then_busy():
     assert (e.msg.cmd_seq, e.msg.code) == (seq, codec.ERR_BUSY)
 
 
-# ------------------------------------------------------------- adc_dec placeholder (finding 5)
+# ------------------------------------------------------------- adc_dec from rezonating_ml (finding 5)
 
 
-def test_decimate_placeholder_depends_only_on_raw_sample_2k_plus_1():
-    from rezonating_lab.sim.node import decimate_placeholder
+def test_decimate_holds_previous_and_marks_the_whole_fir_window():
+    from rezonating_ml.dsp import Decimator2, to_adc_dec_codes
 
-    codes = np.arange(12, dtype=np.int32).reshape(6, 2)  # raw indices 10..15
-    valid = np.ones(6, bool)
-    first_k, dec, ok = decimate_placeholder(10, codes, valid)
-    assert first_k == 5 and ok.all() and dec[:, 0].tolist() == [2, 6, 10]  # raw 11, 13, 15 -> k = 5, 6, 7
-    valid[0] = False  # raw 10 = 2k for k = 5: does not matter
-    assert decimate_placeholder(10, codes, valid)[2].all()
-    valid[:] = True
-    valid[1] = False  # raw 11 = 2k + 1 for k = 5: output 5 is lost
-    assert decimate_placeholder(10, codes, valid)[2].tolist() == [False, True, True]
-    # a block that starts on an odd raw index
-    first_k, dec, ok = decimate_placeholder(11, codes[:5], np.ones(5, bool))
-    assert first_k == 5 and dec[:, 0].tolist() == [0, 4, 8]  # raw 11, 13, 15 -> codes rows 0, 2, 4
-    # a one-sample block that starts on an even index has no output
-    assert len(decimate_placeholder(10, codes[:1], np.ones(1, bool))[2]) == 0
+    from rezonating_lab.sim.node import decimate
+
+    rng = np.random.default_rng(3)
+    codes = rng.integers(-5000, 5000, (300, 2)).astype(np.int32)
+    valid = np.ones(300, bool)
+    valid[100] = False
+    decs = [Decimator2(), Decimator2()]
+    k0, d1, ok1 = decimate(decs, codes[:157], valid[:157])  # odd split: the parity carries over
+    k1, d2, ok2 = decimate(decs, codes[157:], valid[157:])
+    assert k0 == 0 and k1 == len(ok1)
+    for ch in range(2):
+        y, ok = Decimator2().process_valid(codes[:, ch], valid)
+        assert np.array_equal(np.concatenate([d1[:, ch], d2[:, ch]]), to_adc_dec_codes(y))
+        assert np.array_equal(np.concatenate([ok1, ok2]), ok)
+    # output k is lost exactly when raw 100 is in its window [2k + 1 - 62, 2k + 1]
+    lost = np.flatnonzero(~np.concatenate([ok1, ok2])).tolist()
+    assert lost == [k for k in range(150) if 2 * k + 1 - 62 <= 100 <= 2 * k + 1]
 
 
-def test_adc_dec_device_drops_are_exactly_the_lost_odd_raw_samples():
+def test_adc_dec_device_drops_are_exactly_the_fir_windows_holding_a_lost_raw_sample():
     node, clock = make_node(record_injections=True, faults=FaultConfig(device_drop_rate=0.01))
     pc = started(node, clock)
     pc.send(Start(0b011))
@@ -775,7 +782,8 @@ def test_adc_dec_device_drops_are_exactly_the_lost_odd_raw_samples():
     final = of_type(frames, Status)[-1].msg
     n_dec = final.stream(1).win_end
     assert raw_lost and dec_lost
-    assert dec_lost == {(i - 1) // 2 for i in raw_lost if i % 2 == 1 and (i - 1) // 2 < n_dec}
+    want = {k for k in range(n_dec) if any(i in raw_lost for i in range(2 * k + 1 - 62, 2 * k + 2))}
+    assert dec_lost == want  # PROTOCOL.md 4.3: any lost raw sample in the 63-tap window of output k
     assert final.stream(1).win_device == len(dec_lost)
     got = set()
     for x in datas(frames, 1):

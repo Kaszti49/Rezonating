@@ -11,6 +11,7 @@ dependencies = [
   "uvicorn[standard]>=0.29",
   "pydantic>=2.5",
   "segno>=1.6",                           # QR code of the phone-marker URL (pure Python)
+  "pyyaml>=6.0",                          # docs/protocols/*.yaml (the protocol runner)
   "tomli>=2.0; python_version < '3.11'",  # config.toml on Python 3.10
   "rezonating-ml",                        # WAV + sidecar I/O (rezonating_ml.io); install it from this repo first
 ]

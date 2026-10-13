@@ -7,6 +7,8 @@ Copy-paste prompts for building the rest of the **Rezonating Lab** ([[D-017 Rezo
 
 **State on 2026-10-12:** phase 1 is done (commit `734b59b`). It covers the link protocol spec `tools/lab/PROTOCOL.md`, the codec, golden vectors, loss accounting, the simulator and `rzlab sim` / `rzlab tail`, with 280 tests and verifier PASS. There is no browser UI yet.
 
+**State on 2026-10-13 (cloud session):** phases 4–7 are built and run on the simulator (screenshots in the session; not yet tried on pc-10). Verified: 4a runner, 4b rig checks, 6 Datasets, the `rezonating_ml` pipeline ([[D-021 Pack pipeline in rezonating_ml]]). Verifier still pending at wrap-up: 4c Review + SD import, 5 Bench, 7 Experiments, sim people. Not done: the 11-17 dress rehearsal, [[D-022 Sidecar stores loss spans]]. Where to continue: [[Handoff]].
+
 ---
 
 ## Phase 2: Live and Device pages (first visual step, due 2026-10-27)

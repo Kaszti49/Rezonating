@@ -22,3 +22,4 @@ done:
 ## Log
 - 2026-10-01 created
 - 2026-10-05 Claude: due 2026-11-15 → 2026-11-24 (work days are Mon/Tue, schedule recounted at Kaszti's request)
+- 2026-10-13 Claude: at Kaszti's request, a first version is in `rezonating_ml` under [[D-021 Pack pipeline in rezonating_ml]] (verified; synthetic data only). Viktor: review the parameters/features and run it on FootprintID; status and due date unchanged

@@ -7,14 +7,20 @@ Settings come from environment variables (they win) and from ``config.toml`` in 
     staging_dir = "C:\\\\Users\\\\me\\\\AppData\\\\Local\\\\rzlab\\\\staging"   # optional
     sidecar_dir = "C:\\\\work\\\\Rezonating\\\\data"                        # optional: where validated sidecars are copied
     marker_port = 8766                                          # optional: phone marker port (0 = any free port)
+    index_db = "C:\\\\Users\\\\me\\\\AppData\\\\Local\\\\rzlab\\\\datasets.sqlite"   # optional: the Datasets page cache
 
 ``RZ_DATA_ROOT``, ``RZ_STAGING_DIR``, ``RZ_SIDECAR_DIR``, ``RZ_MARKER_PORT``, ``RZ_MARKER_HOST`` (the address put
 in the QR code), ``RZ_MARKER_BIND`` (the interface the marker listens on), ``RZ_COPY_SIM_SIDECARS``,
-``RZ_REPO_ROOT``, ``RZ_SCHEMA`` and ``RZ_CONFIG`` (path of the config file) override the file.
+``RZ_REPO_ROOT``, ``RZ_SCHEMA``, ``RZ_INDEX_DB`` and ``RZ_CONFIG`` (path of the config file) override the file.
+
+``index_db`` is the Datasets page's SQLite cache (per machine, rebuildable from the sidecars at any time). Default:
+``%LOCALAPPDATA%\\rzlab\\datasets.sqlite`` on Windows, ``$XDG_CACHE_HOME/rzlab/datasets.sqlite`` elsewhere. It may not
+lie in the repository.
 
 ``RZ_MARKER_BIND`` defaults to ``auto``: the phone marker listens on one address, this PC's first LAN address unless the
 start request names another (``marker_host``), never on every interface (a public Wi-Fi at a site would reach it).
-Set ``0.0.0.0`` to listen everywhere, on purpose. ``RZ_MARKER_HOST`` only matters then.
+Set ``0.0.0.0`` to listen everywhere, on purpose. ``RZ_MARKER_HOST`` only matters then. Both are IPv4 only: an IPv6
+address is refused with ``bad_config`` (:func:`is_ipv6`).
 
 The staging folder holds the WAV files while they are written, so it must not be inside the repository either
 (:func:`check_staging_dir`). ``sidecar_dir`` is meant to lie in the repository (``data/``): only validated ``.json``
@@ -23,6 +29,7 @@ sidecars are ever copied there.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import sys
@@ -79,6 +86,14 @@ def default_staging_dir(env: Mapping[str, str]) -> Path:
     return Path(base) / "rzlab" / "staging"
 
 
+def default_index_db(env: Mapping[str, str]) -> Path:
+    if os.name == "nt":
+        base = env.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    else:
+        base = env.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(base) / "rzlab" / "datasets.sqlite"
+
+
 def is_inside(path: Path, root: Path) -> bool:
     """True when ``path`` is ``root`` or lies below it. Follows links and short names through ``samefile``,
     and also works for a ``path`` that does not exist yet (its nearest existing parent decides)."""
@@ -104,6 +119,7 @@ class LabConfig:
     repo_root: Path | None = None
     schema_path: Path | None = None
     config_path: Path | None = None
+    index_db: Path | None = None  # Datasets page cache (SQLite); None = default_index_db()
 
     def require_schema(self) -> Path:
         if self.schema_path is None or not self.schema_path.is_file():
@@ -113,6 +129,38 @@ class LabConfig:
                 "or set RZ_REPO_ROOT (or RZ_SCHEMA) to it.",
             )
         return self.schema_path
+
+
+def is_ipv6(text: str) -> bool:
+    """True for an IPv6 address (also ``[::1]``, ``fe80::1%eth0`` or ``::``). The phone marker is IPv4 only.
+
+    A single colon is not IPv6: ``192.168.1.23:8766`` is a host with a port (:func:`host_with_port`)."""
+    t = text.strip()
+    if t.startswith("[") and "]" in t:
+        t = t[1 : t.index("]")]  # [::1] or [::1]:8766
+    t = t.split("%", 1)[0]
+    try:
+        return ipaddress.ip_address(t).version == 6
+    except ValueError:
+        return t.count(":") >= 2
+
+
+def host_with_port(text: str) -> bool:
+    """True for ``host:port`` (one colon, digits after it), e.g. ``192.168.1.23:8766``: an address was expected."""
+    head, sep, tail = text.strip().partition(":")
+    return bool(sep and head and tail.isdigit() and ":" not in tail)
+
+
+HOST_WITH_PORT = (
+    "give the address only, without ':port' (e.g. 192.168.1.23); the phone marker's port is the marker_port "
+    "setting (RZ_MARKER_PORT)."
+)
+
+
+IPV6_REFUSED = (
+    "IPv6 addresses are not supported: the phone marker listens on one IPv4 address (the QR code names it). "
+    "Use auto, an IPv4 address of this PC (e.g. 192.168.1.23), or 0.0.0.0 for every IPv4 interface."
+)
 
 
 def _truthy(text: str | None) -> bool:
@@ -143,6 +191,12 @@ def load_config(env: Mapping[str, str] | None = None) -> LabConfig:
     port_text, _ = pick("RZ_MARKER_PORT", "marker_port")
     host_text, _ = pick("RZ_MARKER_HOST", "marker_host")
     bind_text, _ = pick("RZ_MARKER_BIND", "marker_bind")
+    index_text, _ = pick("RZ_INDEX_DB", "index_db")
+    for key, text in (("marker_bind", bind_text), ("marker_host", host_text)):
+        if text and host_with_port(text):
+            raise ConfigError("bad_config", f"{key} ({cfg_path} or RZ_{key.upper()}) is {text!r}: {HOST_WITH_PORT}")
+        if text and is_ipv6(text):
+            raise ConfigError("bad_config", f"{key} ({cfg_path} or RZ_{key.upper()}): {IPV6_REFUSED}")
     copy_sim = _truthy(env.get("RZ_COPY_SIM_SIDECARS")) or bool(file_cfg.get("copy_sim_sidecars", False))
     try:
         marker_port = int(port_text) if port_text else 0
@@ -167,6 +221,7 @@ def load_config(env: Mapping[str, str] | None = None) -> LabConfig:
         repo_root=repo,
         schema_path=schema,
         config_path=cfg_path,
+        index_db=Path(index_text) if index_text else default_index_db(env),
     )
 
 

@@ -8,10 +8,12 @@ import type {
   Mark,
   MarkerInfo,
   PortInfo,
+  ProtocolInfo,
   PsdResponse,
   RecordingEvent,
   RecordOptions,
   RecordResult,
+  RunnerView,
   SessionForm,
   SpectrogramResponse,
   StateSnapshot,
@@ -42,7 +44,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: string, url: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+export async function request<T>(method: string, url: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const init: RequestInit = { method, signal };
   if (body !== undefined) {
     init.headers = { 'Content-Type': 'application/json' };
@@ -144,6 +146,14 @@ export const api = {
   labels: () => request<{ labels: Mark[]; marking: boolean }>('GET', '/api/record/labels'),
   deleteLabel: (id: number) => request<{ deleted: number }>('DELETE', `/api/record/labels/${encodeURIComponent(String(id))}`),
   marker: () => request<MarkerInfo>('GET', '/api/record/marker'),
+
+  // Protocol runner (WEB_API.md section 10). The server owns its state; every answer is the new runner view.
+  protocol: (name: string) => request<ProtocolInfo>('GET', `/api/record/protocols/${encodeURIComponent(name)}`),
+  runner: () => request<RunnerView>('GET', '/api/record/runner'),
+  runnerStart: (protocol?: string) => request<RunnerView>('POST', '/api/record/runner/start', protocol ? { protocol } : {}),
+  runnerStop: () => request<RunnerView>('POST', '/api/record/runner/stop'),
+  runnerMove: (action: 'next' | 'back' | 'skip' | 'cancel') => request<RunnerView>('POST', `/api/record/runner/${action}`),
+  runnerGoto: (index: number) => request<RunnerView>('POST', '/api/record/runner/goto', { index }),
 };
 
 export function isAbort(e: unknown): boolean {

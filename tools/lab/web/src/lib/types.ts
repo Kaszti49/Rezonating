@@ -296,6 +296,8 @@ export interface RecordOptions {
     streams: OptionStream[];
   } | null;
   label_state: LabelState;
+  /** The label list of the default (or current) protocol: the label form offers only these. */
+  labels_allowed?: string[];
   marker: { bind: string; port: number; hosts: string[] };
   can_start: boolean;
   blockers: Blocker[];
@@ -323,6 +325,8 @@ export interface SessionForm {
   notes?: string;
   marker: boolean;
   marker_host?: string;
+  /** Run the protocol step by step (WEB_API.md section 10). */
+  runner?: boolean;
 }
 
 export type RecordState = 'idle' | 'starting' | 'recording' | 'stopping' | 'finalizing';
@@ -374,6 +378,8 @@ export interface RecordResult {
   path: string;
   streams: ResultStream[];
   n_labels: number;
+  /** What the protocol runner did in this recording (null when it was not used). */
+  runner?: RunnerSummary | null;
   sidecars_copied: string[] | null;
   sidecars_copy_skipped: string | null;
   validation: { ok: boolean; problems: string[] } | null;
@@ -390,6 +396,8 @@ export interface RecordingEvent {
   n_labels: number;
   marking: boolean;
   label_state: LabelState | null;
+  /** The session protocol's fixed label list (its YAML's labels plus noise, other, bad). */
+  labels_allowed?: string[];
   marker: { active: boolean; port: number } | null;
   marker_error: string | null;
   last: RecordResult | null;
@@ -420,3 +428,77 @@ export interface LabelEvent {
 export type MarkerInfo =
   | { active: true; host: string; port: number; url: string; hosts: string[]; qr_svg: string }
   | { active: false; reason: string };
+
+// Protocol runner (WEB_API.md section 10).
+
+export type RunnerStatus = 'pending' | 'active' | 'done' | 'incomplete' | 'skipped';
+export type RunnerState = 'off' | 'ready' | 'marking' | 'countdown' | 'finished';
+
+export interface RunnerCount {
+  done: number;
+  target: number;
+}
+
+export interface RunnerStep {
+  index: number;
+  key: string;
+  id: string;
+  kind: 'timed' | 'passes';
+  label: string;
+  person: string | null;
+  pace: Pace | null;
+  shoes: boolean | null;
+  target: number;
+  done: number;
+  duration_s: number | null;
+  status: RunnerStatus;
+  instructions: string;
+}
+
+export interface RunnerView {
+  active: boolean;
+  protocol: string | null;
+  title: string | null;
+  persons: string[];
+  state: RunnerState;
+  current: number | null;
+  open_mark: number | null;
+  countdown: { duration_s: number; remaining_s: number; mark: number | null } | null;
+  overall: RunnerCount | null;
+  per_person: Record<string, RunnerCount>;
+  steps: RunnerStep[];
+}
+
+export interface RunnerEvent extends RunnerView {
+  type: 'runner';
+  t: number;
+}
+
+export interface RunnerSummary {
+  protocol: string;
+  finished: boolean;
+  overall: RunnerCount;
+  per_person: Record<string, RunnerCount>;
+  steps: { key: string; done: number; target: number; status: RunnerStatus }[];
+}
+
+export interface ProtocolStepDef {
+  id: string;
+  kind: 'timed' | 'passes';
+  label: string;
+  passes: number;
+  duration_s: number | null;
+  fills: string[];
+  pace: Pace | null;
+  shoes: boolean | null;
+  instructions: string;
+}
+
+export interface ProtocolInfo {
+  protocol: string;
+  title: string;
+  pack: string | null;
+  doc: string | null;
+  passes_per_person: number;
+  blocks: { for_each_person: boolean; steps: ProtocolStepDef[] }[];
+}

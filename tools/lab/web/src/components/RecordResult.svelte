@@ -27,6 +27,24 @@
       </tr>
       <tr><td class="muted">folder</td><td class="mono wrap" style="user-select:all">{result.path}</td></tr>
       <tr><td class="muted">labels</td><td class="mono">{result.n_labels}</td></tr>
+      {#if result.runner}
+        {@const run = result.runner}
+        {@const short = run.steps.filter((s) => s.done < s.target)}
+        <tr>
+          <td class="muted">protocol runner</td>
+          <td>
+            <span class="mono">{run.protocol} · {run.overall.done} / {run.overall.target} passes</span>
+            {#each Object.entries(run.per_person) as [p, c] (p)}
+              <span class="chip {c.done >= c.target ? 'ok' : 'warn'}">{p} {c.done}/{c.target}</span>
+            {/each}
+            {#if short.length > 0}
+              <div class="muted">short: {short.map((s) => `${s.key} ${s.done}/${s.target}${s.status === 'skipped' ? ' (skipped)' : ''}`).join(', ')}</div>
+            {:else}
+              <span class="chip ok">all steps done</span>
+            {/if}
+          </td>
+        </tr>
+      {/if}
       <tr>
         <td class="muted">validation</td>
         <td>

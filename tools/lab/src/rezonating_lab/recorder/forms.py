@@ -40,12 +40,15 @@ def check_label(value: str) -> str:
 
 
 def list_protocols(repo_root: Path | None) -> list[str]:
-    """Protocol names: the files in ``docs/protocols/*.md`` (default first). Falls back to the default only."""
+    """Protocol names a recording may use: the machine-readable ones, ``docs/protocols/*.yaml`` (default first).
+
+    A protocol with only a ``.md`` (e.g. the dropped ``kill-test-phone``) is not offered: the runner needs the YAML.
+    Without a checkout the default name alone is returned."""
     names: list[str] = []
     if repo_root is not None:
         folder = repo_root / "docs" / "protocols"
         if folder.is_dir():
-            names = sorted(p.stem for p in folder.glob("*.md"))
+            names = sorted(p.stem for p in folder.glob("*.yaml"))
     if DEFAULT_PROTOCOL in names:
         names.remove(DEFAULT_PROTOCOL)
     return [DEFAULT_PROTOCOL, *names]
@@ -85,6 +88,11 @@ class SessionForm(BaseModel):
     sensors: list[Sensor] = Field(default_factory=list)
     notes: str | None = Field(default=None, max_length=500, description="free text, no names")
     marker: bool = Field(default=True, description="start the phone marker listener")
+    runner: bool = Field(
+        default=False,
+        description="run the protocol step by step (docs/protocols/<protocol>.yaml): marks take their tags from the "
+        "current step",
+    )
     marker_host: str | None = Field(
         default=None,
         max_length=64,

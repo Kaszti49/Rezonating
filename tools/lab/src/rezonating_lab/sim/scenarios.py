@@ -27,6 +27,12 @@ BURST_F2_HZ = 90.0
 BURST_LENGTH_S = 10 * BURST_TAU_S  # a burst is cut here (about 4 codes left), so a block never depends on its split
 CH1_DELAY_S = 0.003
 CH1_GAIN = 0.55
+# Injected tap (``SET sim.tap``, the rig check's tap test): a short, strong burst on one physical channel.
+TAP_AMP_V = 0.05  # peak at the ADC input; footsteps are about 1.5 mV, so a tap stands far above them
+TAP_TAU_S = 0.01
+TAP_F_HZ = 150.0
+TAP_LENGTH_S = 10 * TAP_TAU_S
+TAP_CROSSTALK = 0.15  # the other channel sees this fraction (the sensors share a floor)
 
 
 @dataclass
@@ -52,6 +58,10 @@ class Step:
     n: int  # step number within the acquisition
     t_s: float  # onset, seconds since acquisition start
     amp_v: float
+
+    def truth_fields(self) -> dict:
+        """Extra ground-truth fields for this step (simulated people add person, pace, shoes; see people.py)."""
+        return {}
 
 
 class GroundTruthLog:
@@ -80,8 +90,10 @@ def _children(seed: int, acq_id: int, n: int) -> list[np.random.Generator]:
 class AdcSignal:
     """Two ADC channels for one acquisition. Index i is at time ``i / rate_hz`` since acquisition start."""
 
-    def __init__(self, cfg: ScenarioConfig, acq_id: int) -> None:
+    def __init__(self, cfg: ScenarioConfig, acq_id: int, shorted: bool = False) -> None:
         self.cfg = cfg
+        self.shorted = shorted  # inputs shorted to AGND: noise only (no offset, no footsteps)
+        self.taps: list[tuple[float, int]] = []  # (onset s since acquisition start, physical channel)
         self._step_rng, self._noise_rng = _children(cfg.seed, acq_id, 2)
         self._steps: list[Step] = []
         self._next_t_s = cfg.first_step_s
@@ -108,9 +120,27 @@ class AdcSignal:
         falls inside this block (ground truth, each reported exactly once)."""
         cfg = self.cfg
         t = (first_idx + np.arange(n)) / rate_hz
-        t_a, t_b = float(t[0]), float(t[-1])
+        t_b = float(t[-1])
+        volts = cfg.adc_noise_v * self._noise_rng.standard_normal((n, 2))
+        self._add_taps(volts, t)
+        if self.shorted:
+            g = np.array(gains, dtype=np.float64)
+            codes = np.rint(volts * g / ADC_VREF_V * ADC_FULL_SCALE)
+            return np.clip(codes, -ADC_FULL_SCALE, ADC_FULL_SCALE - 1).astype(np.int32), []
+        volts += cfg.adc_offset_v
         self._extend(t_b)
-        volts = cfg.adc_offset_v + cfg.adc_noise_v * self._noise_rng.standard_normal((n, 2))
+        self._add_steps(volts, t)
+        new = []
+        while self._reported < len(self._steps) and self._steps[self._reported].t_s <= t_b:
+            new.append(self._steps[self._reported])
+            self._reported += 1
+        g = np.array(gains, dtype=np.float64)
+        codes = np.rint(volts * g / ADC_VREF_V * ADC_FULL_SCALE)
+        return np.clip(codes, -ADC_FULL_SCALE, ADC_FULL_SCALE - 1).astype(np.int32), new
+
+    def _add_steps(self, volts: np.ndarray, t: np.ndarray) -> None:
+        """Add the footsteps that touch times ``t`` (n,) to ``volts`` (n, 2). Subclasses change the waveform."""
+        t_a, t_b = float(t[0]), float(t[-1])
         while self._active_from < len(self._steps) and self._steps[self._active_from].t_s + BURST_LENGTH_S < t_a:
             self._active_from += 1
         for step in self._steps[self._active_from :]:
@@ -126,20 +156,30 @@ class AdcSignal:
                     * np.exp(-d / BURST_TAU_S)
                     * (np.sin(2 * np.pi * BURST_F1_HZ * d) + 0.4 * np.sin(2 * np.pi * BURST_F2_HZ * d + 0.7))
                 )
-        new = []
-        while self._reported < len(self._steps) and self._steps[self._reported].t_s <= t_b:
-            new.append(self._steps[self._reported])
-            self._reported += 1
-        g = np.array(gains, dtype=np.float64)
-        codes = np.rint(volts * g / ADC_VREF_V * ADC_FULL_SCALE)
-        return np.clip(codes, -ADC_FULL_SCALE, ADC_FULL_SCALE - 1).astype(np.int32), new
+
+    def add_tap(self, t_s: float, ch: int) -> None:
+        """Schedule a tap on physical channel ``ch`` at ``t_s`` (seconds since acquisition start). The caller picks a
+        time after the last produced sample, so no block that was already sent changes."""
+        self.taps.append((t_s, ch))
+
+    def _add_taps(self, volts: np.ndarray, t: np.ndarray) -> None:
+        for t_tap, ch in self.taps:
+            dt = t - t_tap
+            m = (dt >= 0) & (dt <= TAP_LENGTH_S)
+            if not m.any():
+                continue
+            d = dt[m]
+            wave = TAP_AMP_V * np.exp(-d / TAP_TAU_S) * np.sin(2 * np.pi * TAP_F_HZ * d + 0.3)
+            volts[m, ch] += wave
+            volts[m, 1 - ch] += TAP_CROSSTALK * wave
 
 
 class AccelSignal:
     """Three accelerometer channels for one acquisition."""
 
-    def __init__(self, cfg: ScenarioConfig, acq_id: int) -> None:
+    def __init__(self, cfg: ScenarioConfig, acq_id: int, gravity: bool = True) -> None:
         self.cfg = cfg
+        self.gravity = gravity  # False: z shows no 1 g (the --no-gravity fault)
         (self._noise_rng,) = _children(cfg.seed + 7919, acq_id, 1)
 
     def block(self, first_idx: int, n: int, rate_hz: float, range_g: int) -> np.ndarray:
@@ -147,6 +187,8 @@ class AccelSignal:
         t = (first_idx + np.arange(n)) / rate_hz
         g = np.empty((n, 3))
         g[:] = cfg.accel_offset_g
+        if not self.gravity:
+            g[:, 2] -= 1.0
         g += cfg.accel_noise_g * self._noise_rng.standard_normal((n, 3))
         g[:, 2] += cfg.hum_g * np.sin(2 * np.pi * cfg.hum_hz * t)
         g[:, 0] += 0.3 * cfg.hum_g * np.sin(2 * np.pi * cfg.hum_hz * t + 1.1)
