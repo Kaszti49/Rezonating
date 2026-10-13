@@ -29,6 +29,7 @@ updated: 2026-10-13
 | Claude | 1) Re-verify 4c, 5, 7 and the sim people; fix the findings. 2) Small queued fixes (list below). 3) The 11-17 dress rehearsal on `rzlab sim --walkers`. 4) D-022 loss spans (schema, validate, recorder, SD import, io, pipeline). 5) firmware-dev retry on F-261013-34f1, then flash COM22 |
 
 ## Open flags
+- Lab 7 Experiments verifier FLAG (arrived after the stop): stale feature cache after ml code changes, duplicate EXP drafts from one run, per-person results missing for pace/shoes. See the ledger.
 - **Stopped early (credits).** Sim people FLAG (`--out` guard bypass) and Bench FLAG (HIGH: vector create could overwrite `packs/`/`schemas/`) were fixed at wrap-up with tests added but NOT run. Bench med still open: compare mismatches when the live run starts mid-acquisition. 4c and 7 verifier results never arrived. Run `pytest tools/lab/tests` first.
 - F-261013-860d/-4a62: 4c round 3 waiting on re-verify (ml-dev has used both retries; next failure goes to deep-engineer, L3).
 - F-261013-02f8/-80bb: sim people round 2 waiting on re-verify.
