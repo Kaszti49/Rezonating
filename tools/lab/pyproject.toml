@@ -1,16 +1,22 @@
 [project]
 name = "rezonating-lab"
 version = "0.1.0"
-description = "Rezonating Lab: bench tool for the node link (codec, simulator, tail)"
+description = "Rezonating Lab: bench tool for the node link (codec, simulator, tail, web server, recorder)"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.26",
   "pyserial>=3.5",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "pydantic>=2.5",
+  "segno>=1.6",                           # QR code of the phone-marker URL (pure Python)
+  "tomli>=2.0; python_version < '3.11'",  # config.toml on Python 3.10
+  "rezonating-ml",                        # WAV + sidecar I/O (rezonating_ml.io); install it from this repo first
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "httpx>=0.27", "psutil>=5.9", "scipy>=1.11", "websockets>=12"]  # httpx: TestClient; psutil: rzlab soak; scipy: cross-check of view.py
 
 [project.scripts]
 rzlab = "rezonating_lab.cli:main"
@@ -24,3 +30,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]  # Starlette suggests httpx2; the brief asked for httpx
+
+[tool.setuptools.package-data]
+rezonating_lab = ["static/**"]

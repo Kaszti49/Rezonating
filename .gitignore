@@ -40,3 +40,8 @@ desktop.ini
 .claude/evals/results/
 .claude/settings.local.json
 CLAUDE.local.md
+
+# Rezonating Lab: UI dependencies, built UI, local recordings
+node_modules/
+tools/lab/src/rezonating_lab/static/
+tools/lab/runs/

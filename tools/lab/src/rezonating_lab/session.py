@@ -62,6 +62,35 @@ def wait_for_reply(
     return False
 
 
+def all_streams_mask(mon: SessionMonitor) -> int:
+    if mon.hello is None:
+        raise SessionError("no HELLO yet")
+    mask = 0
+    for s in mon.hello.streams:
+        mask |= 1 << s.id
+    return mask
+
+
+def clean_stop(
+    client: LinkClient,
+    mon: SessionMonitor,
+    handle: FrameHandler,
+    wall: Callable[[], float] = time.perf_counter,
+    stop_timeout_s: float | None = None,
+) -> bool:
+    """STOP every stream and wait for the ACK (PROTOCOL.md section 1, left-over USB session).
+
+    Returns False when the ACK did not arrive in time. The caller must then START with ``force=True``
+    (``SessionMonitor.start_sent``): the node's state is unknown, so a stale window shows up as host gap
+    instead of being hidden.
+    """
+    stop_seq = client.send(Stop(all_streams_mask(mon)))
+    mon.expect_stop_ack(stop_seq, all_streams_mask(mon))
+    return wait_for_reply(
+        client, stop_seq, handle, wall, CLEAN_STOP_TIMEOUT_S if stop_timeout_s is None else stop_timeout_s
+    )
+
+
 def begin_recording(
     client: LinkClient,
     mon: SessionMonitor,
@@ -72,19 +101,13 @@ def begin_recording(
 ) -> int:
     """STOP everything, wait for the ACK, then START ``mask``. Returns the START's cmd_seq.
 
-    The STOP clears whatever a previous (killed) PC left running. Without its ACK we go on anyway: the START's
-    own ACK still arms the accounting, and the report would show the stale window as host loss, not hide it.
+    The STOP clears whatever a previous (killed) PC left running. Without its ACK we go on anyway
+    (``force=True``): the START's own ACK still arms the accounting, and the report would show the stale
+    window as host loss, not hide it.
     """
     if mon.hello is None:
         raise SessionError("begin_recording before HELLO")
-    all_mask = 0
-    for s in mon.hello.streams:
-        all_mask |= 1 << s.id
-    stop_seq = client.send(Stop(all_mask))
-    mon.expect_stop_ack(stop_seq, all_mask)
-    acked = wait_for_reply(
-        client, stop_seq, handle, wall, CLEAN_STOP_TIMEOUT_S if stop_timeout_s is None else stop_timeout_s
-    )
+    acked = clean_stop(client, mon, handle, wall, stop_timeout_s)
     start_seq = client.send(Start(mask))
     mon.start_sent(start_seq, mask, force=not acked)
     return start_seq

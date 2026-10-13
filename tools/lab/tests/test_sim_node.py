@@ -800,3 +800,44 @@ def test_control_fault_hook_corrupts_the_chosen_frame_on_the_wire():
     node.cfg.control_fault = None
     pc.send(Ping(1))
     assert of_type(pc.frames(), Pong)
+
+
+# ------------------------------------------------- STOP drain keeps running = 1 until the final STATUS (section 5)
+
+
+def test_running_stays_1_in_periodic_status_until_the_final_status_of_stop():
+    node, clock = make_node()
+    pc = started(node, clock)
+    pc.send(Start(0b011))
+    run(node, clock, 2.5)
+    periodic = [f.msg for f in of_type(pc.frames(), Status)]
+    assert len(periodic) >= 2
+    assert all(s.stream(0).running == 1 and s.stream(1).running == 1 for s in periodic)
+
+    stop_seq = pc.send(Stop(0b001))
+    after = [f.msg for f in pc.frames() if not isinstance(f.msg, codec.Data)]
+    # the sim drains synchronously, so nothing can sit between STOP and the final STATUS:
+    # no periodic STATUS with running = 0 *and* none with a stale running = 1 after the STOP
+    assert [type(m).__name__ for m in after] == ["Status", "Ack"]
+    final = after[0]
+    assert final.stream(0).running == 0  # first time 0 is in the final STATUS
+    assert final.stream(1).running == 1  # not in the mask: keeps running
+    assert after[1] == Ack(stop_seq)
+    assert final.stream(0).win_end == final.stream(0).produced
+
+    run(node, clock, 1.2)
+    later = [f.msg for f in of_type(pc.frames(), Status)]
+    assert later and all(s.stream(0).running == 0 and s.stream(1).running == 1 for s in later)
+    assert all(s.stream(0).win_end == final.stream(0).win_end for s in later)  # frozen window
+
+
+def test_clock_drift_and_timestamp_jitter_options():
+    node, clock = make_node(clock_drift_ppm=1000.0, speed=1.0)
+    t0 = node.now_dev_s()
+    clock.advance(100.0)
+    assert node.now_dev_s() - t0 == pytest.approx(100.0 * 1.001, rel=1e-9)  # +1000 ppm: 100 s become 100.1 s
+    quiet, _ = make_node()
+    assert quiet.stamp_noise_us() == 0
+    noisy, _ = make_node(timestamp_jitter_us=200.0)
+    noise = [noisy.stamp_noise_us() for _ in range(2000)]
+    assert 150 < float(np.std(noise)) < 250 and abs(float(np.mean(noise))) < 40

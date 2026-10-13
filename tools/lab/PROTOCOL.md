@@ -308,7 +308,8 @@ final `STATUS` that `STOP` produces gives the numbers:
 - `host_gap = missing − device − link`
 
 `host_gap` counts samples that were sent but never arrived: corrupted or lost frames. It is never
-negative; a negative value is a protocol bug and the lab says so. Each lost sample sits in
+negative; a negative value is a protocol bug and the lab says so. The sidecar's `loss.host` is `host_gap` plus the samples the
+recorder itself dropped (writer queue overflow, rejected packets, write errors), and all zero-filled samples when no `STATUS` arrived. Each lost sample sits in
 exactly one of the three counters, and `missing` is their sum.
 
 - **While recording,** the live view uses the latest `STATUS`. Samples between the last index

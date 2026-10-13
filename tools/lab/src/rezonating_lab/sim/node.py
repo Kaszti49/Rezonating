@@ -90,6 +90,8 @@ class SimConfig:
     liveness_s: float = 5.0  # wall seconds without a valid PC frame
     auth_timeout_s: float = 2.0
     boot_offset_s: float = 5.0  # device clock at start
+    clock_drift_ppm: float = 0.0  # the device clock runs this much fast (+) or slow (-) against the host clock
+    timestamp_jitter_us: float = 0.0  # extra Gaussian noise (std) on every DATA and PONG timestamp
     max_backlog_bytes: int = 256_000  # unsent bytes at which DATA is dropped as a link loss (queue full)
     fw_version: str = "0.1.0-sim"
     node_id: str = "rzn-sim001"
@@ -205,7 +207,14 @@ class SimNode:
     # ------------------------------------------------------------------------------- clocks
 
     def now_dev_s(self) -> float:
-        return self.cfg.boot_offset_s + (self.clock() - self._wall0) * self.cfg.speed
+        rate = self.cfg.speed * (1.0 + self.cfg.clock_drift_ppm * 1e-6)
+        return self.cfg.boot_offset_s + (self.clock() - self._wall0) * rate
+
+    def stamp_noise_us(self) -> int:
+        """Timestamp jitter of the firmware (interrupt latency, task scheduling) for one DATA or PONG stamp."""
+        if self.cfg.timestamp_jitter_us <= 0:
+            return 0
+        return int(round(float(self._jitter.normal(0.0, self.cfg.timestamp_jitter_us))))
 
     def now_dev_us(self) -> int:
         return _us(self.now_dev_s())
@@ -343,7 +352,7 @@ class SimNode:
         for a, b in _runs(valid):
             for p in range(a, b, max_frames):
                 q = min(b, p + max_frames)
-                self._send_data(st, Data(st.info.id, first + p, t_fn(p), codes[p:q]))
+                self._send_data(st, Data(st.info.id, first + p, t_fn(p) + self.stamp_noise_us(), codes[p:q]))
 
     def _send_data(self, st: StreamState, data: Data) -> None:
         conn = self.active
@@ -572,7 +581,7 @@ class Connection:
         elif isinstance(msg, Auth):
             pass  # already in a session: accepted and ignored
         elif isinstance(msg, Ping):
-            self.send(Pong(msg.host_t_us, node.now_dev_us()))
+            self.send(Pong(msg.host_t_us, node.now_dev_us() + node.stamp_noise_us()))
         elif isinstance(msg, Start):
             if self._bad_mask(msg.stream_mask):
                 self._err(seq, codec.ERR_BAD_VALUE, "bad stream mask")

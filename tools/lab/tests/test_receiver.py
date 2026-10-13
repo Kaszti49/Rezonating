@@ -119,7 +119,7 @@ def test_ordinary_loss_and_wrap_are_still_lost_frames():
     rx.feed(wire_of([(Ack(0), 100), (Ack(1), 1100)]))  # 999 lost: well under the resync limits
     assert (rx.lost_frames, rx.resyncs) == (999, 0)
     rx = Receiver()
-    rx.feed(wire_of([(Ack(0), 65530), (Ack(1), 4)]))  # 10 lost across the wrap, seq < 16 but a short jump
+    rx.feed(wire_of([(Ack(0), 65530), (Ack(1), 4)]))  # 9 lost across the wrap, seq < 16 but a short jump
     assert (rx.lost_frames, rx.resyncs) == (9, 0)
 
 

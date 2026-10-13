@@ -46,12 +46,13 @@ class StreamMonitor:
         return bool(self.status and self.status.running and not self.stop_acked)
 
     def begin_window(self) -> None:
-        """Call when a START is sent for a stream that is not running: indices may restart at 0."""
+        """Reset for a new window and close the START gate (``awaiting_start``): the gate is set here, so a reset
+        window can never be fed an older window's STATUS."""
         self.acct.reset()
         self.fit = RateFit()
         self.status = None
         self.finalized = False
-        self.awaiting_start = False
+        self.awaiting_start = True
         self._stop_sent = False
         self._final_status = False
         self.timing_flags = 0
@@ -139,12 +140,6 @@ class SessionMonitor:
             if stream_mask & (1 << sid):
                 mon.mark_stop_sent()
 
-    def begin_window(self, stream_mask: int) -> None:
-        """Reset the accounting of every idle stream in the mask (a running stream keeps its window)."""
-        for sid, mon in self.streams.items():
-            if stream_mask & (1 << sid) and not mon.running:
-                mon.begin_window()
-
     def start_sent(self, cmd_seq: int, stream_mask: int, force: bool = False) -> None:
         """Call right after sending a START: reset idle streams and ignore STATUS windows until the ACK.
         ``force`` also resets streams that look running (the PC does not know the node's state).
@@ -153,8 +148,7 @@ class SessionMonitor:
         START and may still describe an older window (left-over USB session, PROTOCOL.md section 1)."""
         for sid, mon in self.streams.items():
             if stream_mask & (1 << sid) and (force or not mon.running):
-                mon.begin_window()
-                mon.mark_start_sent()
+                mon.begin_window()  # also closes the gate until the START is acknowledged
         self._start_acks[cmd_seq] = stream_mask
 
     def on_frame(self, frame: Frame, host_now_us: int | None = None) -> None:
@@ -164,6 +158,10 @@ class SessionMonitor:
             self.streams = {s.id: self.streams.get(s.id) or StreamMonitor(s) for s in msg.streams}
             for mon in self.streams.values():
                 mon.stop_acked = False  # the node's state is unknown again after a HELLO
+                if not mon.running:
+                    # Close the gate here, with the HELLO itself: the STATUS frames that follow (before CONFIG, or
+                    # before the caller gets to run) may describe a left-over session's window.
+                    mon.mark_start_sent()
         elif isinstance(msg, Config):
             self.config = msg
         elif isinstance(msg, Data):

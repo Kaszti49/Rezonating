@@ -155,6 +155,11 @@ class StreamAccounting:
     def has_window(self) -> bool:
         return self._win is not None
 
+    @property
+    def window(self) -> tuple[int, int, int, int] | None:
+        """``(win_first, win_end, win_device, win_link)`` of the latest STATUS that belongs to our window."""
+        return self._win
+
     def report(self, mode: str = "live") -> LossReport | None:
         """Loss numbers for the latest STATUS window.
 

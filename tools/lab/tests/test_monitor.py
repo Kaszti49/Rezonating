@@ -123,3 +123,21 @@ def test_start_of_a_running_stream_keeps_its_window():
     mon.start_sent(2, 0b001)  # no-op on the node: ACK, no index reset
     feed(mon, Ack(2), data(500, 500), status(1, 0, 1100))
     assert mon.streams[0].loss().received == 1000
+
+
+def test_the_gate_ignores_the_left_over_window_until_our_own_start_is_acknowledged():
+    mon = new_monitor()  # the HELLO closes the gate
+    mon.expect_stop_ack(1, 0b111)  # the clean-up STOP: its final STATUS still describes the old window
+    feed(mon, status(0, 5000, 9000), Ack(1))
+    sm = mon.streams[0]
+    assert sm.loss() is None and not sm.running and sm.status is not None
+    mon.start_sent(2, 0b001)
+    feed(mon, Ack(2), data(0, 500), status(1, 0, 600))
+    assert sm.loss().win_end == 600 and mon.streams[1].loss() is None
+
+
+def test_the_gate_closes_with_the_hello_itself():
+    """STATUS frames between HELLO and anything the caller does next must not feed the accounting."""
+    mon = new_monitor()  # new_monitor() feeds a HELLO
+    feed(mon, status(0, 5000, 9000))
+    assert mon.streams[0].awaiting_start and mon.streams[0].loss() is None

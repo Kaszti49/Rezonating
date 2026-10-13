@@ -102,7 +102,7 @@ class Receiver:
     def _track_seq(self, seq: int) -> None:
         """Count lost frames from the ``seq`` jump, or a resync when the jump means "numbering restarted".
 
-        Rule (v0, proposed for PROTOCOL.md section 2): with ``jump = (seq - expected) mod 65536``,
+        Rule (PROTOCOL.md section 2): with ``jump = (seq - expected) mod 65536``,
 
         * ``jump == 0``: in order;
         * ``jump > 32768`` (the new ``seq`` is *behind* the expected one), or ``seq < 16`` with
