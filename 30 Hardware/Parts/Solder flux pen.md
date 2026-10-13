@@ -1,6 +1,6 @@
 ---
 type: part
-status: needed
+status: have
 category: consumable
 qty: 1
 price_eur: 8.0
@@ -15,3 +15,4 @@ order: "[[ORD-001 First rig]]"
 **Why we need it:** For the fine-pitch ADC. Skip if you have one.
 
 ## Notes
+- 2026-10-13: in the lab (Kaszti in chat: all parts are here except the geophones).

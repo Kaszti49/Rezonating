@@ -1,6 +1,6 @@
 ---
 type: part
-status: needed
+status: have
 category: adc
 qty: 1
 price_eur: 30.29
@@ -22,3 +22,12 @@ order: "[[ORD-001 First rig]]"
 - **Connection to the ESP32-S3:** jumper wires from the mikroBUS pins: SCK, MISO (SDO), MOSI (SDI), CS, INT (DRDY), RST, PWM (oscillator CS2), 3V3 and GND. 3.3 V logic only. Never use GPIO 33–37 (octal PSRAM).
 - **Stock:** thin. DigiKey lists it as Active (6 in stock on 2026-10-06); SparkFun and Robot Gear stopped carrying it. Buy 2 if Farnell has them.
 - **To confirm on the board's schematic:** input connector type, any input RC filters, the LTC6903 default frequency, the power jumper. Research: [[60 Research/ADC 15 Click|ADC 15 Click research]].
+- 2026-10-13: in the lab (Kaszti in chat: all parts are here except the geophones).
+
+## Ports (read from the board, 2026-10-13)
+![[ADC_15_Click.jpg]]
+- **Analog inputs:** two 2-pole screw terminals at the top. On the left is **CH2** (+ left, − right). On the right is **CH1** (− left, + right). There are no excitation or ground terminals, so a bridge sensor needs 3.3 V and GND from the ESP32 side.
+- **Left header (mikroBUS), top to bottom:** NC, RST, CS1, SCK, SDO, SDI, 3V3, GND. CS1 is the ADC (SPI mode 1). SDO is the ADC's data out, so it goes to the MCU's MISO; SDI goes to MOSI.
+- **Right header, top to bottom:** CS2, INT, NC, NC, NC, NC, NC, GND. CS2 is the LTC6903 clock chip (SPI mode 0). INT is DRDY (active low).
+- **No 5V pin** is connected (3.3 V only, "3.3V" logo). There is a PWR LED with a 470 Ω resistor (R1).
+- **Assumed** (not on the silkscreen): CH1 = ADC channel 0 and CH2 = channel 1. The firmware confirms it on the first read.

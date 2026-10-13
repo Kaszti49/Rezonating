@@ -1,6 +1,6 @@
 ---
 type: part
-status: needed
+status: have
 category: sensor
 qty: 1
 price_eur: 54.87
@@ -30,3 +30,4 @@ order: "[[ORD-001 First rig]]"
   - EVAL-ADXL355-SDP: about USD 78 to 85 (Mouser, DigiKey, Farnell); needs the SDP controller connector, not suited to our node.
   - Bare ADXL355BEZ chip: only useful with our own PCB (about 70 to 80 EUR on Farnell/Mouser, inferred from DKK and INR prices seen).
 - No cheap third-party ADXL355 breakouts (Adafruit, SparkFun, etc.) were found.
+- 2026-10-13: in the lab (Kaszti in chat: all parts are here except the geophones).

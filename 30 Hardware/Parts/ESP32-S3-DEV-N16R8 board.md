@@ -15,3 +15,4 @@ order: "[[ORD-001 First rig]]"
 **Why we need it:** The node's brain. Must be the N16R8 variant (8 MB PSRAM). One spare.
 
 ## Notes
+- 2026-10-13: the board in the lab photos is a classic ESP32 (WROOM-32), not this S3, so this part is still `needed` until someone confirms the S3 boards are here. See [[ESP32 DevKit V1 with expansion board]].

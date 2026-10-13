@@ -19,21 +19,21 @@ await dv.view("90 Meta/Views/rz", {section: "agents"})
 ```mermaid
 flowchart LR
   You([Kaszti / Viktor]) <--> O[Orchestrator<br/>main session]
-  O --> FW[firmware-dev<br/>sonnet · high]
-  O --> ML[ml-dev<br/>sonnet · high]
-  O --> RS[researcher<br/>sonnet · medium]
-  O --> WR[writer<br/>sonnet · medium]
-  O --> VK[vault-keeper<br/>haiku]
+  O --> FW[firmware-dev<br/>Opus 5.5 · high]
+  O --> ML[ml-dev<br/>Opus 5.5 · high]
+  O --> RS[researcher<br/>Sonnet 5.5 · medium]
+  O --> WR[writer<br/>Sonnet 5.5 · medium]
+  O --> VK[vault-keeper<br/>Haiku 5.5]
   FW & ML & RS & WR & VK --> G{{L0 gate<br/>hooks}}
   G -->|fail, 2 fix rounds| G
-  G -->|pass| V[verifier<br/>opus · high]
+  G -->|pass| V[verifier<br/>Opus 5.5 · high]
   V -->|PASS| O
   V -->|FLAG / BLOCK| LG[(Ledger)]
   G -->|still failing| LG
   LG --> O
-  O -->|L3| DE[deep-engineer<br/>opus · xhigh]
+  O -->|L3| DE[deep-engineer<br/>Opus 5.5 · xhigh]
   O -->|L4| You
-  LG -->|weekly /retro| C[curator<br/>opus · high]
+  LG -->|weekly /retro| C[curator<br/>Opus 5.5 · high]
   C -->|max 3 proposals| You
 ```
 
@@ -41,14 +41,14 @@ flowchart LR
 | Agent | Model · effort | Writes to | Used for |
 | --- | --- | --- | --- |
 | orchestrator | the session's model (Opus recommended) | everything, asks first for config | talking to you, planning, routing, small edits |
-| `firmware-dev` | sonnet · high | `firmware/`, `packs/`, `docs/`, `tools/` | ESP-IDF C code, builds |
-| `ml-dev` | sonnet · high | `ml/`, `tools/`, `data/` manifests, `packs/`, `docs/` | signal processing, training, test vectors |
-| `researcher` | sonnet · medium | `60 Research/`, `00 Inbox/` | datasheets, prices, papers, datasets |
-| `writer` | sonnet · medium | `docs/`, READMEs, `10 Project/`, `00 Inbox/` | docs, OTIO texts |
-| `vault-keeper` | haiku | the numbered vault folders | work items, parts, daily lines, Handoff |
-| `verifier` | opus · high | nothing (read-only) | independent review, verdict PASS / FLAG / BLOCK |
-| `deep-engineer` | opus · xhigh | code folders + `schemas/` | escalations: failed twice, hard root causes |
-| `curator` | opus · high | `90 Meta/Agents/` proposals, retros, evals | improving the agents |
+| `firmware-dev` | Opus 5.5 · high | `firmware/`, `packs/`, `docs/`, `tools/` | ESP-IDF C code, builds |
+| `ml-dev` | Opus 5.5 · high | `ml/`, `tools/`, `data/` manifests, `packs/`, `docs/` | signal processing, training, test vectors |
+| `researcher` | Sonnet 5.5 · medium | `60 Research/`, `00 Inbox/` | datasheets, prices, papers, datasets |
+| `writer` | Sonnet 5.5 · medium | `docs/`, READMEs, `10 Project/`, `00 Inbox/` | docs, OTIO texts |
+| `vault-keeper` | Haiku 5.5 | the numbered vault folders | work items, parts, daily lines, Handoff |
+| `verifier` | Opus 5.5 · high | nothing (read-only) | independent review, verdict PASS / FLAG / BLOCK |
+| `deep-engineer` | Opus 5.5 · xhigh | code folders + `schemas/` | escalations: failed twice, hard root causes |
+| `curator` | Opus 5.5 · high | `90 Meta/Agents/` proposals, retros, evals | improving the agents |
 
 Each agent's own instructions are its file in `.claude/agents/` (its personal CLAUDE.md). All of them also read the project `CLAUDE.md`; `firmware/CLAUDE.md` and `ml/CLAUDE.md` load when they work in those folders.
 
@@ -121,6 +121,6 @@ Adding an agent: its file in `.claude/agents/`, its scope in `agent-scopes.json`
 ## Known limits
 - The gate checks files an agent changed with Edit/Write. A file written by a script the agent ran isn't seen; the verifier's `git diff` catches it.
 - Effort can't be raised per task, only per agent; that's why `deep-engineer` exists.
-- Model aliases (`sonnet`, `opus`, `haiku`) follow the newest model of that family. If a plan doesn't include one, Claude Code falls back to the session's model and shows a warning.
+- Agents are pinned to exact model ids (`claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`) since 2026-10-13, so a new model never changes an agent silently: moving to a newer model is a Changelog line. If a plan doesn't include a model, Claude Code falls back to the session's model and shows a warning.
 - Evals use subscription quota: run them for proposals, not every day.
 - `.claude/` points at vault paths (the ledger). Before the repo goes open source, move the ledger out of the vault or drop it (see [[D-012 Obsidian vault in the repo]]).
