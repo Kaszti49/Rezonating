@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 from typing import Literal
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Path, Query
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict
 
 from ..recorder.config import ConfigError, LabConfig, check_data_root, save_data_root
-from ..recorder.forms import LabelOverrides, LabelState, SessionForm
+from ..recorder.forms import LabelOverrides, LabelState, SessionForm, list_protocols
+from ..recorder.protocol import ProtocolError, load_named
 from ..recorder.recording import RecordError, Recorder
 from .device import DeviceManager
 
@@ -23,6 +24,18 @@ class MarkBody(LabelOverrides):
     """
 
     edge: Literal["start", "end", "toggle"] = "toggle"
+
+
+class RunnerStartBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: str | None = None  # omit = the session's protocol
+
+
+class RunnerGotoBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    index: int
 
 
 class DataRootBody(BaseModel):
@@ -111,3 +124,52 @@ def register_record_routes(app: FastAPI, mgr: DeviceManager, rec: Recorder, cfg:
                 {"error": {"code": "no_marker", "message": "No phone marker is running."}}, status_code=404
             )
         return Response(info["qr_svg"], media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
+
+    # ------------------------------------------------------------------- protocols and the runner (WEB_API.md 10)
+
+    @app.get("/api/record/protocols/{name}")
+    async def protocol(name: str = Path(max_length=64)):
+        if name not in list_protocols(cfg.repo_root):
+            raise RecordError("not_found", f"No protocol {name!r}; see options.protocols.", http=404)
+        try:
+            proto = await asyncio.to_thread(load_named, cfg.repo_root, name)
+        except ProtocolError as exc:
+            raise RecordError(
+                "bad_protocol",
+                f"docs/protocols/{name}.yaml cannot be used: " + "; ".join(exc.problems),
+                http=422,
+                details=[{"loc": ["protocol"], "msg": p} for p in exc.problems],
+            ) from exc
+        return proto.to_dict()
+
+    @app.get("/api/record/runner")
+    async def runner_state():
+        return rec.runner_view()
+
+    @app.post("/api/record/runner/start")
+    async def runner_start(body: RunnerStartBody | None = None):
+        return await asyncio.to_thread(rec.runner_start, body.protocol if body else None)
+
+    @app.post("/api/record/runner/stop")
+    async def runner_stop():
+        return rec.runner_stop()
+
+    @app.post("/api/record/runner/next")
+    async def runner_next():
+        return rec.runner_move("next")
+
+    @app.post("/api/record/runner/back")
+    async def runner_back():
+        return rec.runner_move("back")
+
+    @app.post("/api/record/runner/skip")
+    async def runner_skip():
+        return rec.runner_move("skip")
+
+    @app.post("/api/record/runner/goto")
+    async def runner_goto(body: RunnerGotoBody):
+        return rec.runner_move("goto", body.index)
+
+    @app.post("/api/record/runner/cancel")
+    async def runner_cancel():
+        return rec.runner_cancel()

@@ -16,7 +16,7 @@ export interface ChanForm {
 type RecStream = 'adc_raw' | 'accel';
 const KEY = 'rzlab.recform';
 export const MAX_PERSONS = 12;
-const FIELDS = ['site', 'room', 'floor', 'surface', 'persons', 'protocol', 'streams', 'sensors', 'notes', 'marker_host'];
+const FIELDS = ['site', 'room', 'floor', 'surface', 'persons', 'protocol', 'streams', 'sensors', 'notes', 'marker_host', 'runner'];
 
 function emptyChan(): ChanForm {
   return { x: null, y: null, z: null, head: '', serial: '', port: null, mount: '' };
@@ -46,6 +46,8 @@ class RecForm {
   chans = $state<Record<string, ChanForm>>({});
   marker = $state(true);
   markerHost = $state('');
+  /** Run the protocol step by step (the runner sets the labels' person, pace and shoes). */
+  runner = $state(true);
   /** Field errors: `site`, `persons`, `sensor:<key>`, `form` (anything else). Texts come from the server or this
    * page and never contain the rejected value. */
   errors = $state<Record<string, string>>({});
@@ -109,6 +111,7 @@ class RecForm {
       streams,
       sensors,
       marker: this.marker,
+      runner: this.runner,
     };
     if (this.floor.trim()) form.floor = this.floor.trim();
     if (this.surface.trim()) form.surface = this.surface.trim();
@@ -163,6 +166,7 @@ class RecForm {
       chans: this.chans,
       marker: this.marker,
       markerHost: this.markerHost,
+      runner: this.runner,
     };
     try {
       localStorage.setItem(KEY, JSON.stringify(data));
@@ -194,6 +198,7 @@ class RecForm {
       this.protocol = str(d.protocol);
       this.markerHost = str(d.markerHost);
       if (typeof d.marker === 'boolean') this.marker = d.marker;
+      if (typeof d.runner === 'boolean') this.runner = d.runner;
       if (Array.isArray(d.persons))
         this.persons = d.persons.filter((p): p is string => typeof p === 'string' && /^P\d+$/.test(p)).slice(0, MAX_PERSONS);
       this.streams = bools(d.streams);

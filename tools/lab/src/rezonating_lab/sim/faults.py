@@ -15,6 +15,12 @@ class FaultConfig:
     device_drop_rate: float = 0.0  # probability that one sample index is lost in acquisition
     link_drop_rate: float = 0.0  # probability that one DATA packet never reaches the transport
     corrupt_rate: float = 0.0  # probability that one DATA frame has a byte flipped on the wire
+    # Rig faults (the rig checks of server/rigcheck.py must catch each one):
+    swap_channels: bool = False  # ADC ch0 and ch1 swapped (wiring or firmware channel map)
+    no_gravity: bool = False  # ADXL355 z shows no 1 g (wrong axis, wrong scale or a dead sensor)
+    no_adc: bool = False  # the ADC never answers: its streams START but no sample is ever produced
+    # Bench mode, not a fault: ADC inputs shorted to AGND, the channels read only their noise (noise-floor check).
+    shorted_inputs: bool = False
 
 
 class FaultInjector:

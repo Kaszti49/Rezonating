@@ -3,6 +3,9 @@
 Recording protocol for the `footstep-id` pack. The sidecar's `protocol` field
 must say `walk-pass-v1`.
 
+Machine-readable version: `walk-pass-v1.yaml` (the Lab's protocol runner reads it).
+Change both files together.
+
 ## Before
 
 - Written consent from everyone recorded. Assign each a pseudonym (P1, P2, …);

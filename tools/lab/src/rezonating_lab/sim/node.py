@@ -9,9 +9,17 @@ produced in chunks of ``chunk_s`` device seconds (about 25 DATA frames per secon
 depends only on the seed and the chunk count, not on how often ``tick`` is called. Liveness and the
 2 s authentication timeout use wall time. STATUS uses device time.
 
-Placeholders: ``adc_dec`` is "take raw sample 2k + 1" (no FIR) until ``rezonating_ml`` provides the real
-filter; HELLO therefore reports ``fir_taps = 1`` and ``fir_delay = 0``, and the FIR window of output k is
-raw sample 2k + 1 alone. No pack maths lives in the lab.
+``adc_dec`` comes from ``rezonating_ml``: one :class:`rezonating_ml.dsp.Decimator2` per channel (the D-016 63-tap
+FIR + keep odd raw indices; HELLO reports ``fir_taps = 63``, ``fir_delay = 31``) and
+:func:`rezonating_ml.dsp.to_adc_dec_codes`. Device-dropped raw samples go in with ``valid = False``: the FIR holds
+the previous good value, and an output whose 63-sample window held a lost sample is ``device_dropped`` and not
+sent (PROTOCOL.md 4.3). No signal maths lives in the lab.
+
+EVENT frames (PROTOCOL.md 4.5): the simulator plays the firmware's part for the ``footstep-id`` trigger. It runs
+:func:`rezonating_ml.pipeline.build_pipeline` on ADC channel 0 (port 1) of its own ``adc_raw`` samples (with the
+device-drop mask, in blocks of ``EVENT_BATCH`` raw samples) and sends one EVENT (``stream`` 1 = ``adc_dec`` index, ``kind`` 0 trigger) per trigger onset.
+Until real firmware exists, a firmware-vs-Python compare against the simulator compares Python with Python: it
+checks the Lab's plumbing (indices, chunking, loss handling), not a second implementation.
 
 USB rules: the node cannot see the port close. When the client socket goes away inside a live session the
 connection is *detached* (``Connection.detach``): the session and the streams keep running, writes go
@@ -30,6 +38,9 @@ from pathlib import Path
 
 import numpy as np
 
+from rezonating_ml.dsp import DECIM_N_TAPS, Decimator2, to_adc_dec_codes
+from rezonating_ml.pipeline import Pipeline, build_pipeline
+
 from ..link import codec
 from ..link.codec import (
     Ack,
@@ -38,6 +49,7 @@ from ..link.codec import (
     Config,
     Data,
     Err,
+    Event,
     GetInfo,
     Hello,
     Ping,
@@ -72,11 +84,19 @@ RATE_WINDOW_S = 10.0
 VALID_GAINS = (1, 2, 4, 8, 16, 32, 64, 128)
 STREAM_TABLE: dict[int, StreamInfo] = {
     codec.STREAM_ADC_RAW: StreamInfo(0, 2, 2000, 24, codec.CLOCK_LTC6903, 0, 0),
-    codec.STREAM_ADC_DEC: StreamInfo(1, 2, 1000, 24, codec.CLOCK_LTC6903, 1, 0),  # placeholder: no FIR yet (window = 1)
+    codec.STREAM_ADC_DEC: StreamInfo(
+        1, 2, 1000, 24, codec.CLOCK_LTC6903, DECIM_N_TAPS, (DECIM_N_TAPS - 1) // 2
+    ),  # D-016 FIR (rezonating_ml)
     codec.STREAM_ACCEL: StreamInfo(2, 3, 2000, 20, codec.CLOCK_ADXL355, 0, 0),
 }
 MAX_FRAMES_PER_PACKET = {2: 509, 3: 339}
 DETACHED_BACKLOG = 10**12  # a detached USB port never drains: every DATA frame counts as a link loss
+SIM_TAP_KEY = "sim.tap"  # simulator-only SET key (sim.* is reserved in PROTOCOL.md; real firmware answers ERR 3)
+SIM_TAP_LEAD_S = 0.05  # an injected tap starts this long after the last produced sample
+EVENT_PACK_ID = "footstep-id"  # the pack whose trigger the simulator runs (EVENT frames, PROTOCOL.md 4.5)
+EVENT_KEY = "step"  # footstep-id outputs[]: the per-footstep event
+EVENT_CHANNEL = 0  # ADC channel (port 1) the pack runs on
+EVENT_BATCH = 512  # raw samples per pipeline call (about 0.25 s): the pack runs in blocks, as firmware would
 
 
 @dataclass
@@ -102,6 +122,13 @@ class SimConfig:
     control_fault: Callable[[object], bool] | None = None
     faults: FaultConfig = field(default_factory=FaultConfig)
     scenario: ScenarioConfig = field(default_factory=ScenarioConfig)
+    # ADC signal factory ``(scenario, acq_id, shorted=...) -> AdcSignal``; None = the generic footsteps.
+    # ``rzlab sim --walkers`` passes ``people.WalkerAdcSignal.factory(...)`` (simulated people walking a protocol).
+    adc_signal: Callable[..., AdcSignal] | None = None
+    # The footstep-id pack.json whose trigger produces EVENT frames; None = packs/footstep-id/pack.json of the
+    # checkout (no checkout found: no EVENT frames). Set ``events=False`` to turn EVENT frames off.
+    event_pack: Path | None = None
+    events: bool = True
 
 
 @dataclass
@@ -153,6 +180,9 @@ class Acquisition:
     k: int = 0  # chunks processed
     produced: int = 0  # raw indices assigned
     signal: AdcSignal | AccelSignal | None = None
+    decimators: list[Decimator2] = field(default_factory=list)  # ADC only: one per channel (adc_dec)
+    pipe: Pipeline | None = None  # ADC only: the footstep-id pipeline behind EVENT frames
+    pipe_buf: list[tuple[np.ndarray, np.ndarray]] = field(default_factory=list)  # raw ch0 + valid not yet run
 
     @property
     def rate_hz(self) -> float:
@@ -166,13 +196,25 @@ def _runs(mask: np.ndarray) -> list[tuple[int, int]]:
     return list(zip(np.flatnonzero(edges == 1).tolist(), np.flatnonzero(edges == -1).tolist(), strict=False))
 
 
-def decimate_placeholder(first: int, codes: np.ndarray, valid: np.ndarray) -> tuple[int, np.ndarray, np.ndarray]:
-    """PLACEHOLDER until rezonating_ml has the real FIR (HELLO says ``fir_taps = 1``, so the FIR window is one
-    sample): decimated output k is raw sample ``2k + 1`` and is lost exactly when that raw sample was lost.
-    Raw sample 2k does not matter. ``first`` is the raw index of ``codes[0]``; returns the first decimated
-    index, its codes and its validity."""
-    off = 1 - (first % 2)  # position of the first odd raw index in this block
-    return (first + off - 1) // 2, codes[off::2], valid[off::2]
+def decimate(decimators: list[Decimator2], codes: np.ndarray, valid: np.ndarray) -> tuple[int, np.ndarray, np.ndarray]:
+    """``adc_dec`` for one block of ``adc_raw`` (``codes: (n, n_ch)`` int32, ``valid: (n,)`` bool, contiguous with
+    the previous block): the first decimated index, its int32 codes ``(m, n_ch)`` and their validity ``(m,)``.
+    All the maths is ``rezonating_ml.dsp`` (Decimator2 + to_adc_dec_codes)."""
+    first = decimators[0].n_out
+    cols, ok = [], np.ones(0, dtype=bool)
+    for ch, dec in enumerate(decimators):
+        y, ok = dec.process_valid(codes[:, ch], valid)
+        cols.append(to_adc_dec_codes(y))
+    return first, np.stack(cols, axis=1) if cols else np.zeros((0, 0), np.int32), ok
+
+
+def default_event_pack() -> Path | None:
+    """``packs/footstep-id/pack.json`` in the checkout this package runs from, or None."""
+    from ..recorder.config import find_repo_root
+
+    repo = find_repo_root()
+    p = repo / "packs" / EVENT_PACK_ID / "pack.json" if repo is not None else None
+    return p if p is not None and p.is_file() else None
 
 
 def _us(t_s: float) -> int:
@@ -203,6 +245,7 @@ class SimNode:
         self.active: Connection | None = None
         self._next_status_s = 0.0
         self._acq_counter = 0
+        self.events_total = 0  # footstep-id trigger onsets (EVENT frames), since start
 
     # ------------------------------------------------------------------------------- clocks
 
@@ -265,10 +308,18 @@ class SimNode:
         acq.produced = 0
         for sid in acq.stream_ids:
             self.streams[sid].reset_acquisition()
+        faults = self.cfg.faults
         if acq is self.adc:
-            acq.signal = AdcSignal(self.scenario_cfg, acq.acq_id)
+            make_adc = self.cfg.adc_signal or AdcSignal  # --walkers: simulated people (people.WalkerAdcSignal)
+            acq.signal = make_adc(self.scenario_cfg, acq.acq_id, shorted=faults.shorted_inputs)
+            acq.decimators = [Decimator2() for _ in range(STREAM_TABLE[codec.STREAM_ADC_RAW].n_ch)]
+            pack = (self.cfg.event_pack or default_event_pack()) if self.cfg.events else None
+            acq.pipe_buf = []
+            acq.pipe = (
+                build_pipeline(pack, input_fs_hz=float(STREAM_TABLE[codec.STREAM_ADC_RAW].nominal_hz)) if pack else None
+            )
         else:
-            acq.signal = AccelSignal(self.scenario_cfg, acq.acq_id)
+            acq.signal = AccelSignal(self.scenario_cfg, acq.acq_id, gravity=not faults.no_gravity)
 
     def _release_acq(self, acq: Acquisition) -> None:
         if acq.running and not self._needed(acq):
@@ -281,6 +332,8 @@ class SimNode:
 
     def _process_chunk(self, acq: Acquisition) -> None:
         acq.k += 1
+        if acq is self.adc and self.cfg.faults.no_adc:
+            return  # the ADC never answers: no DRDY, no samples, nothing counted
         t_end_rel = acq.k * self.cfg.chunk_s
         total = math.ceil(acq.rate_hz * t_end_rel)
         first, n = acq.produced, total - acq.produced
@@ -292,6 +345,8 @@ class SimNode:
         if acq is self.adc:
             assert isinstance(acq.signal, AdcSignal)
             codes, steps = acq.signal.block(first, n, rate, (self.adc_gain[0], self.adc_gain[1]))
+            if self.cfg.faults.swap_channels:
+                codes = np.ascontiguousarray(codes[:, ::-1])
             for step in steps:
                 idx = int(round(step.t_s * rate))
                 self.truth.add(
@@ -303,6 +358,8 @@ class SimNode:
                         "sample_adc_raw": idx,
                         "sample_adc_dec": idx // 2,
                         "amp_v": round(step.amp_v, 9),
+                        **self._accel_index(acq.t0_s + step.t_s),
+                        **step.truth_fields(),
                     }
                 )
             t0 = acq.t0_s
@@ -311,13 +368,20 @@ class SimNode:
                 return _us(t0 + (first + j) / rate) + int(round(float(self._jitter.normal(0.0, 10.0))))
 
             self._feed_stream(self.streams[0], first, codes, valid, t_raw, acq.t0_s + t_end_rel)
-            dec_first, dec_codes, dec_valid = decimate_placeholder(first, codes, valid)
+            dec_first, dec_codes, dec_valid = decimate(acq.decimators, codes, valid)
             if len(dec_valid):
 
                 def t_dec(j: int, dec_first: int = dec_first, t0: float = t0, rate: float = rate) -> int:
                     return _us(t0 + (2 * (dec_first + j) + 1) / rate)
 
                 self._feed_stream(self.streams[1], dec_first, dec_codes, dec_valid, t_dec, acq.t0_s + t_end_rel)
+            if acq.pipe is not None:
+                acq.pipe_buf.append((codes[:, EVENT_CHANNEL].copy(), valid))
+                if sum(len(v) for _, v in acq.pipe_buf) >= EVENT_BATCH:
+                    x = np.concatenate([c for c, _ in acq.pipe_buf])
+                    ok = np.concatenate([v for _, v in acq.pipe_buf])
+                    acq.pipe_buf = []
+                    self._send_events(acq.pipe, x, ok)
         else:
             assert isinstance(acq.signal, AccelSignal)
             codes = acq.signal.block(first, n, rate, self.accel_range_g)
@@ -354,6 +418,19 @@ class SimNode:
                 q = min(b, p + max_frames)
                 self._send_data(st, Data(st.info.id, first + p, t_fn(p) + self.stamp_noise_us(), codes[p:q]))
 
+    def _send_events(self, pipe: Pipeline, x: np.ndarray, valid: np.ndarray) -> None:
+        """Run the footstep-id pipeline (rezonating_ml) on this block; one EVENT per trigger onset (PROTOCOL 4.5).
+        The pipeline always runs (it is the node's pack); EVENTs go out only while a connection is attached."""
+        out = pipe.process(x, valid)
+        if not out.events:
+            return
+        self.events_total += len(out.events)  # trigger onsets, sent or not
+        conn = self.active
+        for e in out.events:
+            r = float(out.ratio[e.onset - out.start_index]) if out.ratio is not None else None
+            if conn is not None:
+                conn.send(Event(codec.STREAM_ADC_DEC, e.onset, codec.EVENT_TRIGGER, pipe.pack_id, EVENT_KEY, r, ""))
+
     def _send_data(self, st: StreamState, data: Data) -> None:
         conn = self.active
         n = data.n
@@ -371,6 +448,27 @@ class SimNode:
             inj.corrupt_packets += 1
             if self.cfg.record_injections:
                 inj.corrupt.append(rng)
+
+    def _accel_index(self, t_dev_s: float) -> dict:
+        """``{"sample_accel": i}``: the accel stream's index at device time ``t_dev_s`` (empty when it is not running)."""
+        acc = self.accel
+        if not acc.running:
+            return {}
+        return {"sample_accel": int(round((t_dev_s - acc.t0_s) * acc.rate_hz))}
+
+    def inject_tap(self, ch: int) -> int:
+        """Simulator only (``SET sim.tap``): a tap on physical ADC channel ``ch`` shortly after the last produced
+        sample. Channel faults (``swap_channels``) act on it like on any other signal. Returns its raw index."""
+        acq = self.adc
+        self._advance(self.now_dev_s())
+        assert isinstance(acq.signal, AdcSignal)
+        t_s = acq.produced / acq.rate_hz + SIM_TAP_LEAD_S
+        acq.signal.add_tap(t_s, ch)
+        idx = int(math.ceil(t_s * acq.rate_hz))
+        self.truth.add(
+            {"acq": acq.acq_id, "kind": "tap", "ch": ch, "t_dev_us": _us(acq.t0_s + t_s), "sample_adc_raw": idx}
+        )
+        return idx
 
     def rate_mhz(self, st: StreamState) -> int:
         h = st.rate_hist
@@ -679,6 +777,13 @@ class Connection:
             if not (isinstance(value, bytes) and len(value) == 16):
                 return self._err(seq, codec.ERR_BAD_VALUE, "16-byte blob expected")
             node.auth_key = value
+        elif key == SIM_TAP_KEY:
+            if not (isinstance(value, int) and not isinstance(value, bool) and value in (0, 1)):
+                return self._err(seq, codec.ERR_BAD_VALUE, "sim.tap must be 0 or 1")
+            if not node.adc.running:
+                return self._err(seq, codec.ERR_BUSY, "ADC acquisition not running")
+            node.inject_tap(value)
+            return self.send(Ack(seq))  # no CONFIG: nothing in it changed
         elif key == "status.period_ms":
             if not (isinstance(value, int) and not isinstance(value, bool) and 200 <= value <= 10000):
                 return self._err(seq, codec.ERR_BAD_VALUE, "status.period_ms must be 200 to 10000")

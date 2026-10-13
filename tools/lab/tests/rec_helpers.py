@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 from rezonating_lab.recorder.config import LabConfig, find_repo_root
+from rezonating_lab.recorder.recording import Recorder
 from rezonating_lab.server.app import create_app
 from rezonating_lab.server.device import DeviceManager
 from rezonating_lab.sim.node import SimConfig
@@ -59,8 +60,10 @@ def make_cfg(tmp_path: Path, **over) -> LabConfig:
 
 
 @contextmanager
-def lab(tmp_path: Path, sim_cfg: SimConfig | None = None, **cfg_over):
-    """``(client, sim, cfg)``: the app on a TestClient, connected to a fresh simulator."""
+def lab(tmp_path: Path, sim_cfg: SimConfig | None = None, recorder_opts: dict | None = None, **cfg_over):
+    """``(client, sim, cfg)``: the app on a TestClient, connected to a fresh simulator.
+
+    ``recorder_opts`` are keyword arguments of :class:`Recorder` (e.g. ``timed_scale``)."""
     cfg = make_cfg(tmp_path, **cfg_over)
     sim_cfg = sim_cfg or SimConfig(speed=10.0)
     if sim_cfg.max_backlog_bytes == SimConfig().max_backlog_bytes:
@@ -68,9 +71,9 @@ def lab(tmp_path: Path, sim_cfg: SimConfig | None = None, **cfg_over):
         # simulated 256 kB transmit queue and show up as link loss that has nothing to do with the recorder.
         sim_cfg = dataclasses.replace(sim_cfg, max_backlog_bytes=16_000_000)
     with SimThread(sim_cfg) as sim:
-        app = create_app(
-            PORT, manager=DeviceManager(embedded_sim=False), static_dir=tmp_path / "nostatic", lab_config=cfg
-        )
+        mgr = DeviceManager(embedded_sim=False)
+        rec = Recorder(mgr, cfg, **recorder_opts) if recorder_opts else None
+        app = create_app(PORT, manager=mgr, static_dir=tmp_path / "nostatic", lab_config=cfg, recorder=rec)
         with TestClient(app, base_url=f"http://127.0.0.1:{PORT}") as client:
             r = client.post("/api/connect", json={"kind": "tcp", "host": "127.0.0.1", "port": sim.port})
             assert r.status_code == 200, r.text

@@ -232,6 +232,10 @@ The window fields reset when `START` turns sending on. Before any `START`, they 
 
 ### 4.5 EVENT (`0x04`)
 
+The simulator sends one EVENT per `footstep-id` trigger onset (`stream` 1, `sample` = the `adc_dec` index,
+`kind` 0, `pack` `footstep-id`, `key` `step`, `value` = the STA/LTA ratio at the onset, `label` empty), computed
+with `rezonating_ml` on its own `adc_raw` channel 0 (README, phase 1).
+
 | Field | Type | Notes |
 | --- | --- | --- |
 | stream | u8 | stream the event refers to |
@@ -287,6 +291,8 @@ The window fields reset when `START` turns sending on. Before any `START`, they 
 | `status.period_ms` | i32 | 200 to 10000, default 1000 |
 
 A `wifi.*` or `pair.key` SET over TCP gets `ERR 6`.
+
+Keys starting with `sim.` (e.g. `sim.tap`) are reserved for the simulator (`rzlab sim`); real firmware never implements them and answers `ERR 3`.
 
 **Error rules** (the firmware must match the simulator):
 - A known command whose payload is too short gets `ERR 2`.

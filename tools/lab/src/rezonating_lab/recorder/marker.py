@@ -32,6 +32,8 @@ import time
 from collections.abc import Callable
 from typing import Protocol
 
+from .config import HOST_WITH_PORT, IPV6_REFUSED, host_with_port, is_ipv6
+
 TOKEN_BYTES = 20  # 160 bits
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 MAX_CLIENTS = 4
@@ -435,7 +437,7 @@ def lan_addresses() -> list[str]:
     return found
 
 
-WILDCARD_BINDS = ("0.0.0.0", "::", "")
+WILDCARD_BINDS = ("0.0.0.0", "")  # IPv4 only: an IPv6 bind is refused (config.is_ipv6)
 LOOPBACK = "127.0.0.1"
 
 
@@ -474,6 +476,10 @@ def choose_bind(configured_bind: str, requested: str | None) -> str:
     Raises :class:`MarkerHostError` for any other ``requested``. ``0.0.0.0`` can only come from the config."""
     if requested is None or requested == "":
         return resolve_bind(configured_bind)
+    if host_with_port(requested):
+        raise MarkerHostError(f"marker_host: {HOST_WITH_PORT}")
+    if is_ipv6(requested):
+        raise MarkerHostError(f"marker_host: {IPV6_REFUSED}")
     default = resolve_bind(configured_bind)
     allowed = {*lan_addresses(), LOOPBACK}
     if not is_wildcard(default):

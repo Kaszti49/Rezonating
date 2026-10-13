@@ -25,7 +25,13 @@ from ..recorder.config import LabConfig, load_config
 from ..recorder.recording import RecordError, Recorder
 from .device import ConnectSpec, DeviceError, DeviceManager, stream_mask_of
 from .ports import list_serial_ports
+from .bench_routes import register_bench_routes
+from .dataset_routes import register_dataset_routes
+from .experiment_routes import register_experiment_routes
 from .record_routes import register_record_routes
+from .rigcheck import RigChecks
+from .review_routes import register_review_routes
+from .rigcheck_routes import register_rigcheck_routes
 from .security import LoopbackGuard
 
 STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
@@ -180,6 +186,8 @@ def create_app(
     mgr = manager or DeviceManager(embedded_sim=embedded_sim)
     cfg = lab_config or (recorder.cfg if recorder is not None else load_config())
     rec = recorder or Recorder(mgr, cfg)
+    rig = RigChecks(mgr, cfg, recording=lambda: rec.active)
+    rec.rig_running = lambda: rig.running
     hub = Hub()
 
     async def broadcaster() -> None:
@@ -205,6 +213,8 @@ def create_app(
         mgr.set_emit(emit)
         mgr.start()
         mgr.publish(rec.status())
+        mgr.publish(rec.runner_event())
+        mgr.publish(rig.view())
         task = loop.create_task(broadcaster())
         auto: asyncio.Task | None = None
         if initial_connect is not None:
@@ -220,6 +230,7 @@ def create_app(
             task.cancel()
             if auto is not None:
                 auto.cancel()
+            await asyncio.to_thread(rig.close)
             await asyncio.to_thread(rec.close)  # finish a running recording before the link goes away
             await asyncio.to_thread(mgr.close)
 
@@ -232,6 +243,7 @@ def create_app(
     )
     app.state.manager = mgr
     app.state.recorder = rec
+    app.state.rigcheck = rig
     app.state.lab_config = cfg
     app.state.hub = hub
     app.state.static_dir = static_dir
@@ -266,6 +278,10 @@ def create_app(
         if rec.active:
             raise RecordError(
                 "recording_active", f"Cannot {what} while a recording runs. Stop the recording first.", http=409
+            )
+        if rig.running:
+            raise DeviceError(
+                "rigcheck_running", f"Cannot {what} while rig checks run. Wait for them or cancel them.", http=409
             )
 
     @app.get("/api/health")
@@ -454,6 +470,11 @@ def create_app(
         return _clean_json(await compute(work))
 
     register_record_routes(app, mgr, rec, cfg)
+    register_rigcheck_routes(app, rig)
+    register_review_routes(app, cfg)
+    register_dataset_routes(app, cfg)
+    register_bench_routes(app, cfg, mgr)
+    register_experiment_routes(app, cfg)
 
     # ----------------------------------------------------------------------------------- WebSocket
 
@@ -536,7 +557,7 @@ def create_app(
 
 async def _send_snapshot(websocket: WebSocket, mgr: DeviceManager) -> None:
     st = mgr.state()
-    for kind in ("connection", "hello", "config", "status", "recording"):
+    for kind in ("connection", "hello", "config", "status", "recording", "runner", "rigcheck"):
         if kind in st:
             await websocket.send_text(json.dumps(st[kind], separators=(",", ":"), allow_nan=False))
 

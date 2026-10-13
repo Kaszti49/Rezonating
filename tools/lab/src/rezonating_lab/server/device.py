@@ -34,13 +34,14 @@ from ..core.timing import ClockMap
 from ..core.view import channel_levels
 from ..link import codec
 from ..link.client import LinkClient
-from ..link.codec import Ack, Config, Data, Err, Hello, Log, Ping, Pong, Set, Start, Status, Stop
+from ..link.codec import Ack, Config, Data, Err, Event, Hello, Log, Ping, Pong, Set, Start, Status, Stop
 from ..link.transport_serial import SerialTransport
 from ..link.transport_tcp import DEFAULT_PORT, TcpTransport, TransportClosed, parse_host_port
 
 LOOP_POLL_S = 0.02  # how long one read waits for bytes
 PING_PERIOD_S = 0.5  # liveness PING (PROTOCOL.md section 1 asks for at least 1 Hz)
 STATUS_EVENT_PERIOD_S = 1.0
+NODE_EVENTS_KEPT = 100_000
 HANDSHAKE_TIMEOUT_S = 3.0
 START_TIMEOUT_S = 2.0
 STOP_TIMEOUT_S = 3.0
@@ -59,7 +60,17 @@ CLOCK_NAMES = {codec.CLOCK_LTC6903: "ltc6903", codec.CLOCK_ADXL355: "adxl355", c
 SERIAL_URL_RE = re.compile(r"^(COM\d+|/dev/[\w./-]+|socket://[\w.\-\[\]:]+)$", re.IGNORECASE)
 
 Emit = Callable[[dict], None]
-CACHED_EVENTS = ("connection", "hello", "config", "status", "recording")  # the snapshot a new client gets
+DataListener = Callable[[Data], None]
+SIM_TAP_KEY = "sim.tap"  # simulator-only SET key (sim/node.py); the rig check's tap test uses it on a simulator
+CACHED_EVENTS = (
+    "connection",
+    "hello",
+    "config",
+    "status",
+    "recording",
+    "runner",
+    "rigcheck",
+)  # the snapshot a new client gets
 
 
 class RecordTap(Protocol):
@@ -215,7 +226,11 @@ class DeviceManager:
         self._embedded: Any = None
         self._embedded_started_here = False
         self.rings: dict[int, SampleRing] = {}
+        # EVENT frames from the node (PROTOCOL.md 4.5), newest last: (adc_raw ring epoch at arrival, Event). The bench's
+        # compare mode reads them; the epoch tells events of an earlier acquisition (restarted indices) apart.
+        self.node_events: deque[tuple[int, Event]] = deque(maxlen=NODE_EVENTS_KEPT)
         self._tap: RecordTap | None = None
+        self._data_listeners: tuple[DataListener, ...] = ()  # rig checks; called on the worker thread
         self.clock_map = ClockMap()  # host clock -> node clock, from every PING/PONG pair of this connection
 
     # --------------------------------------------------------------------------------- lifecycle
@@ -278,6 +293,23 @@ class DeviceManager:
     def record_stop(self, mask: int) -> concurrent.futures.Future:
         """STOP ``mask``, wait for the drain, detach the tap. Resolves to ``{"snapshot": ..., "stop_error": ...}``."""
         return self.submit(lambda: self._do_record_stop(mask))
+
+    def add_data_listener(self, fn: DataListener) -> None:
+        """Call ``fn(Data)`` on the worker thread for every DATA frame (keep it short; it must not block)."""
+        with self._lock:
+            self._data_listeners = (*self._data_listeners, fn)
+
+    def remove_data_listener(self, fn: DataListener) -> None:
+        with self._lock:
+            self._data_listeners = tuple(f for f in self._data_listeners if f is not fn)
+
+    def stream_running(self, stream_id: int) -> bool:
+        sm = self._mon.streams.get(stream_id)
+        return bool(sm is not None and sm.running)
+
+    def sim_tap(self, ch: int) -> concurrent.futures.Future:
+        """Simulator only: ``SET sim.tap ch`` (inject a tap on ADC channel ``ch``). A real node answers ERR."""
+        return self.submit(lambda: self._do_sim_tap(ch))
 
     @property
     def recording(self) -> bool:
@@ -489,6 +521,11 @@ class DeviceManager:
                 if ring is not None:
                     ring.write(msg.first_sample, msg.samples)
                 self._tap_call("on_data", msg)
+                for fn in self._data_listeners:
+                    try:
+                        fn(msg)
+                    except Exception as exc:  # noqa: BLE001 - a broken listener must not kill the link thread
+                        self.host_log(f"data listener error: {exc!r}", 1)
             elif isinstance(msg, Pong):
                 self.clock_map.add(msg.host_t_us, self._host_us(), msg.t_dev_us)
             elif isinstance(msg, Status):
@@ -511,6 +548,9 @@ class DeviceManager:
                 )
             elif isinstance(msg, Config):
                 self._publish(self._config_event())
+            elif isinstance(msg, Event):
+                ring = self.rings.get(0)
+                self.node_events.append((ring.epoch if ring is not None else -1, msg))
         self._tick()
 
     def _tap_call(self, method: str, *args: Any) -> None:
@@ -608,6 +648,7 @@ class DeviceManager:
         if self._client is not None:
             self._do_disconnect(polite=True)
         self._spec = spec
+        self.node_events.clear()
         self._set_state("connecting")
         self._mon = SessionMonitor()
         self.clock_map = ClockMap()
@@ -870,6 +911,16 @@ class DeviceManager:
         while self._mon.config is before and self._wall() < deadline:
             self._handle(client.poll(LOOP_POLL_S))
         return {"set": key, "value": value}
+
+    def _do_sim_tap(self, ch: int) -> dict:
+        client = self._require_connected()
+        seq = client.send(Set(SIM_TAP_KEY, ch))
+        reply = self._wait_reply(seq, SET_TIMEOUT_S)
+        if isinstance(reply, Err):
+            raise self._err_to_device_error(reply, SIM_TAP_KEY, SIM_TAP_KEY)
+        if reply is None:
+            raise DeviceError("timeout", f"no answer to SET {SIM_TAP_KEY} within 2 s", http=504)
+        return {"set": SIM_TAP_KEY, "value": ch}
 
     # ------------------------------------------------------------------------------- event bodies
 

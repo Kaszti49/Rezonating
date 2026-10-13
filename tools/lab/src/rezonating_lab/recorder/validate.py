@@ -10,6 +10,12 @@ For each ``<root>/<session>/`` folder:
   inside the file (``rezonating_ml.io.check_pair``);
 * the streams of a session agree on the node, the protocol and the session name.
 
+``<sidecar>.json.bak`` (the previous version a Review save keeps) is allowed next to its sidecar.
+
+With ``repo_root`` (the checkout, for ``docs/protocols/``) a label whose text is not in the session protocol's fixed
+list (decision of 2026-10-13; the shared ``noise``/``other``/``bad`` only, for a protocol without a YAML) is a
+**warning**: older sessions may hold such labels, and the Review page needs them retagged before it can save.
+
 An empty folder is only a warning: it is a reservation that no recording ever used. ``sidecars_only`` checks a folder
 of sidecars without WAV files (the repository's ``data/``).
 """
@@ -20,6 +26,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from rezonating_ml import io
+
+from .protocol import SHARED_LABELS, ProtocolError, load_named
 
 STREAM_BY_SUFFIX = {"adc": "adc_raw", "accel": "accel"}  # D-020: adc_dec is not recorded
 
@@ -37,7 +45,51 @@ class SessionReport:
         return not self.problems
 
 
-def validate_session_folder(folder: Path, schema_path: Path, sidecars_only: bool = False) -> SessionReport:
+LABEL_TAG_KEYS = ("label", "person", "pace", "shoes", "src")
+
+
+def labels_out_of_step(a: list, b: list) -> str | None:
+    """Why two streams' label lists are not in step (count, or tags in order), or None."""
+    if len(a) != len(b):
+        return f"{len(a)} and {len(b)} labels"
+    for n, (x, y) in enumerate(zip(a, b, strict=True)):
+        if not isinstance(x, dict) or not isinstance(y, dict) or any(x.get(k) != y.get(k) for k in LABEL_TAG_KEYS):
+            return f"label {n} has other tags"
+    return None
+
+
+def protocol_label_list(repo_root: Path, protocol: object) -> tuple[str, ...] | None:
+    """The fixed label list of ``protocol`` (its YAML's ``labels`` plus the shared ones), only the shared ones when it
+    has no usable YAML, ``None`` when the sidecar names no protocol."""
+    if not isinstance(protocol, str):
+        return None
+    try:
+        return load_named(repo_root, protocol).labels
+    except ProtocolError:
+        return SHARED_LABELS
+
+
+def off_list_warning(sidecar: str, labels: list, allowed: tuple[str, ...] | None, protocol: object) -> str | None:
+    """A warning naming the labels of one sidecar that are not in ``allowed``, or None."""
+    if allowed is None:
+        return None
+    bad: dict[str, int] = {}
+    for lab in labels:
+        text = lab.get("label") if isinstance(lab, dict) else None
+        if text not in allowed:
+            bad[str(text)] = bad.get(str(text), 0) + 1
+    if not bad:
+        return None
+    which = ", ".join(f"{t!r} ({n})" for t, n in sorted(bad.items()))
+    return (
+        f"{sidecar}: label(s) not in protocol {protocol}'s list ({', '.join(allowed)}): {which}; "
+        "retag them on the Review page before saving"
+    )
+
+
+def validate_session_folder(
+    folder: Path, schema_path: Path, sidecars_only: bool = False, repo_root: Path | None = None
+) -> SessionReport:
     name = folder.name
     rep = SessionReport(name, folder)
     if not io.SESSION_RE.match(name):
@@ -66,6 +118,15 @@ def validate_session_folder(folder: Path, schema_path: Path, sidecars_only: bool
             rep.problems.append(f"{js.name}: cannot read: {exc}")
             continue
         docs[stream] = doc
+        if repo_root is not None:
+            warn = off_list_warning(
+                js.name,
+                doc.get("labels") or [],
+                protocol_label_list(repo_root, doc.get("protocol")),
+                doc.get("protocol"),
+            )
+            if warn:
+                rep.warnings.append(warn)
         if sidecars_only or not has_wav:
             problems = [f"sidecar: {m}" for m in io.validate_sidecar(doc, schema_path)]
         else:
@@ -75,7 +136,10 @@ def validate_session_folder(folder: Path, schema_path: Path, sidecars_only: bool
             rep.problems.append(f"{js.name}: session is {doc.get('session')!r}, the folder is {name!r}")
         if doc.get("schema") == 1 and doc.get("stream") != stream:
             rep.problems.append(f"{js.name}: stream is {doc.get('stream')!r}, the file name says {stream!r}")
+    backups = {f"{n}.bak" for n in expected if n.endswith(".json")}  # the Review page's previous sidecar version
     for p in files:
+        if p.name in backups and p.is_file():
+            continue
         if p.name not in expected:
             kind = "recording" if p.suffix.lower() in (".wav", ".json") else "file"
             rep.problems.append(f"{p.name}: unexpected {kind} (only <session>.adc|accel.wav|json belong here)")
@@ -86,19 +150,30 @@ def validate_session_folder(folder: Path, schema_path: Path, sidecars_only: bool
         for key in ("node", "protocol", "session"):
             if a.get(key) != b.get(key):
                 rep.problems.append(f"the streams disagree on {key}: {a.get(key)!r} and {b.get(key)!r}")
+        why = labels_out_of_step(a.get("labels") or [], b.get("labels") or [])
+        if why:
+            rep.warnings.append(
+                f"the two streams' label lists differ ({why}); save the session once on the Review page to sync them"
+            )
     return rep
 
 
-def validate_root(root: Path, schema_path: Path, sidecars_only: bool = False) -> list[SessionReport]:
-    return [validate_session_folder(p, schema_path, sidecars_only) for p in sorted(root.iterdir()) if p.is_dir()]
+def validate_root(
+    root: Path, schema_path: Path, sidecars_only: bool = False, repo_root: Path | None = None
+) -> list[SessionReport]:
+    return [
+        validate_session_folder(p, schema_path, sidecars_only, repo_root) for p in sorted(root.iterdir()) if p.is_dir()
+    ]
 
 
-def run_validate(root: Path, schema_path: Path, sidecars_only: bool = False, out=print) -> int:
+def run_validate(
+    root: Path, schema_path: Path, sidecars_only: bool = False, out=print, repo_root: Path | None = None
+) -> int:
     """Print one line per session and a summary. Returns 0 when every session is fine, 1 otherwise, 2 for a bad root."""
     if not root.is_dir():
         out(f"rzlab validate: {root} is not a folder")
         return 2
-    reports = validate_root(root, schema_path, sidecars_only)
+    reports = validate_root(root, schema_path, sidecars_only, repo_root)
     stray = [p for p in sorted(root.iterdir()) if p.is_file() and p.suffix.lower() == ".wav"]
     failed = 0
     for r in reports:

@@ -1,0 +1,52 @@
+# Machine-readable walk-pass-v1 (the human version is walk-pass-v1.md; keep the two in step).
+# Read by the Lab's protocol runner (tools/lab, rezonating_lab.recorder.protocol). Format:
+#
+#   steps: a list run top to bottom. Each step is one of
+#     kind: timed   -> one label lasting duration_s (a countdown on the Record page)
+#     kind: passes  -> `passes` labels, one per pass (Space or the phone marks start and end)
+#   for_each_person: a block of steps repeated for every person of the session, in the form's order.
+#   fills: the label fields the step sets on every label it makes. Allowed keys: person, pace, shoes.
+#     person: "$person" (only inside for_each_person) -> the session's pseudonym P1, P2, ...
+#     pace: slow | normal | fast        shoes: true | false
+#   label: the label text (lower case, as in the sidecar's labels[].label).
+#   labels: the protocol's fixed list of label texts (required). Every step's label must be in it; the lab adds
+#     the shared list noise, other, bad to every protocol. Live marks (Space, phone), the runner, the Review page
+#     and the label form accept only these labels; anything else is refused (HTTP 422).
+format: 1
+protocol: walk-pass-v1
+title: Walk passes for footstep-id
+pack: footstep-id
+doc: walk-pass-v1.md
+labels: [silence, walk]
+steps:
+  - id: silence
+    kind: timed
+    label: silence
+    duration_s: 60
+    fills: {}
+    instructions: Nobody moves or walks. 60 s of silence at the start of every session.
+  - for_each_person:
+      - id: normal-shoes-on
+        kind: passes
+        label: walk
+        passes: 50
+        fills: {person: $person, pace: normal, shoes: true}
+        instructions: Normal pace, shoes on. Walk the marked 4 m line past the sensors, stop, wait 3 s.
+      - id: normal-shoes-off
+        kind: passes
+        label: walk
+        passes: 20
+        fills: {person: $person, pace: normal, shoes: false}
+        instructions: Normal pace, shoes off. Walk the marked 4 m line past the sensors, stop, wait 3 s.
+      - id: slow-shoes-on
+        kind: passes
+        label: walk
+        passes: 10
+        fills: {person: $person, pace: slow, shoes: true}
+        instructions: Slow pace, shoes on. Walk the marked 4 m line past the sensors, stop, wait 3 s.
+      - id: fast-shoes-on
+        kind: passes
+        label: walk
+        passes: 10
+        fills: {person: $person, pace: fast, shoes: true}
+        instructions: Fast pace, shoes on. Walk the marked 4 m line past the sensors, stop, wait 3 s.

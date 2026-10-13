@@ -11,11 +11,13 @@ import type {
   LogEvent,
   Mark,
   RecordingEvent,
+  RunnerView,
   StatusEvent,
   StreamResetEvent,
   Toast,
   UnitName,
 } from './types';
+import type { RigCheckView } from './rigcheck';
 
 export type WsState = 'connecting' | 'open' | 'down';
 export type Theme = 'dark' | 'light';
@@ -123,11 +125,19 @@ class AppState {
   healthVersion = $state(0);
   /** Name of the running command ("connect", "start", ...) or null. */
   busy = $state<string | null>(null);
+  /** The Review page holds label edits that are not saved; the rail and Back ask before leaving it. */
+  reviewDirty = $state(false);
 
   /** Latest `recording` event (WEB_API.md 9.4); null until the server sent one. */
   recording = $state.raw<RecordingEvent | null>(null);
   /** Marks of the running recording, in order of start (from GET /api/record/labels and `label` events). */
   marks = $state.raw<Mark[]>([]);
+  /** Latest protocol runner view (WEB_API.md section 10): from the `runner` event or a runner command's answer. */
+  runner = $state.raw<RunnerView | null>(null);
+  /** Latest rig check view (WEB_API.md section 11), from the `rigcheck` event or a rig check command's answer. */
+  rigcheck = $state.raw<RigCheckView | null>(null);
+  /** `performance.now()` when `runner` arrived: the countdown is shown relative to it (no browser wall clock). */
+  runnerAt = 0;
   /** True while this page asked for the stop: the result is then shown from the stop answer, not as a surprise. */
   stopRequested = false;
 
@@ -315,6 +325,12 @@ class AppState {
       case 'label':
         this.applyLabel(m as LabelEvent);
         break;
+      case 'runner':
+        this.applyRunner(m as RunnerView);
+        break;
+      case 'rigcheck':
+        this.rigcheck = m as RigCheckView;
+        break;
       case 'stream_reset': {
         const r = m as StreamResetEvent;
         this.rings.get(r.stream)?.reset(r.epoch & 0xffff);
@@ -350,6 +366,16 @@ class AppState {
       this.toast(`Recording ${r.last.session} ${why}. The result is on the Record page.`, r.last.ok ? 'info' : 'error');
     }
     if (r.state === 'idle') this.stopRequested = false;
+  }
+
+  applyRunner(v: RunnerView): void {
+    this.runnerAt = performance.now();
+    this.runner = v;
+  }
+
+  /** True while the protocol runner sets the labels (marks take their tags from its current step). */
+  get runnerOn(): boolean {
+    return this.runner?.active === true;
   }
 
   applyLabel(e: Pick<LabelEvent, 'action' | 'mark'>): void {

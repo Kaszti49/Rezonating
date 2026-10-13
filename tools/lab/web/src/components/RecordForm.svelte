@@ -4,7 +4,7 @@
   import { api, ApiError } from '../lib/api';
   import { app, chName } from '../lib/store.svelte';
   import { chanKey, MAX_PERSONS, recForm as f } from '../lib/recform.svelte';
-  import type { ChannelDefaults, RecordOptions } from '../lib/types';
+  import type { ChannelDefaults, ProtocolInfo, RecordOptions } from '../lib/types';
 
   let { options }: { options: RecordOptions } = $props();
 
@@ -26,6 +26,44 @@
   $effect(() => {
     f.sync(options);
   });
+
+  // The chosen protocol's steps, for the line under the picker (and to show a broken protocol file before Start).
+  let proto = $state.raw<ProtocolInfo | null>(null);
+  let protoErr = $state('');
+  $effect(() => {
+    const name = f.protocol;
+    if (!name) return;
+    let gone = false;
+    api.protocol(name).then(
+      (p) => {
+        if (gone) return;
+        proto = p;
+        protoErr = '';
+      },
+      (e: unknown) => {
+        if (gone) return;
+        proto = null;
+        protoErr = e instanceof ApiError ? e.message : String(e);
+      },
+    );
+    return () => {
+      gone = true;
+    };
+  });
+
+  function protoSummary(p: ProtocolInfo): string {
+    const parts: string[] = [];
+    for (const b of p.blocks) {
+      for (const s of b.steps) {
+        if (s.kind === 'timed') parts.push(`${s.label} ${s.duration_s} s`);
+      }
+      if (b.for_each_person) {
+        const n = b.steps.reduce((a, s) => a + (s.kind === 'passes' ? s.passes : 0), 0);
+        parts.push(`per person: ${b.steps.length} steps, ${n} passes`);
+      }
+    }
+    return parts.join(' · ');
+  }
 
   function addPerson(): void {
     // Accept "p3" as "P3". A refused entry is cleared, never shown back (it may be a real name).
@@ -119,13 +157,22 @@
     </div>
 
     <div class="row">
-      <label class="field" style="min-width:180px">
-        <span>Protocol</span>
-        <select bind:value={f.protocol} aria-invalid={!!f.errors.protocol}>
+      <div class="field" style="min-width:180px; max-width:340px">
+        <span id="rz-protocol-label">Protocol</span>
+        <select bind:value={f.protocol} aria-labelledby="rz-protocol-label" aria-invalid={!!f.errors.protocol}>
           {#each options.protocols as p (p)}<option value={p}>{p}</option>{/each}
         </select>
         {@render err('protocol')}
-      </label>
+        <label style="display:flex; gap:6px; align-items:center; margin-top:4px">
+          <input type="checkbox" bind:checked={f.runner} /> run it step by step
+        </label>
+        {#if proto}
+          <span class="muted" title={proto.title}>{protoSummary(proto)}</span>
+        {:else if protoErr}
+          <div class="field-err" role="alert">{protoErr}</div>
+        {/if}
+        {@render err('runner')}
+      </div>
       <div class="field" style="flex:1; min-width:260px">
         <span>Persons (pseudonyms only: P1, P2 …; at most {MAX_PERSONS})</span>
         <div class="persons">

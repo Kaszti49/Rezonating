@@ -105,7 +105,9 @@ def test_valid_form_and_duplicates():
 
 def test_protocols_listed_from_docs():
     names = list_protocols(REPO)
-    assert names[0] == "walk-pass-v1" and "kill-test-phone" in names
+    assert names[0] == "walk-pass-v1"
+    assert "kill-test-phone" not in names  # the kill test was dropped: only machine-readable protocols are offered
+    assert (REPO / "docs" / "protocols" / "kill-test-phone.md").is_file()  # its write-up stays in docs
     assert list_protocols(None) == ["walk-pass-v1"]
 
 

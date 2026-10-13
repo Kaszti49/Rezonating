@@ -3,6 +3,7 @@
   import NodeInfo from './NodeInfo.svelte';
   import MiniGraph from './MiniGraph.svelte';
   import LogConsole from './LogConsole.svelte';
+  import RigChecks from './RigChecks.svelte';
   import { app } from '../lib/store.svelte';
   import { fmtBytes, fmtFixed } from '../lib/format';
 
@@ -96,5 +97,7 @@
     />
   </div>
 {/key}
+
+<RigChecks />
 
 <LogConsole />
