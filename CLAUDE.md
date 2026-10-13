@@ -43,14 +43,14 @@ routes work to specialists, checks results and escalates. Full description:
 
 | Work | Agent | Model · effort |
 | --- | --- | --- |
-| `firmware/` C, build errors, on-device pack code | `firmware-dev` | sonnet · high |
-| `ml/`, `tools/`, data manifests, test vectors | `ml-dev` | sonnet · high |
-| Sources, datasheets, prices, papers, datasets | `researcher` | sonnet · medium |
-| Docs, READMEs, OTIO texts | `writer` | sonnet · medium |
-| Vault records, daily lines, Handoff, Session log | `vault-keeper` | haiku |
-| Checking any of the above | `verifier` | opus · high |
-| Failed twice, or a hard root cause (L3) | `deep-engineer` | opus · xhigh |
-| Improving the agents (`/retro`) | `curator` | opus · high |
+| `firmware/` C, build errors, on-device pack code | `firmware-dev` | Opus 5.5 · high |
+| `ml/`, `tools/`, data manifests, test vectors | `ml-dev` | Opus 5.5 · high |
+| Sources, datasheets, prices, papers, datasets | `researcher` | Sonnet 5.5 · medium |
+| Docs, READMEs, OTIO texts | `writer` | Sonnet 5.5 · medium |
+| Vault records, daily lines, Handoff, Session log | `vault-keeper` | Haiku 5.5 |
+| Checking any of the above | `verifier` | Opus 5.5 · high |
+| Failed twice, or a hard root cause (L3) | `deep-engineer` | Opus 5.5 · xhigh |
+| Improving the agents (`/retro`) | `curator` | Opus 5.5 · high |
 
 **Do it yourself** (no subagent) for: questions you can answer from what's loaded, planning and
 decision discussions, edits to one or two notes, anything that needs back-and-forth with a person.

@@ -1,7 +1,7 @@
 ---
 name: ml-dev
 description: Python signal processing and ML for packs (dataset loaders, segmentation, features, training, evaluation, export, test vectors, tools/ scripts). Use for any change under ml/ or tools/, or data/ manifests.
-model: sonnet
+model: claude-opus-5-5
 effort: high
 maxTurns: 60
 disallowedTools: Agent

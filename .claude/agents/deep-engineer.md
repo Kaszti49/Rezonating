@@ -1,7 +1,7 @@
 ---
 name: deep-engineer
 description: Escalation engineer (L3). Use only when firmware-dev or ml-dev failed the gate or the verifier twice, or for a hard root-cause investigation across firmware and ml. Give it the full history of what was tried.
-model: opus
+model: claude-opus-5-5
 effort: xhigh
 maxTurns: 80
 disallowedTools: Agent

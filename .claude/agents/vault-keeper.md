@@ -1,7 +1,7 @@
 ---
 name: vault-keeper
 description: Obsidian vault records (create or update work items, parts, orders, experiments, decision proposals, daily and weekly notes, inbox triage, broken links, Handoff and Session log when asked). Use for routine note edits that follow the templates.
-model: haiku
+model: claude-haiku-5-5
 maxTurns: 30
 disallowedTools: Agent
 skills:

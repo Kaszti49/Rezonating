@@ -1,7 +1,7 @@
 ---
 name: writer
 description: Documentation and prose (READMEs, docs/ protocols and guides, OTIO competition texts, project descriptions, explainers for the team). Use when the output is text people will read, not code or a vault record.
-model: sonnet
+model: claude-sonnet-5-5
 effort: medium
 maxTurns: 30
 disallowedTools: Agent

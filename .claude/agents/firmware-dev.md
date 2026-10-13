@@ -1,7 +1,7 @@
 ---
 name: firmware-dev
 description: ESP32-S3 firmware in C/C++ on ESP-IDF v6 (drivers, acquisition, storage, trigger, packs loader, build fixes). Use for any change under firmware/ or a pack's on-device side. Not for hardware purchasing or research.
-model: sonnet
+model: claude-opus-5-5
 effort: high
 maxTurns: 60
 disallowedTools: Agent

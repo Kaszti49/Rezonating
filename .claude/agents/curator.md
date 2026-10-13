@@ -1,7 +1,7 @@
 ---
 name: curator
 description: Improves the agent system itself. Use from the /retro skill (weekly) or when the same flag keeps coming back. Reads the ledger, runs and agent files; writes a retro note and at most three change proposals. Never edits agent configuration.
-model: opus
+model: claude-opus-5-5
 effort: high
 maxTurns: 40
 disallowedTools: Agent

@@ -1,7 +1,7 @@
 ---
 name: verifier
 description: Independent reviewer (L1). Use after every code, schema or pack change and after research that feeds a decision or an order. Give it the task, its "Done when", the agent that did the work and the changed files. It changes nothing and returns a verdict.
-model: opus
+model: claude-opus-5-5
 effort: high
 maxTurns: 40
 tools: Read, Grep, Glob, Bash, WebFetch

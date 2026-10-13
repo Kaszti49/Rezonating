@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Web and datasheet research (parts, suppliers and prices in the EU, datasheet values, papers, datasets, competitor products). Writes research notes in 60 Research. Use when an answer needs sources.
-model: sonnet
+model: claude-sonnet-5-5
 effort: medium
 maxTurns: 40
 disallowedTools: Agent, Bash
