@@ -4,6 +4,11 @@ firmware/sdkconfig
 firmware/sdkconfig.old
 firmware/managed_components/
 firmware/dependencies.lock
+firmware/bringup-esp32/build/
+firmware/bringup-esp32/sdkconfig
+firmware/bringup-esp32/sdkconfig.old
+firmware/bringup-esp32/managed_components/
+firmware/bringup-esp32/dependencies.lock
 
 # Python
 __pycache__/
