@@ -24,4 +24,6 @@ Kaszti asked Claude to write this on 2026-10-13 (Lab phases 5 and 7), ahead of [
 
 **Affects:** `ml/src/rezonating_ml/` (new pipeline, trigger, features, baseline, test vectors), the Lab simulator's `adc_dec` (now the real decimator), [[Lab 5 Pack bench]], [[Lab 7 Experiments page]], [[Footstep segmentation with STA-LTA]], [[Baseline person-ID classifier]]. The firmware side (the same decimator, STA/LTA and features in C) isn't written yet: until it is, one feature implementation in two languages is not met, and the test vectors are what the firmware must match. Accept in Obsidian if this is right.
 
+**Clarification (Kaszti, 2026-10-13):** a pack `dsp` entry `highpass_hz` / `lowpass_hz` means one 2nd-order Butterworth biquad (−12 dB/octave), the same in Python and firmware (`DSP_FILTER_FAMILY`, `DSP_FILTER_ORDER` in `rezonating_ml.dsp`). Firmware builds the `dsp` and trigger code with `-ffp-contract=off` and uses 64-bit sample indices; a lost raw sample is held at the previous good value and the outputs it touches are invalid (PROTOCOL.md).
+
 **Acceptance:** Kaszti accepted D-021 in the cloud session chat on 2026-10-13 ("I kaszti accept decision 21 … I read it and accept the decision"); he couldn't edit the file from there. Kaszti flips `status` and `decided_by` in Obsidian at the next chance.

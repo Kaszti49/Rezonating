@@ -37,3 +37,32 @@ Append-only. Newest at the bottom. One entry per Claude session.
 - **Left open:** is the classic ESP32 the node now, or are S3 boards coming (firmware target, PSRAM, pin rules)? Are the ADXL355 and microSD in the lab (not in the photos)? Real-phone marker test; reject IPv6 `marker_bind`; `kill-test-phone` still listed as a protocol; the expansion board's signal/V/G pin order; ORD-001 status.
 - **Next session should:** get the ESP32 answer, then have firmware-dev write the bring-up firmware (HX711 test, LTC6903 + ADS131M02 ID, DRDY rate) for the right target.
 - **Later on 2026-10-13:** the first board was plugged in, wired per the bench guide. It is COM22 (CP2102); data only works through the DevKit's own micro-USB. Boot log: ESP32 rev 3, WROOM-32, 4 MB flash, factory AT firmware 2.4.0. It boots normally with the wiring attached. Kaszti: bring-up firmware is bench-only and may be flashed. firmware-dev (Opus) built `firmware/bringup-esp32/` (target esp32, no warnings). Verifier FLAG F-261013-34f1 (the FIFO resync runs before the DRDY interrupt is armed; a late read drains only one frame; a README range note). Not flashed, because Kaszti ended the day: retry first next session, then flash and read the first report. Committed and pushed at Kaszti's request.
+
+## 2026-10-13 (cloud session, evening)
+- **Did:** Lab phases 4–7 on the simulator. The pages:
+  - protocol runner + `walk-pass-v1.yaml`;
+  - rig checks + sim faults;
+  - Review page + SD import;
+  - Datasets (index cache, manifest builder);
+  - Pack bench;
+  - Experiments.
+
+  `rezonating_ml` got the pack pipeline ([[D-021 Pack pipeline in rezonating_ml]]: 63-tap decimator, Butterworth biquads, STA/LTA, `footstep_v1`, baseline, manifest, firmware test vectors). The simulator got people (`--walkers`, `rzlab sim-dataset`). Proposed [[D-022 Sidecar stores loss spans]]. Screenshots of every page went to Kaszti. A container restart mid-session lost no work.
+- **Agents:**
+  - **ml-dev,** many runs; the turn limit was hit three times (F-261013-e9b4).
+  - **Verifier PASS:** 4a, 4b, 6, the manifest module (after FLAG F-261013-0fd6), D-021 parts 1–3. Part 1 went FLAG F-261013-537e, then FLAG F-261013-8f25, then FLAG F-261013-0e64, then **deep-engineer L3** (F-261013-7e54), then PASS.
+  - **Part 2:** FLAG F-261013-cb1a, then PASS.
+  - **4c:** FLAG F-261013-5c94, then FLAG F-261013-860d, then retry 2; the re-verify was running at wrap-up.
+  - **Sim people:** FLAG F-261013-02f8, then retry 1; the re-verify was running.
+  - **Bench and Experiments:** verifier running at wrap-up.
+- **Decided with the team:** Kaszti accepted D-021 and D-022 in chat (the frontmatter flip is his in Obsidian). Pack filters are 2nd-order Butterworth. Review edits keep both streams in sync. Label text is a fixed list per protocol. EXP drafts go to `50 Experiments`. Review via screenshots; commit and push at wrap-up, merge if possible.
+- **Left open:**
+  - re-verify 4c, 5, 7 and the sim people;
+  - the 11-17 dress rehearsal;
+  - D-022 implementation;
+  - firmware parity for D-021;
+  - verifier lows (listed in [[Handoff]]);
+  - a load-sensitive runner test;
+  - bring-up firmware F-261013-34f1;
+  - ESP32 vs S3.
+- **Next session should:** re-run the verifier on 4c, 5, 7 and the sim people and fix the findings; then the dress rehearsal; then D-022.
