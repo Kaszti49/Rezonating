@@ -23,18 +23,20 @@ updated: 2026-10-13
   - pin map for the classic ESP32 (VSPI D18/D19/D23, CS1 D17, CS2 D16, DRDY D4, RST D27, HX711 D34/D32);
   - load cell on Click CH1 through a 680 Ω resistor, or on the HX711;
   - a wiring diagram and a build-order diagram.
+- **First board is alive** on COM22 (CP2102; data only via the DevKit's own micro-USB): ESP32 rev 3, **WROOM-32**, 4 MB, factory AT firmware. It boots fine with the bench wiring attached.
+- **Bench bring-up firmware** `firmware/bringup-esp32/` (Kaszti: bench-only, separate from the node firmware; flashing approved). It builds clean for `esp32`, but has **verifier FLAG F-261013-34f1, not flashed yet**. Fix first: arm the DRDY interrupt before the two-frame FIFO flush, read two frames when behind, and fix the README range note (the rig feeds 2.0 V through 680 Ω, so about 1.0 V is in range). Then flash: `eim run "idf.py -C firmware/bringup-esp32 -p COM22 flash monitor"` from PowerShell (`Remove-Item Env:MSYSTEM` first if it came from Git Bash).
 - **Agents pinned to 5.5 models**: firmware-dev and ml-dev run on Opus 5.5 (Changelog 2026-10-13). Keep each brief small: ml-dev hit its 60-turn limit twice on big briefs (F-261013-906b, for /retro).
 
 ## Next up
 | Who | What |
 | --- | --- |
-| Kaszti + Viktor | Decide: is the classic ESP32 the node now, or are S3 boards coming? Is the ADXL355 in the lab? |
+| Kaszti + Viktor | Decide: is the classic ESP32 the node now, or are S3 boards coming? (bring-up is bench-only either way) Is the ADXL355 in the lab? Is the load cell on Click CH1 or on the HX711? |
 | Viktor | Confirm the bench-guide pin map; [[Wire the first rig]] follows the guide now; [[FootprintID dataset loader]] (2026-10-20) |
-| Claude | After the ESP32 answer: firmware-dev writes bring-up firmware (HX711 test, LTC6903 + ADS131M02 ID, DRDY rate) for the right target. Small Lab follow-ups: reject IPv6 `marker_bind`, drop `kill-test-phone` from the protocol list |
+| Claude | firmware-dev retry on F-261013-34f1 (small) → verifier → flash COM22 and read the first report: ADC ID, real sample rate, load cell on CH1, noise floor on CH2, HX711. Then streaming to the Lab. Small Lab follow-ups: reject IPv6 `marker_bind`, drop `kill-test-phone` from the protocol list |
 | Kaszti | Real-phone marker test on the Record page; ORD-001 status |
 
 ## Open questions
-- Push to GitHub: commits after `f654b7b` are local only; nobody has said to push.
+- Everything up to 2026-10-13 is pushed to GitHub (Kaszti asked).
 - License for open source (backlog); which GPU the home desktop has.
 
 ## Watch out

@@ -39,3 +39,4 @@ order:
 
 ## Notes
 - 2026-10-13: logged from Kaszti's photos. Qty 1 seen; a second board not seen.
+- 2026-10-13: plugged in with the bench wiring attached. Shows as COM22 (CP210x, VID 10C4:EA60). Boot log: classic ESP32, chip revision 3, module **WROOM-32** (so D16/D17 are free), 4 MB flash, DIO 40 MHz. Ships with Espressif's factory AT firmware 2.4.0. It boots normally with the wiring attached. Only the micro-USB on the DevKit itself carries data.
