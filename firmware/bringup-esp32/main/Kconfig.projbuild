@@ -1,0 +1,11 @@
+menu "Rezonating bring-up"
+
+    config BRINGUP_DIAG
+        bool "Run the [DIAG] ADC SPI setting matrix at boot"
+        default n
+        help
+            Bit-banged reference plus one probe per SPI setting, then use the first setting that passes.
+            Off by default: the boot uses the fixed setting found on 2026-11-01 (mode 1, 2 MHz,
+            cs_ena_pretrans 2, cs_ena_posttrans 2).
+
+endmenu
