@@ -1,53 +1,65 @@
 ---
 type: handoff
-updated: 2026-10-13
+updated: 2026-11-01
 ---
 # Handoff
 
 **Read this first every session.** It's the current state in under a page. Rewrite it at the end of each session; don't append.
 
-## Where we are (2026-10-13, evening, cloud session)
-- **Rezonating Lab phases 4–7 are built** and run on the simulator. They have been tried only in the cloud container's browser, not yet on pc-10. Pages: Live, Device (+ **rig checks**), Record (+ **protocol runner**), **Review** (+ SD import), **Datasets**, **Experiments**, **Bench**. Details per phase in [[Lab 4 Protocol runner, review and rig checks]], [[Lab 5 Pack bench]], [[Lab 6 Datasets page]] (done), [[Lab 7 Experiments page]].
-- **Verifier PASS:** 4a runner + `walk-pass-v1.yaml`, 4b sim faults + rig checks, 6 Datasets (+ fix round), the `rezonating_ml` pipeline (decimator, filters, STA/LTA, `footstep_v1`, baseline, manifest; part 1 needed a deep-engineer L3 escalation).
-- **Verifier still running at wrap-up (results not in):** 4c Review + SD import (round 3), 5 Bench, 7 Experiments, sim people (round 2). They are committed anyway, at Kaszti's request. **Re-run the verifier on these first.**
-- **New in `rezonating_ml` (Tier 1):** `dsp` (63-tap FIR ÷2, 2nd-order Butterworth biquads), `trigger` (STA/LTA, windows with `n_invalid`), `pipeline` (chunked, stateful, `finish()`, features + optional model), `features` (`footstep_v1`, 13 features), `baseline` (split by group, no overlap, majority baseline), `manifest`, `vectors` (firmware test vectors in `ml/tests/vectors/`). **Firmware side not written:** one implementation in two languages is not met yet.
-- **Decisions:** [[D-021 Pack pipeline in rezonating_ml]] and [[D-022 Sidecar stores loss spans]] were accepted by Kaszti **in chat** (recorded in each note's body). Frontmatter still says `proposed`: **Kaszti flips them in Obsidian.** D-022 is not implemented yet.
-- **Kaszti's choices today:**
-  - pack `highpass_hz`/`lowpass_hz` = one 2nd-order Butterworth biquad;
-  - Review edits keep both streams' labels in sync;
-  - label text is a fixed list per protocol;
-  - EXP drafts go to `50 Experiments` (status `running`).
-- **Simulator:** `rzlab sim --walkers P1,P2` walks walk-pass-v1 by itself; `rzlab sim-dataset` writes labelled sim sessions (people drift per session, so a session split shows leakage). Synthetic result: balanced accuracy about 0.69 against a 0.33 baseline. This says nothing about a real floor.
-- **Bench firmware unchanged since this morning:** `firmware/bringup-esp32/` still has FLAG F-261013-34f1, not flashed.
+## Where we are (2026-11-01, off-day, desktop-o8pjtu7)
+- **Bench rig works on the digital side.** COM5 runs the bring-up firmware:
+  - ADS131M02 ID 0x2205, register writes OK, 1995.80 Hz measured (CLKIN ≈ 8.1748 MHz, −0.21 %, in [[ADC 15 Click board]]);
+  - CRC 0, missed 0, unaccounted 0;
+  - HX711 found (nothing on its inputs).
+  - **The SPI fix:** the ESP32 needs `cs_ena_pretrans`/`posttrans` = 2 for the ADC. Default CS timing gives a one-bit shift and ignored commands.
+- **The load cell gives no signal.** CH1 behaves like a grounded input: ≈190 µV offset, the same as CH2, and no response to presses. The bridge has no excitation; suspect the taped red (E+) → 680 Ω → 3V3 joint (seen on Kaszti's photos; deleted at his request).
+- **Link mode in the bench firmware, built and NOT flashed:**
+  - UART0 at 115200, `adc_dec` only; it switches from the text report on GET_INFO, and only a reset brings the text back.
+  - Host test 58/58: link vectors byte-exact, FIR bit-exact with `rezonating_ml`. App 219 744 B.
+  - `[DIAG]` is behind `CONFIG_BRINGUP_DIAG`.
+  - **Verifier FLAG F-261101-457b (don't flash until fixed):**
+    - an ADC frame with a bad output CRC goes into the FIR as good (it should count as a lost raw sample);
+    - after a double read, the spurious DRDY pulse is counted as missed when pending ≥ 2, giving a phantom raw index. Classify edges by the `s_drdy_t` gaps, with a host test.
+    - Plus 4 lows. Committed anyway at Kaszti's request (2026-11-01).
+- **This PC:**
+  - ESP-IDF v6.1-beta1 is on `E:\esp`, through `C:\Espressif\tools\Microsoft.v6.1-beta1.PowerShell_profile.ps1` (with `-ExecutionPolicy Bypass`).
+  - The auto-mode classifier blocks Claude from flashing: Kaszti runs `! … idf.py -C firmware\bringup-esp32 -p COM5 -b 115200 flash` (460800 failed with serial noise).
+  - Node v26.13.0 and the Lab tool are installed, and the UI is built.
+- **Lab tests:** 612 passed. 2 fail only on Windows symlink privilege (WinError 1314); the symlink part of the sim-people `--out` guard is untested on Windows.
+- **From 10-13, still open:**
+  - re-verify Lab 4c, 5, 7 and the sim people;
+  - [[D-021 Pack pipeline in rezonating_ml]] / [[D-022 Sidecar stores loss spans]] frontmatter flip (Kaszti);
+  - D-022 not built;
+  - the 11-17 dress rehearsal.
 
 ## Next up
 | Who | What |
 | --- | --- |
-| Kaszti | Flip D-021 and D-022 to `accepted` in Obsidian. Pull, `pip install -e ml -e "tools/lab[dev]"`, `rzlab build-ui`, `rzlab serve --connect sim`, and click through the new pages. Real-phone marker test. ORD-001 status |
-| Kaszti + Viktor | Is the classic ESP32 the node now, or are S3 boards coming? Is the ADXL355 in the lab? Load cell on Click CH1 or HX711? Is the per-session drift in the sim (f1 ±8 %, amplitude ±24 %) plausible? Should model classes be checked against the pack labels? |
-| Viktor | Review D-021's STA/LTA parameters, the `footstep_v1` band edges and the 10 % active threshold, and the filter choice; [[FootprintID dataset loader]] (2026-10-20); confirm the bench-guide pin map |
-| Claude | 1) Re-verify 4c, 5, 7 and the sim people; fix the findings. 2) Small queued fixes (list below). 3) The 11-17 dress rehearsal on `rzlab sim --walkers`. 4) D-022 loss spans (schema, validate, recorder, SD import, io, pipeline). 5) firmware-dev retry on F-261013-34f1, then flash COM22 |
+| Kaszti | **With the multimeter:** red–black ≈ 2.0 V? black–GND 0 V? green/white–GND ≈ 1.0 V each? CH2 screws on GND? Redo the red → 680 Ω → 3V3 joint (solder or a terminal), then the press test. Flash link mode when Claude says the verifier passed. Flip D-021/D-022 in Obsidian |
+| Kaszti + Viktor | Is the classic ESP32 the node now? Is the ADXL355 in the lab? Is the sim drift plausible? |
+| Viktor | Review D-021 parameters; [[FootprintID dataset loader]]; confirm the bench-guide pin map |
+| Claude | 1) firmware-dev retry 1 on F-261101-457b (findings verbatim in the ledger), re-verify. 2) Press test in text mode with Kaszti; then `rzlab serve --connect serial:COM5` on the real board. 3) Make the symlink tests skip on WinError 1314. 4) Lab re-verifies 4c, 5, 7, sim people. 5) D-022. Add desktop-o8pjtu7 to [[Workstations]] |
 
 ## Open flags
-- Lab 7 Experiments verifier FLAG (arrived after the stop): stale feature cache after ml code changes, duplicate EXP drafts from one run, per-person results missing for pace/shoes. See the ledger.
-- **Stopped early (credits).** Sim people FLAG (`--out` guard bypass) and Bench FLAG (HIGH: vector create could overwrite `packs/`/`schemas/`) were fixed at wrap-up with tests added but NOT run. Bench med still open: compare mismatches when the live run starts mid-acquisition. 4c and 7 verifier results never arrived. Run `pytest tools/lab/tests` first.
-- F-261013-860d/-4a62: 4c round 3 waiting on re-verify (ml-dev has used both retries; next failure goes to deep-engineer, L3).
-- F-261013-02f8/-80bb: sim people round 2 waiting on re-verify.
-- F-261013-34f1: bring-up firmware FIFO/DRDY order (not flashed).
-- F-261013-906b, F-261013-e9b4: ml-dev and verifier turn limits (for /retro).
-- F-261013-da80, F-261006-646c: orchestrator process notes (for /retro).
+- 4c (F-261013-860d/-4a62, next failure → deep-engineer), sim people (F-261013-02f8/-80bb), Lab 7 Experiments (F-261013-1e25): all waiting on re-verify.
+- F-261013-906b, -e9b4 (turn limits), -da80, F-261006-646c (orchestrator notes): for /retro.
+- **Verifier lows on the bring-up firmware:**
+  - the README links a private claude.ai bench guide and names this PC;
+  - a rare start-up race can leave the reader one sample behind;
+  - the bit-bang label says ~125 kHz (really ~200).
+- The gate's idf-build check can't find IDF on this machine (it isn't on PATH).
 
-## Queued small fixes (verifier lows, not done)
+## Queued small fixes (not done)
 - **Bench:** y-axis labels clipped.
-- **Datasets:** add `sidecar_prefix` to the cache identity; re-wrap the datasets.py docstring and WEB_API 13 lines.
-- **ml README:** "every reported window is one or the other" holds only when features are ok; list `footstep_v1.json` + `features --check` with the vectors.
+- **Datasets:** `sidecar_prefix` in the cache identity; re-wrap the datasets.py docstring and WEB_API.
+- **ml README:** the windows claim; list the `footstep_v1.json` vectors.
 - **`test_sim_people.py`:** use `out.features`.
-- **`evaluate`:** returns no per-window predictions (per-person results for pace/shoes are missing).
-- **`tools/lab/tests/test_runner_e2e.py::test_runner_produces_90_labelled_passes_per_person`:** fails under heavy CPU load (zero-length walk labels). Suspect the sim EVENT computation in `sim/node.py` or the 10 ms test margin.
+- **`evaluate`:** no per-window predictions.
+- **`test_runner_e2e.py`:** flaky under CPU load.
+- **Symlink tests:** skip on Windows without the privilege.
 
 ## Watch out
-- The ml/ vector files are pinned to footstep-id's trigger (`ratio 3.5`, 50/2000 ms). Retuning in the Bench warns: regenerate `ml/tests/vectors` and tell firmware.
-- Sidecars store only loss counts until D-022. With any loss, the mask marks every all-zero frame (can skip many windows on quiet floors).
-- Git Bash on pc-10 has no coreutils or python on PATH: use full paths or PowerShell. `idf.py` refuses Git Bash.
-- Lab: `pip install -e ml -e "tools/lab[dev]"` (now needs pyyaml), `rzlab build-ui`. Data root via `RZ_DATA_ROOT` or config. The Datasets cache defaults to `%LOCALAPPDATA%\rzlab\datasets.sqlite`. Runs go to `tools/lab/runs/` (gitignored).
-- Accepted decisions are hook-locked: to change one, propose a new decision with `supersedes`.
+- After a site session the bench board stays silent until EN/RESET. `rzlab tail --serial COM5` needs `--streams adc_dec`.
+- Don't run two programs on COM5 at once: stop `rzlab serve` before a text capture.
+- ml vectors are pinned to footstep-id's trigger; Bench retuning means regenerating them and telling firmware.
+- Accepted decisions are hook-locked: propose a new one with `supersedes`.

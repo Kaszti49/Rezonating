@@ -66,3 +66,25 @@ Append-only. Newest at the bottom. One entry per Claude session.
   - bring-up firmware F-261013-34f1;
   - ESP32 vs S3.
 - **Next session should:** re-run the verifier on 4c, 5, 7 and the sim people and fix the findings; then the dress rehearsal; then D-022.
+
+## 2026-11-01
+- **Did:** Off-day session on desktop-o8pjtu7 (not in Workstations yet), with the bench rig on COM5 (classic ESP32, CP2102). The board still had the factory AT firmware.
+  - Fixed F-261013-34f1 in `firmware/bringup-esp32/` and built it with the local IDF v6.1-beta1 (on `E:\`).
+  - Kaszti flashed it: counting OK, HX711 found, but the ADC read every word shifted one bit.
+  - A one-flash `[DIAG]` showed it's chip-select timing: `cs_ena_pre/posttrans = 2` or GPIO CS fixes it; MISO delay and mode 0 don't. ADS131M02 ID 0x2205, measured **1995.80 Hz (CLKIN ≈ 8.1748 MHz, −0.21 %)**, recorded in [[ADC 15 Click board]].
+  - Three press tests: CH1 doesn't respond and sits at the ADC's own offset like the grounded CH2. The bridge has no excitation; most likely the taped red → 680 Ω → 3V3 joint (seen on Kaszti's photos, deleted at his request).
+  - Bench firmware now has link v0 on UART0 at 115200 (`adc_dec` only, starts on GET_INFO) so the Lab site can show the rig. CS fix made default, `[DIAG]` behind `CONFIG_BRINGUP_DIAG`.
+  - Installed Node.js v26.13.0 (Kaszti OK'd) and the Lab tool, built the UI, ran the Lab tests: 612 passed, 2 failed on Windows symlink privilege.
+- **Agents:**
+  - firmware-dev ×3: 34f1 fix (ledger retry F-261101-5d32), `[DIAG]`, link mode. Gate skipped each time: the hook can't find IDF on this machine, so the agents built it themselves.
+  - verifier: PASS on the 34f1 fix (4 lows) and on `[DIAG]` (6 lows). Link mode: verifier FLAG F-261101-457b (CRC-failed frames go into the FIR as good; phantom raw index after a double read), not flashed.
+  - F-261013-34f1 resolved.
+- **Decided with the team:** Kaszti: push today's work to main (link mode with its FLAG open) and delete `Pics/` and `Peter_doc/`. Link over the CP2102 sends `adc_dec` 1 kSPS at 115200. Node.js may be installed on this PC. The rewiring and the multimeter checks wait until tomorrow.
+- **Left open:**
+  - F-261101-457b retry and re-verify, then flash and the first real-board site test;
+  - the bridge excitation fault;
+  - CH2 ≈ 250 µV offset (ADC offset or not grounded?);
+  - symlink tests should skip on Windows;
+  - the README's private claude.ai link and machine name (verifier lows);
+  - the earlier Lab re-verifies (4c, 5, 7, sim people), still not done.
+- **Next session should:** firmware-dev retry 1 on F-261101-457b, then re-verify. Then with Kaszti: multimeter checks, redo the E+ feed, press test in text mode, flash link mode, `rzlab serve --connect serial:COM5`. After that, the Lab re-verifies from 10-13.
