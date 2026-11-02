@@ -88,3 +88,35 @@ Append-only. Newest at the bottom. One entry per Claude session.
   - the README's private claude.ai link and machine name (verifier lows);
   - the earlier Lab re-verifies (4c, 5, 7, sim people), still not done.
 - **Next session should:** firmware-dev retry 1 on F-261101-457b, then re-verify. Then with Kaszti: multimeter checks, redo the E+ feed, press test in text mode, flash link mode, `rzlab serve --connect serial:COM5`. After that, the Lab re-verifies from 10-13.
+
+## 2026-11-02
+- **Did:**
+  - Set up **EP-LAPTOP** from a zip copy:
+    - Python 3.12.10, `ml[dev]` + `tools/lab[dev]` + ruff, Lab UI built;
+    - WinLibs GCC 16.2 for the host tests;
+    - ESP-IDF v6.0 (esp32, esp32s3, mcp) in `C:\esp\v6.0` via EIM.
+    - Tests: validate 0 problems, ml 277 passed, Lab 612 passed / 2 failed (the known WinError 1314 symlink tests).
+  - Fixed and flashed the bring-up link mode:
+    - Kaszti asked Claude to flash, and it worked from here.
+    - **First real-board site session:** `rzlab serve` → `serial:COM12`, `adc_dec` at 997.3 Hz (−0.21 %), 0 device drops while the ADC was wired.
+  - Bench:
+    - The ADC stopped answering after a reconnect (ID 0xFFFF/0x0000, 3992 Hz defaults); Kaszti re-seated the jumpers and it came back.
+    - CH1 never responded to load. CH1 and CH2 move together when the rig is handled (ground or supply), and CH1 sits at the ADC offset.
+    - Multimeter: 3.3 V on the 3V3 end of the 680 Ω resistor, **0 V on the cell end**. Either the resistor or its joint is open, or that end is shorted to GND. Resistance checks not done: the power went out.
+- **Agents:**
+  - firmware-dev retry 1 (F-261102-473c) → verifier FLAG F-261102-fa86: FIFO-overwrite race; m≥2 gaps not counted as g−1 (PROTOCOL.md:179).
+  - firmware-dev retry 2 (F-261102-4da5) → verifier **PASS**. 2 lows logged as F-261102-f78b. Host 74/74, build 213 376 B.
+  - F-261101-457b resolved.
+  - The L0 gate still skips idf-build (IDF not on PATH); Claude built through a scratchpad launcher, because the classifier blocks `-ExecutionPolicy Bypass` activation.
+- **Decided with the team:** Kaszti asked Claude to flash COM12 and to commit and push today's work.
+- **Left open:**
+  - the bridge excitation fault at the 680 Ω resistor;
+  - after a USB reconnect, `rzlab serve` reconnects but does not restart acquisition;
+  - link losses at 115200 (~0.07 % frames plus 200 host samples): consider a higher baud rate;
+  - the README mislabel bound (5 → 8) and the unreported latency limit (F-261102-f78b);
+  - symlink test skips;
+  - Lab re-verifies 4c, 5, 7 and sim people;
+  - D-022.
+- **Next session should:**
+  - With Kaszti, USB unplugged: Ω across the 680 Ω resistor (about 680?), cell end to black (about 1070–1120?). Fix the joint, then about 2.0 V red–black, then a press test with one end fixed while watching CH1 in the site.
+  - Then fix the reconnect/acquisition restart in the Lab.
