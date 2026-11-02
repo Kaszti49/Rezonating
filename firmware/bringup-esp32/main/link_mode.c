@@ -178,7 +178,13 @@ void link_adc_poll(void)
         }
         s_st.acq_running = false;
     }
+    /* a STOP the link task gave up waiting for (stop_acquisition timeout): stop here, open packet not sent */
+    bool orphan = s_acq && !(req & (REQ_START | REQ_STOP)) && !s_st.acq_running;
     portEXIT_CRITICAL(&s_mux);
+    if (orphan) {
+        pkt_flush(true);
+        s_acq = false;
+    }
     if (req & REQ_START) {
         rz_decim_init(&s_dec, N_CH); /* acquisition from idle: index 0 is the next DRDY, FIR history zeros */
         s_pkt.n = 0;
@@ -440,11 +446,16 @@ static void stop_acquisition(bool discard)
     portEXIT_CRITICAL(&s_mux);
     if (xSemaphoreTake(s_stop_done, pdMS_TO_TICKS(STOP_WAIT_MS)) != pdTRUE) {
         s_stop_timeouts++;
-        portENTER_CRITICAL(&s_mux); /* freeze the window anyway; a late packet is then outside it */
+        /* Freeze the window anyway and withdraw the request, so a later START is not cancelled by this stale STOP in
+         * the same poll. The ADC task sees acq_running false at its next poll and stops by itself (link_adc_poll),
+         * counting its open packet in win_link. If it took the request just now, it has already stopped. */
+        portENTER_CRITICAL(&s_mux);
+        s_req &= ~(REQ_STOP | REQ_DISCARD);
         if (s_st.sending) {
             s_st.win_end = s_st.produced;
             s_st.sending = false;
         }
+        s_st.acq_running = false;
         portEXIT_CRITICAL(&s_mux);
     }
 }

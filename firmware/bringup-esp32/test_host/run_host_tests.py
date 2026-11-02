@@ -1,9 +1,10 @@
-"""Build and run the bring-up firmware's host test (link codec + decimator against the shared vectors).
+"""Build and run the bring-up firmware's host test (link codec + decimator against the shared vectors, DRDY edge
+classifier against its own cases and a reader simulation).
 
     python firmware/bringup-esp32/test_host/run_host_tests.py
 
-Generates build/vectors_gen.h from the JSON vectors, compiles test_main.c with ../main/rz_link.c and ../main/rz_decim.c
-using the host C compiler, runs it and returns its exit code. Compiler: $CC (gcc/clang style) if set, else MSVC found
+Generates build/vectors_gen.h from the JSON vectors, compiles test_main.c with ../main/rz_link.c, ../main/rz_decim.c
+and ../main/rz_drdy.c using the host C compiler, runs it and returns its exit code. Compiler: $CC (gcc/clang style) if set, else MSVC found
 through vswhere / the Visual Studio 2022 vcvars64.bat. Floating point is compiled without contraction
 (-ffp-contract=off, or /fp:precise which never contracts on MSVC x64 unless /fp:contract is given), as dsp.py requires.
 """
@@ -38,7 +39,7 @@ def main() -> int:
     BUILD.mkdir(exist_ok=True)
     gen = BUILD / "vectors_gen.h"
     subprocess.run([sys.executable, str(HERE / "gen_vectors.py"), str(ROOT), str(gen)], check=True)
-    srcs = [str(HERE / "test_main.c"), str(MAIN / "rz_link.c"), str(MAIN / "rz_decim.c")]
+    srcs = [str(HERE / "test_main.c"), str(MAIN / "rz_link.c"), str(MAIN / "rz_decim.c"), str(MAIN / "rz_drdy.c")]
     exe = BUILD / ("test_host.exe" if os.name == "nt" else "test_host")
     cc = os.environ.get("CC")
     if cc:

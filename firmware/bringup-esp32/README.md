@@ -49,16 +49,33 @@ both channels** (full scale ±9375 µV, 1 LSB ≈ 0.0011 µV), DRDY as a level o
 | Counter | Meaning | Normal |
 | --- | --- | --- |
 | `drdy_edges` | DRDY falling edges seen by the GPIO4 interrupt | about 2000 per second |
-| `frames` | frames read successfully | = drdy_edges |
-| `missed` | DRDY edges whose data were never read (reader too late): **lost samples**. The ADC's FIFO holds two samples per channel, so a late reader reads both and counts the rest (pending − 2) here | 0 |
+| `frames` | frames read (CRC errors and drained frames included) | ≈ drdy_edges − pulses |
+| `missed` | conversions whose data were never read (reader too late): **lost samples**. The ADC's FIFO holds two samples per channel, so a late reader reads the newest two and counts the older ones here | 0 |
+| `gaps` | sample intervals with no conversion edge (an edge gap of g periods counts g − 1), including a conversion whose read was given back (stale or CRC error, below): **lost samples** | 0; rarely 1 after a resync or a CRC error |
+| `drains` | left-over frames read and dropped: a narrow pulse that no double read explains means a frame was still in the FIFO (the reader was a frame behind) | 0; rarely 1 after a resync |
+| `pulses` | narrow DRDY pulses: after the first of two queued frames is read the ADC pulses DRDY once more (SBAS853A 8.5.1.9.1). They are told apart from conversions by their DRDY time (below) and not read | ≈ resyncs |
 | `spi_err` | SPI reads that failed: **lost samples** | 0 |
-| `crc_err` | output CRC (CCITT, seed FFFFh) did not match: sample kept but suspect | 0 |
-| `no_drdy_flag` | STATUS showed no new data on a read. Can rise by one after a resync: the ADC sends a narrow DRDY pulse after the first of two queued frames (SBAS853A 8.5.1.9.1), and if the ESP32 catches it, the next read finds no new data | 0 |
+| `crc_err` | output CRC (CCITT, seed FFFFh) did not match: **lost samples** (the frame's data and STATUS are not used) | 0 |
+| `no_drdy_flag` | STATUS showed no new data on a read: a narrow pulse late in the period was taken for a conversion, or a conversion landed between the wake-up and the read | 0, rarely 1 after a resync |
 | `drdy_timeouts` | 100 ms with no DRDY at all | 0 |
 | `adc_resets` | STATUS RESET bit set again (the ADC reset itself, e.g. supply dip) | 0 |
-| `resyncs` | times the reader was late (more than one DRDY pending) and read both FIFO frames | 0 |
-| `unaccounted` | edges − frames − missed − spi_err | 0 or 1 |
+| `resyncs` | wake-ups with two or more conversions pending (the reader was late) that read both FIFO frames | 0 |
+| `unaccounted` | edges − frames − missed − pulses − spi_err + drains | 0 or 1 |
 | `hx_reads`, `hx_bad`, `hx_timeouts` | HX711 good reads, reads where DT was not high after the 25th pulse, 1 s with no conversion | bad and timeouts 0 |
+
+**Conversion or narrow pulse.** The reader sorts each wake-up's DRDY edges by their interrupt times
+(`main/rz_drdy.c`, host-tested). An edge one data period (500 µs) ± a third of a period after the previous
+conversion edge is a conversion; an edge g ≥ 2 periods after it is a conversion after g − 1 sample intervals with no
+edge (`gaps`); anything else is the narrow pulse. A pulse within a third of a period of the next grid point is
+counted in place of the conversion that follows it, which then takes its place. When the read for the newest
+conversion edge finds no new data, or has a CRC error, that edge is given back: if it was a real conversion, the
+next one is two periods away and its gap gives the lost index. A pulse that no double read explains makes the reader
+read and drop the left-over frame. The host simulation (reads that take time, the FIFO sampled at each read's start,
+lost interrupt edges, CRC errors, ±1.65 % rate error) keeps the raw index count exact with interrupt latency up to
+100 µs; after a race (a conversion landing between the wake-up and the read) or a lost edge, a few samples (at most
+5 seen) can carry a neighbouring index before the reader is back in step. Latency of 130 µs and more can shift the
+index by one for good; on core 1, with the HX711 on core 0, the real latency should be far below that (not
+measured).
 
 ## Reading the result
 
@@ -88,11 +105,17 @@ answers as `tools/lab/PROTOCOL.md` section 1 says: one `0x00`, `HELLO` seq 0, `C
 `status.period_ms`. Text printed before the switch is harmless: the `0x00` separates it from `HELLO`. To get the
 text report back, press EN/RESET or send `REBOOT`.
 
-Run the Lab on the PC with the board on COM5 (close any `idf.py monitor` first: only one program can open the port):
+**A panic still prints.** Link mode silences the text report, `ESP_LOG` and the ROM print channels, but the panic
+handler writes its message and backtrace to UART0 directly, and the board then reboots into the text report. On the
+PC this shows as bad frames (no reply to the next command, or CRC errors) followed by the session timing out. To read
+the backtrace, close rzlab and open a serial monitor (`idf.py monitor` decodes the addresses).
+
+Run the Lab on the PC with the board on its COM port (`COMx` below; Device Manager shows it under "Ports" as
+"Silicon Labs CP210x"). Close any `idf.py monitor` first: only one program can open the port.
 
 ```powershell
-rzlab serve --connect serial:COM5        # browser UI at http://127.0.0.1:8765, adc_dec live
-rzlab tail --serial COM5 --streams adc_dec   # terminal: loss and rates every second
+rzlab serve --connect serial:COMx        # browser UI at http://127.0.0.1:8765, adc_dec live
+rzlab tail --serial COMx --streams adc_dec   # terminal: loss and rates every second
 ```
 
 `rzlab tail` without `--streams` asks for all three streams; this firmware has only `adc_dec`, so it answers
@@ -103,9 +126,9 @@ does not reset the board (`tools/lab/src/rezonating_lab/link/transport_serial.py
 `fir_delay` 31): the D-016 63-tap FIR on the 2 kSPS ADC samples, keeping the output after every odd raw sample
 (`main/rz_decim.c`, a port of `rezonating_ml.dsp.Decimator2` + `to_adc_dec_codes`, compiled with
 `-ffp-contract=off`). Index k is the output after raw sample 2k + 1, and its `t_dev_us` is that raw sample's DRDY
-interrupt time. Index 0 is the first DRDY after `START`; the FIR history starts at zeros. A lost raw sample (missed
-DRDY, failed SPI read) holds the previous good value inside the FIR, and every output whose 63-sample window holds it
-is not sent and counts in `device_dropped` (and `win_device`). Values are rounded half away from zero and saturated
+interrupt time. Index 0 is the first conversion after `START`; the FIR history starts at zeros. A lost raw sample
+(missed conversion, failed SPI read, output CRC error) holds the previous good value inside the FIR, and every output
+whose 63-sample window holds it is not sent and counts in `device_dropped` (and `win_device`). Values are rounded half away from zero and saturated
 to 24 bits. CONFIG reports gain 128 on both channels and `scale = 1.2 V / gain / 2^23` (units V).
 
 **What differs from PROTOCOL.md's USB row** (the contract is unchanged; this is a bench variant):
@@ -122,6 +145,7 @@ to 24 bits. CONFIG reports gain 128 on both channels and `scale = 1.2 V / gain /
 | STATUS `temp_c_x10`, `sd_state`, `rssi_dbm` | 0 (no supported die temperature sensor on the classic ESP32, no SD, no Wi-Fi) |
 | Text before a session | the whole text report (any length) until `GET_INFO` |
 | Port closed: unwritten DATA counts in `win_link` | the UART always clocks bytes out, so DATA sent while no PC listens is lost on the PC side (host gap) until the 5 s liveness timeout ends the session |
+| Index k is sample interval k; a gap of g periods skips g − 1 indices (4.4) | Gaps are counted as 4.4 says. The index count stays exact (host simulation), but after a race or a lost DRDY edge a few frames (at most 5 seen) can carry a neighbouring index, unflagged, and DRDY interrupt latency of 130 µs or more can shift the index by one for good (see "Conversion or narrow pulse") |
 
 Session rules that are the same: a session starts only with `GET_INFO` (other frames before it are ignored, AUTH
 inside a session is ignored), a later `GET_INFO` re-sends `HELLO` + `CONFIG` with seq reset and no `0x00`,
@@ -136,9 +160,15 @@ outputs (one point every 500 ms; 0 for the first 0.2 s); `clipped` = sent frames
 put in the DATA queue (full), UART write errors, and the queue and open packet thrown away at session end;
 `queue_fill` = DATA queue fill in %; `heap_free` = free internal heap.
 
-A frame read whose STATUS word shows no new data (DRDY0/DRDY1 clear: the narrow DRDY pulse after the first of two
-queued frames, SBAS853A 8.5.1.9.1) is not a sample interval and gets no index; in the text report it is still counted
-in `no_drdy_flag`.
+Raw indices follow conversions, not DRDY edges (see "Conversion or narrow pulse" above): a narrow pulse gets no
+index, and a gap of g periods between conversion edges skips g − 1 indices, each counted in `device_dropped`
+(PROTOCOL.md 4.4). A stale read or a CRC error on the newest conversion edge gives the edge back; its index comes as
+a gap at the next conversion (a lost raw sample, held in the FIR). A CRC error on the older frame of a double read is
+a lost raw sample on its own index. After such an event a few frames can be sent under a neighbouring index before
+the reader is back in step; the index count itself stays exact (see the limit on interrupt latency above).
+A STOP whose drain the ADC task does not confirm within 500 ms still freezes the window; the request is withdrawn
+(so it cannot cancel a later START) and the ADC task stops by itself at its next poll, counting its open packet in
+`win_link`.
 
 **Throughput at 115200 8N1** (11 520 B/s):
 
@@ -149,7 +179,8 @@ in `no_drdy_flag`.
 | PONG | 16 B payload, ≤ 24 B on the wire | ~1/s | 24 |
 
 Nominal total ≈ 8 840 B/s = 77 % of the line; worst case (LTC6903 +1.65 %, STATUS every 200 ms) ≈ 9 330 B/s = 81 %,
-so at least 19 % margin. Measured today the raw rate is 1995.80 Hz (`adc_dec` ≈ 997.9 Hz, ≈ 8 710 B/s of DATA).
+so at least 19 % margin. Measured on this rig on 2026-11-01, the raw rate was 1995.80 Hz (`adc_dec` ≈ 997.9 Hz,
+≈ 8 710 B/s of DATA).
 
 **The UART can't block the DRDY reader.** The ADC task (core 1, priority 10) runs the FIR and puts each full
 40-frame packet into the DATA queue with a zero timeout; when the queue is full the packet's frames are added to
@@ -157,8 +188,10 @@ so at least 19 % margin. Measured today the raw rate is 1995.80 Hz (`adc_dec` �
 and it queues DATA only while fewer than 512 B wait there, so a control frame (ACK, PONG, STATUS) waits at most about
 75 ms behind DATA.
 
-**Host test.** `main/rz_link.c` (CRC, COBS, frame encoders, receiver, SET parser) and `main/rz_decim.c` are portable C
-and are checked on the PC against the shared vectors:
+**Host test.** `main/rz_link.c` (CRC, COBS, frame encoders, receiver, SET parser), `main/rz_decim.c` and
+`main/rz_drdy.c` (DRDY edge classifier) are portable C and are checked on the PC, the first two against the shared
+vectors, the classifier with its own cases and a reader + FIFO simulation that checks every frame lands on its own
+raw index:
 
 ```powershell
 python firmware\bringup-esp32\test_host\run_host_tests.py
@@ -177,14 +210,14 @@ to run under Git Bash/MSYS; if you start PowerShell from Git Bash, run `Remove-I
 ```powershell
 eim run "idf.py -C firmware\bringup-esp32 set-target esp32"   # once; also creates sdkconfig
 eim run "idf.py -C firmware\bringup-esp32 build"
-eim run "idf.py -C firmware\bringup-esp32 -p COM22 flash monitor"
+eim run "idf.py -C firmware\bringup-esp32 -p COMx flash monitor"
 ```
 
-On a PC where `eim` is not on PATH, load the IDF profile script EIM wrote instead (it also builds with
-ESP-IDF v6.1-beta1), for example on desktop-o8pjtu7, where the board is COM5:
+Where `eim` is not on PATH, load the IDF profile script EIM wrote in its tools folder instead (named after the IDF
+version, for example `Microsoft.v6.1-beta1.PowerShell_profile.ps1`; the firmware also builds with v6.1-beta1):
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item Env:MSYSTEM -ErrorAction SilentlyContinue; . 'C:\Espressif\tools\Microsoft.v6.1-beta1.PowerShell_profile.ps1'; idf.py -C firmware\bringup-esp32 -p COM5 flash monitor"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item Env:MSYSTEM -ErrorAction SilentlyContinue; . '<EIM tools folder>\Microsoft.<version>.PowerShell_profile.ps1'; idf.py -C firmware\bringup-esp32 -p COMx flash monitor"
 ```
 
 Leave the monitor with `Ctrl+]`. If flashing does not connect, hold BOOT, tap EN/RESET, release BOOT.
@@ -207,5 +240,5 @@ Leave the monitor with `Ctrl+]`. If flashing does not connect, hold BOOT, tap EN
   (`esp_rom_install_channel_putc`, NULL disconnects a channel), `log/include/esp_log_write.h` (`esp_log_set_vprintf`),
   `esp_hw_support/include/esp_mac.h` (`esp_read_mac`). ADS131M02 WREG acknowledgement 8.5.1.10.8, GAIN1 8.6.5.
 - Hardware notes: `30 Hardware/Parts/ADC 15 Click board.md`, `HX711 load cell amplifier board.md`,
-  `YZC-133 load cell 5 kg.md`; load-cell wiring (680 Ω, CH1, CH2 to GND):
-  [First rig bench guide](https://claude.ai/code/artifact/53c286fe-182d-4bf3-91f6-4778f18e5648), "Way B".
+  `YZC-133 load cell 5 kg.md`; load-cell wiring (680 Ω, CH1, CH2 to GND): "Reading the result" above (the team's
+  first-rig bench guide, "Way B").

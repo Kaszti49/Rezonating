@@ -1,4 +1,4 @@
-idf_component_register(SRCS "bringup_main.c" "link_mode.c" "rz_link.c" "rz_decim.c"
+idf_component_register(SRCS "bringup_main.c" "link_mode.c" "rz_link.c" "rz_decim.c" "rz_drdy.c"
                        INCLUDE_DIRS "."
                        PRIV_REQUIRES esp_driver_spi esp_driver_gpio esp_driver_uart esp_timer spi_flash
                                      esp_hw_support esp_rom esp_system heap log)

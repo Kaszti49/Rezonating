@@ -31,6 +31,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "link_mode.h"
+#include "rz_drdy.h"
 #include "sdkconfig.h"
 
 /* ---------------------------------------------------------------- pin map (wired 2026-10-13) */
@@ -117,15 +118,19 @@ typedef struct {
     int32_t min[2];
     int32_t max[2];
     uint32_t clip[2];
-    uint32_t lost; /* missed DRDY + failed SPI reads in this window */
+    uint32_t lost; /* missed DRDY + gaps + failed SPI reads + CRC errors in this window */
     uint32_t edges;
     int64_t t_us;  /* window length */
     /* cumulative totals since streaming started (64-bit sample counters) */
     uint64_t tot_edges;
     uint64_t tot_frames;
-    uint64_t tot_missed;   /* DRDY edges whose data were never read (reader was late) */
+    uint64_t tot_missed;   /* conversion edges whose data were never read (reader was late) */
+    uint64_t tot_spurious; /* narrow DRDY pulses after a double read (8.5.1.9.1): no conversion, not read */
+    uint64_t tot_gaps;     /* sample intervals with no conversion edge (gap of m periods: m - 1), including a
+                              conversion given back after a stale or CRC-error read: lost samples */
+    uint64_t tot_drains;   /* left-over frames read and dropped (rz_drdy.h): frames with no edge of their own */
     uint64_t tot_spi_err;  /* spi_device_polling_transmit failed: sample lost */
-    uint64_t tot_crc_err;  /* output CRC mismatch: sample kept but suspect */
+    uint64_t tot_crc_err;  /* output CRC mismatch: sample lost (its STATUS and data are not trusted) */
     uint64_t tot_no_flag;  /* STATUS had DRDY0/DRDY1 clear: data may be stale */
     uint64_t tot_timeouts; /* no DRDY for 100 ms */
     uint64_t tot_dev_reset;/* STATUS RESET bit came back: the ADC reset itself */
@@ -509,15 +514,16 @@ static void win_reset(win_stats_t *w)
     }
 }
 
-/* What one data read gave the link: a sample, a lost sample, or no new data (a spurious DRDY edge, see below). */
-typedef enum { RD_GOOD, RD_LOST, RD_STALE } rd_t;
+/* What one data read gave: a sample, a failed SPI read, a frame with an output CRC error, or no new data. */
+typedef enum { RD_GOOD, RD_LOST, RD_CRC, RD_STALE } rd_t;
 
 #define ADC_ACK_GAIN1 ((uint16_t)(0x4000u | ((uint16_t)ADC_REG_GAIN1 << 7))) /* WREG ack, 1 register (8.5.1.10.8) */
 static bool s_wreg_prev; /* the previous frame carried a WREG GAIN1: this frame's response word may be its ack */
 static uint32_t s_wreg_gen;
 
-/* Read one data frame and account for it: a good frame goes into the window stats, a failed read is a lost
- * sample. A pending link SET adc.gain.* rides on the read as WREG GAIN1 in place of NULL (the frame's output data are
+/* Read one data frame and account for it: a good frame goes into the window stats, a failed read or a frame whose
+ * output CRC does not match is a lost sample (checked first: a corrupt frame's STATUS word is not trusted either).
+ * A pending link SET adc.gain.* rides on the read as WREG GAIN1 in place of NULL (the frame's output data are
  * unchanged); the ADC acknowledges it in the next frame's response word, which then is not a STATUS word. */
 static rd_t adc_read_one(win_stats_t *w, adc_frame_t *fp)
 {
@@ -542,21 +548,23 @@ static rd_t adc_read_one(win_stats_t *w, adc_frame_t *fp)
         return RD_LOST;
     }
     *fp = f;
-    bool is_ack = ack_slot && f.resp == ADC_ACK_GAIN1; /* 0x4200 never is a STATUS word with WLENGTH 01b */
+    bool crc_ok = f.crc_rx == f.crc_calc; /* CRC-16-CCITT over response, ch0, ch1 (8.3.12) */
+    /* 0x4200 never is a STATUS word with WLENGTH 01b; under a CRC error the ack is not trusted (the link retries) */
+    bool is_ack = ack_slot && crc_ok && f.resp == ADC_ACK_GAIN1;
     if (ack_slot) {
         link_adc_gain_result(is_ack, ack_gen);
     }
     w->tot_frames++;
-    if (f.crc_rx != f.crc_calc) {
+    if (!crc_ok) {
         w->tot_crc_err++;
-    }
-    bool stale = false;
-    if (!is_ack && (f.resp & 0x0003) != 0x0003) {
-        w->tot_no_flag++;
-        stale = true;
+        return RD_CRC;
     }
     if (!is_ack && (f.resp & 0x0400)) {
         w->tot_dev_reset++;
+    }
+    if (!is_ack && (f.resp & 0x0003) != 0x0003) {
+        w->tot_no_flag++;
+        return RD_STALE; /* no new data: a repeat of the previous sample, kept out of the window stats */
     }
     if (w->n == 0) {
         w->ref[0] = f.ch[0];
@@ -578,20 +586,52 @@ static rd_t adc_read_one(win_stats_t *w, adc_frame_t *fp)
         }
     }
     w->n++;
-    return stale ? RD_STALE : RD_GOOD;
+    return RD_GOOD;
 }
 
-/* Hand one read to the link. A frame whose STATUS shows no new data (DRDY0/DRDY1 clear) belongs to the narrow DRDY
- * pulse after the first of two queued frames (SBAS853A 8.5.1.9.1), not to a sample interval: it gets no index. */
-static void link_feed(uint32_t edge, rd_t rd, const adc_frame_t *f)
+#define DRDY_PERIOD_US    ((int64_t)(1e6 / ADC_NOMINAL_SPS)) /* 500 us; the classifier's T / 3 window allows far
+                                                                more than the LTC6903's 1.65 % */
+#define DRDY_CLASSIFY_MAX (DRDY_T_RING / 2) /* edges per wake-up whose ring times are safe from the ISR */
+
+/* Lost samples for the sample intervals with no conversion edge just before the conversion edge at t_us (PROTOCOL.md
+ * 4.4: a gap of g periods skips g - 1 indices, counted in device_dropped), at their grid times. */
+static void feed_gap(win_stats_t *w, int64_t t_us, uint32_t skipped)
 {
-    if (rd == RD_STALE) {
+    w->tot_gaps += skipped;
+    w->lost += skipped;
+    for (uint32_t j = skipped; j > 0; j--) {
+        link_adc_sample(t_us - (int64_t)j * DRDY_PERIOD_US, false, NULL);
+    }
+}
+
+/* Read the frame for one conversion edge (DRDY time t_us) and hand it to the link after the edge's skipped intervals:
+ * a good frame is a sample, a failed SPI read a lost sample (index assigned, FIR window rule).
+ *
+ * newest = this is the newest conversion edge so far (the classifier's reference). A frame whose STATUS shows no new
+ * data (DRDY0/DRDY1 clear) means that edge was the narrow DRDY pulse after the first of two queued frames (SBAS853A
+ * 8.5.1.9.1) taken for a conversion, or the FIFO had moved on before the read (rz_drdy.h). A frame with an output CRC
+ * error has a STATUS that cannot be trusted, so it is treated the same way. Either way the edge is given back
+ * (rz_drdy_unclaim) together with its skipped intervals: the reference returns to the conversion edge before, so if
+ * the edge was a real conversion the next one is two periods away and its skip assigns this index as a lost sample;
+ * if it was a pulse, nothing is lost. The older frame of a double read always belongs to a real conversion (a pulse
+ * taken for one never has another conversion within T / 3 after it), so a CRC error or a stale frame there is a lost
+ * sample on its own index. */
+static void read_feed(win_stats_t *w, rz_drdy_t *dc, int64_t t_us, uint32_t skipped, bool newest, adc_frame_t *f)
+{
+    rd_t rd = adc_read_one(w, f);
+    if (newest && (rd == RD_STALE || rd == RD_CRC)) {
+        rz_drdy_unclaim(dc);
         return;
     }
-    link_adc_sample(s_drdy_t[edge & (DRDY_T_RING - 1)], rd == RD_GOOD, f->ch);
+    feed_gap(w, t_us, skipped);
+    if (rd == RD_CRC || rd == RD_STALE) {
+        w->lost++; /* RD_LOST is counted in adc_read_one */
+    }
+    link_adc_sample(t_us, rd == RD_GOOD, f->ch);
 }
 
-/* Pinned to core 1 together with the DRDY interrupt. Reads one frame per DRDY falling edge, two when late. */
+/* Pinned to core 1 together with the DRDY interrupt. Reads one frame per conversion edge, two when late; the narrow
+ * DRDY pulse after a double read is told apart by its DRDY time (rz_drdy.h) and not read. */
 static void adc_task(void *arg)
 {
     (void)arg;
@@ -635,6 +675,12 @@ static void adc_task(void *arg)
         w.tot_missed += k - 2;
     }
     uint32_t edge = last_edges + k; /* number of the next DRDY edge (s_drdy_t index) */
+    rz_drdy_t dc;
+    rz_drdy_init(&dc, DRDY_PERIOD_US); /* the flush's narrow pulse is in k: the next edge is a conversion */
+    rz_drdy_lo_t lo;
+    rz_drdy_lo_init(&lo);
+    int64_t t[DRDY_CLASSIFY_MAX];
+    uint32_t skip[DRDY_CLASSIFY_MAX];
 
     int64_t win_start = esp_timer_get_time();
 
@@ -643,25 +689,51 @@ static void adc_task(void *arg)
         link_adc_poll(); /* link START/STOP take effect here, before this wake-up's edges */
         if (pending == 0) {
             w.tot_timeouts++;
-        } else if (pending == 1) {
-            rd_t rd = adc_read_one(&w, &f);
-            link_feed(edge++, rd, &f);
         } else {
-            /* Late: more than one DRDY since the last read. The FIFO holds only two samples per channel
-             * (8.5.1.9.1), so pending - 2 samples are gone. Read the two that are left back to back, which also
-             * puts the reader back in step with DRDY. */
-            w.tot_missed += pending - 2;
-            w.lost += pending - 2;
-            w.tot_resyncs++;
-            for (uint32_t i = 0; i < pending - 2; i++) {
-                /* missed: lost sample intervals (index assigned, FIR window rule) */
-                link_adc_sample(s_drdy_t[edge & (DRDY_T_RING - 1)], false, NULL);
-                edge++;
+            /* Sort this wake-up's edges into conversions and narrow pulses by their DRDY times (rz_drdy.h): a pulse
+             * after a double read is neither a sample nor a missed one. Edges beyond the newest DRDY_CLASSIFY_MAX
+             * (a stall of 16 ms or more) may have had their ring times overwritten: they count as missed
+             * conversions (at most one pulse per period, so the newest 32 then hold at least 2 conversions) and the
+             * classifier starts again without a reference. */
+            uint32_t n_old = pending > DRDY_CLASSIFY_MAX ? pending - DRDY_CLASSIFY_MAX : 0;
+            uint32_t n_new = pending - n_old;
+            for (uint32_t i = 0; i < n_new; i++) {
+                t[i] = s_drdy_t[(edge + n_old + i) & (DRDY_T_RING - 1)];
             }
-            rd_t rd = adc_read_one(&w, &f);
-            link_feed(edge++, rd, &f);
-            rd = adc_read_one(&w, &f);
-            link_feed(edge++, rd, &f);
+            edge += pending;
+            if (n_old > 0) {
+                rz_drdy_reset(&dc);
+            }
+            int64_t t_old = t[0];
+            uint32_t n_real = rz_drdy_classify(&dc, t, skip, n_new);
+            /* The FIFO holds only two samples per channel (8.5.1.9.1): older conversions were overwritten. Reading
+             * the two that are left back to back also puts the reader back in step with DRDY. */
+            uint32_t n_read = rz_drdy_n_read(n_real);
+            uint32_t n_miss = n_old + (n_real - n_read);
+            w.tot_spurious += n_new - n_real;
+            w.tot_missed += n_miss;
+            w.lost += n_miss;
+            if (rz_drdy_leftover(&lo, n_new - n_real)) {
+                /* a narrow pulse no double read explains: a frame is still in the FIFO and the reader is a frame
+                 * behind (rz_drdy.h). Read it and drop it: its index already went to the frame before it. */
+                (void)adc_read_one(&w, &f);
+                w.tot_drains++;
+            }
+            rz_drdy_leftover_reads(&lo, n_read);
+            if (n_read == RZ_DRDY_FIFO) {
+                w.tot_resyncs++;
+            }
+            for (uint32_t i = 0; i < n_old; i++) {
+                link_adc_sample(t_old, false, NULL); /* missed: lost sample intervals (index, FIR window rule) */
+            }
+            for (uint32_t i = 0; i < n_real; i++) {
+                if (i < n_real - n_read) {
+                    feed_gap(&w, t[i], skip[i]);
+                    link_adc_sample(t[i], false, NULL); /* missed */
+                } else {
+                    read_feed(&w, &dc, t[i], skip[i], i == n_real - 1, &f);
+                }
+            }
         }
 
         int64_t now = esp_timer_get_time();
@@ -825,16 +897,18 @@ static void print_counters(const win_stats_t *w)
     taskENTER_CRITICAL(&s_hx_mux);
     hx = s_hx;
     taskEXIT_CRITICAL(&s_hx_mux);
-    /* unaccounted = DRDY edges that are neither read, nor counted missed, nor a failed read. 0 or 1 (an edge
-     * in flight at the window boundary) is normal; anything growing is a bug or a noisy DRDY line. */
-    int64_t unacc = (int64_t)w->tot_edges - (int64_t)(w->tot_frames + w->tot_missed + w->tot_spi_err);
-    link_txt("[CNT] drdy_edges=%" PRIu64 " frames=%" PRIu64 " missed=%" PRIu64 " spi_err=%" PRIu64 " crc_err=%" PRIu64
-           " no_drdy_flag=%" PRIu64 " drdy_timeouts=%" PRIu64 " adc_resets=%" PRIu64 " resyncs=%" PRIu64
-           " unaccounted=%" PRId64 " report_drops=%" PRIu32 " hx_reads=%" PRIu64 " hx_bad=%" PRIu64
-           " hx_timeouts=%" PRIu64 "\n",
-           w->tot_edges, w->tot_frames, w->tot_missed, w->tot_spi_err, w->tot_crc_err, w->tot_no_flag,
-           w->tot_timeouts, w->tot_dev_reset, w->tot_resyncs, unacc, w->report_drops, hx.reads, hx.bad,
-           hx.timeouts);
+    /* unaccounted = DRDY edges that are neither read, nor counted missed, nor a narrow pulse, nor a failed read. 0 or
+     * 1 (an edge in flight at the window boundary) is normal; anything growing is a bug or a noisy DRDY line. Gaps
+     * have no edge and are not part of it; drained frames (counted in frames or spi_err) have none either. */
+    int64_t unacc = (int64_t)w->tot_edges - (int64_t)(w->tot_frames + w->tot_missed + w->tot_spurious +
+                                                      w->tot_spi_err - w->tot_drains);
+    link_txt("[CNT] drdy_edges=%" PRIu64 " frames=%" PRIu64 " missed=%" PRIu64 " gaps=%" PRIu64 " drains=%" PRIu64
+           " pulses=%" PRIu64 " spi_err=%" PRIu64 " crc_err=%" PRIu64 " no_drdy_flag=%" PRIu64
+           " drdy_timeouts=%" PRIu64 " adc_resets=%" PRIu64 " resyncs=%" PRIu64 " unaccounted=%" PRId64
+           " report_drops=%" PRIu32 " hx_reads=%" PRIu64 " hx_bad=%" PRIu64 " hx_timeouts=%" PRIu64 "\n",
+           w->tot_edges, w->tot_frames, w->tot_missed, w->tot_gaps, w->tot_drains, w->tot_spurious, w->tot_spi_err,
+           w->tot_crc_err, w->tot_no_flag, w->tot_timeouts, w->tot_dev_reset, w->tot_resyncs, unacc, w->report_drops,
+           hx.reads, hx.bad, hx.timeouts);
 }
 
 /* ---------------------------------------------------------------- main */
