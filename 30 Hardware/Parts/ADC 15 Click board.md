@@ -24,6 +24,7 @@ order: "[[ORD-001 First rig]]"
 - **To confirm on the board's schematic:** input connector type, any input RC filters, the LTC6903 default frequency, the power jumper. Research: [[60 Research/ADC 15 Click|ADC 15 Click research]].
 - 2026-10-13: in the lab (Kaszti in chat: all parts are here except the geophones).
 - 2026-11-01, bench bring-up on the classic ESP32 (COM5, desktop-o8pjtu7): ID 0x2205 (ADS131M02), all register writes acknowledged. **Measured rate 1995.80 Hz at OSR 2048 → CLKIN ≈ 8.1748 MHz, −0.21 %** (LTC6903 word 0xCF60, room temperature, 10 s DRDY count). **SPI needs extra chip-select time:** with ESP-IDF's default CS timing every word reads shifted right by one bit and the ADC ignores commands. `cs_ena_posttrans`/`cs_ena_pretrans` = 2, or CS1 driven from a GPIO, fixes it; the MISO input delay and mode 0 don't.
+- 2026-11-03, pc-10: press test with the load cell confirms **screw CH1 = ADC ch0**. `adc_dec` 997.96 Hz, 0 losses. Wiring and why: [[Load cell on the ADC 15 Click]].
 
 ## Ports (read from the board, 2026-10-13)
 ![[ADC_15_Click.jpg]]

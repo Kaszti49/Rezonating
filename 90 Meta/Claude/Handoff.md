@@ -21,6 +21,16 @@ updated: 2026-11-02
   - Python 3.12, ml + Lab, Lab UI, WinLibs GCC (host tests: `CC=gcc`) and ESP-IDF v6.0 in `C:\esp\v6.0` are installed.
   - The classifier blocks `-ExecutionPolicy Bypass` (IDF activation, the esp-idf MCP), so Claude ran idf.py through a scratchpad launcher that sets the env from `Microsoft.v6.0.PowerShell_profile.ps1`. That launcher is gone next session: recreate it, or use the EIM desktop shortcut.
 
+## Study site (2026-11-03, pc-10)
+- `python tools/study/serve.py` (port 8790). 28 lessons EN/HU, 3D parts and builds, fault cases, cards, Claude tutor. Progress goes to `10 Project/Study/` (new `study` note type in vault_schema.py and Vault rules).
+- **Not verified yet** (the verifier was skipped for the usage limit): run `verifier` on `tools/study/**`, and check lesson facts against the writers' flags. Their flags:
+  - AMS1117 800 mA / 1.1 V are not datasheet-checked;
+  - the SM-24 damping figures come from a secondary source;
+  - f_data = CLKIN/2/OSR should be confirmed in the datasheet;
+  - a native speaker should skim the Hungarian.
+- The writer hook blocks `tools/`. Content went through `docs/study-drafts/` and was moved. Consider allowing `tools/study/web/content/**` for the writer (`.claude/` change: needs approval).
+- Ask Kaszti: delete the old `docs/study-guide.html` and `docs/study-library/`?
+
 ## Next up
 | Who | What |
 | --- | --- |

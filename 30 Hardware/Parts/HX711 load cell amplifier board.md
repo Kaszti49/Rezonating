@@ -24,3 +24,4 @@ order:
 
 ## Notes
 - 2026-10-13: logged from Kaszti's photos.
+- 2026-11-03: not needed on the rig any more: the ADC 15 Click reads the load cell directly (press test passed). It read 8388607 (top of range) on pc-10. To be disconnected from the cell and the ESP32; why, and the checklist: [[Load cell on the ADC 15 Click]].

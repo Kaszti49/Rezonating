@@ -1,0 +1,42 @@
+filters:
+  and:
+    - file.inFolder("10 Project/Study")
+    - type == "study"
+formulas:
+  progress: 'if(lessons_total, round(lessons_done / lessons_total * 100), 0)'
+properties:
+  file.name:
+    displayName: Person
+  formula.progress:
+    displayName: Done %
+  lessons_done:
+    displayName: Lessons done
+  quiz_avg:
+    displayName: Quiz avg %
+  cards_known:
+    displayName: Cards known
+  cards_due:
+    displayName: Cards due
+  cases_solved:
+    displayName: Cases solved
+  parts_seen:
+    displayName: Parts studied
+  last_lesson:
+    displayName: Last lesson
+  updated:
+    displayName: Updated
+views:
+  - type: table
+    name: Study progress
+    order:
+      - file.name
+      - formula.progress
+      - lessons_done
+      - lessons_total
+      - quiz_avg
+      - cards_known
+      - cards_due
+      - cases_solved
+      - parts_seen
+      - last_lesson
+      - updated

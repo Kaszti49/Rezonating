@@ -11,6 +11,7 @@ These rules keep the vault readable for all three of us. The **properties are th
 | --- | --- | --- | --- |
 | `00 Inbox` | inbox | Loose idea, link, question | anything |
 | `10 Project` | project | Charter, plan, roadmap, team, rules | fixed |
+| `10 Project/Study` | study | Study progress of one person, written by the study site | `Kaszti`, `Viktor` |
 | `20 Work` | work | Piece of work with an owner | what to do, e.g. `Place first order` |
 | `30 Hardware/Parts` | part | Part we buy | part name |
 | `30 Hardware/Orders` | order | Order | `ORD-### name` |
@@ -42,6 +43,7 @@ New notes in each folder get the right template automatically (Templater).
 | decision `status` | `proposed` (Claude only proposes), `accepted`, `superseded` |
 | research `status` | `to-read`, `read` |
 | proposal `status` | `proposed`, `accepted`, `rejected`, `applied` |
+| study `person` | `kaszti`, `viktor` (the notes are written by `tools/study/serve.py`, not by hand) |
 | daily `off_day` | `true` on days other than Monday and Tuesday (the template sets it) |
 | dates | `YYYY-MM-DD` |
 | links in properties | `"[[Note name]]"`, in quotes |

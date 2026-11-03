@@ -29,3 +29,4 @@ order:
 
 ## Notes
 - 2026-10-13: logged from Kaszti's photos. The thread size of the holes was not measured.
+- 2026-11-03: on the ADC 15 Click screw CH1 with **690 Ω** (470 + 220 Ω) in series with red. The first "680 Ω" was 680 kΩ (no signal). Press test passed: +400 … +900 µV on presses. See [[Load cell on the ADC 15 Click]].
