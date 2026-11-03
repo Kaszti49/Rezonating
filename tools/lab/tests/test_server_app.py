@@ -93,17 +93,43 @@ def test_state_ports_logs_health_before_any_connection(client):
 def test_ports_marks_the_node_vid_pid(client, monkeypatch):
     from serial.tools import list_ports_common
 
+    def port(dev, vid, pid, desc):
+        p = list_ports_common.ListPortInfo(dev)
+        p.vid, p.pid, p.description = vid, pid, desc
+        return p
+
     def fake_comports(*a, **k):
-        a_ = list_ports_common.ListPortInfo("COM3")
-        a_.vid, a_.pid, a_.description = 0x1A86, 0x7523, "CH340"
-        b_ = list_ports_common.ListPortInfo("COM9")
-        b_.vid, b_.pid, b_.description = 0x303A, 0x1001, "USB JTAG/serial debug unit"
-        return [a_, b_]
+        return [
+            port("COM1", None, None, "Communications Port (COM1)"),  # a real ACPI port with nothing on it
+            port("COM3", 0x1A86, 0x7523, "CH340"),
+            port("COM22", 0x10C4, 0xEA60, "Silicon Labs CP210x USB to UART Bridge (COM22)"),
+            port("COM10", 0x1A86, 0x55D4, "USB-Enhanced-SERIAL CH9102"),
+            port("COM4", 0x0403, 0x6001, "FTDI"),  # not one of ours
+            port("COM9", 0x303A, 0x1001, "USB JTAG/serial debug unit"),
+        ]
 
     monkeypatch.setattr("serial.tools.list_ports.comports", fake_comports)
     ports = client.get("/api/ports").json()["ports"]
-    assert [p["device"] for p in ports] == ["COM9", "COM3"]  # the node first
-    assert ports[0]["is_node"] is True and ports[0]["vid_pid"] == "303A:1001" and ports[1]["is_node"] is False
+    # ESP32-S3 USB-Serial/JTAG first, then the bench bridges (CP210x, CH340, CH9102), then everything else
+    assert [p["device"] for p in ports] == ["COM9", "COM22", "COM3", "COM10", "COM1", "COM4"]
+    assert [p["is_node"] for p in ports] == [True, True, True, True, False, False]
+    assert [p["node_kind"] for p in ports] == ["esp32s3-usb", "cp210x", "ch340", "ch9102", None, None]
+    assert ports[0]["vid_pid"] == "303A:1001" and ports[1]["vid_pid"] == "10C4:EA60"
+
+
+def test_ports_bench_board_before_com1(client, monkeypatch):
+    """pc-10: only the CP2102 bench board (COM22) and an empty ACPI COM1; the board must come first."""
+    from serial.tools import list_ports_common
+
+    def fake_comports(*a, **k):
+        com1 = list_ports_common.ListPortInfo("COM1")
+        com22 = list_ports_common.ListPortInfo("COM22")
+        com22.vid, com22.pid = 0x10C4, 0xEA60
+        return [com1, com22]
+
+    monkeypatch.setattr("serial.tools.list_ports.comports", fake_comports)
+    ports = client.get("/api/ports").json()["ports"]
+    assert [(p["device"], p["is_node"]) for p in ports] == [("COM22", True), ("COM1", False)]
 
 
 def test_error_shapes(client, sim):
@@ -474,3 +500,29 @@ def test_settings_cannot_change_while_recording(tmp_path):
         assert r.status_code == 409 and r.json()["error"]["code"] == "recording_active"
         assert c.post("/api/record/stop").status_code == 200
         wait_idle(c)
+
+
+def test_connect_with_start_streams_at_once(client, sim):
+    """``start: true`` (what the web UI sends): every stream runs straight after the connect."""
+    r = client.post("/api/connect", json={"kind": "tcp", "host": "127.0.0.1", "port": sim.port, "start": True})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["state"] == "connected" and body["started"] == 0b111 and body["start_error"] is None
+    time.sleep(1.5)
+    st = client.get("/api/state").json()["status"]
+    assert all(s["running"] for s in st["streams"]), st["streams"]
+
+
+def test_connect_without_start_stays_idle(client, sim):
+    """The default (no ``start``) keeps the old meaning: connected, nothing streams until /api/acquisition."""
+    body = connect_sim(client, sim).json()
+    assert "started" not in body and "start_error" not in body
+    st = client.get("/api/state").json()["status"]
+    assert not any(s["running"] for s in st["streams"])
+
+
+def test_failed_connect_is_in_the_host_log(client):
+    r = client.post("/api/connect", json={"kind": "tcp", "host": "127.0.0.1", "port": 1})
+    assert r.status_code == 502
+    msgs = [e["msg"] for e in client.get("/api/logs").json()["logs"] if e["source"] == "host"]
+    assert any("connect tcp 127.0.0.1:1 failed: connect_failed" in m for m in msgs), msgs

@@ -88,6 +88,11 @@ The dev server passes `Host` and `Origin` through unchanged; the lab server acce
 was started with `--dev` (WEB_API.md section 1). The theme, unit and window choices are kept in `localStorage` (optional: the page works
 without it). The live scope keeps about 65 s per stream in the browser; older data and scroll-back come from the
 server's 10-minute rings through the `/api/view/*` requests.
+- **Connecting from the web UI** (Device page): the port list refreshes every 2 s while disconnected, and likely
+  nodes come first and are preselected: the ESP32-S3's own USB port, then the USB-UART bridges of classic ESP32 bench
+  boards (CP210x, CH340, CH9102). The UI connects with `start: true`, so every stream runs and the Live page shows
+  data straight away; a START failure is shown, not hidden. A serial open is retried for 2 s and `GET_INFO` is resent
+  inside the handshake window; every failed connect is in the log (WEB_API.md section 3, `POST /api/connect`).
 - **Switching transport** (Wi-Fi to USB, or to the simulator): connecting again closes the old session politely
   (STOP, then close), resets the ring buffers and starts a fresh `SessionMonitor`, then runs the clean-up STOP of
   PROTOCOL.md section 1 before anything starts. A window left over on the node is never counted; if the clean-up

@@ -148,6 +148,7 @@ class ConnectBody(BaseModel):
     port: int | None = Field(default=None, ge=1, le=65535)
     url: str | None = None
     key: str | None = Field(default=None, description="pairing key, 32 hex digits")
+    start: bool = Field(default=False, description="START every stream once connected (the web UI sends true)")
 
 
 class AcquisitionBody(BaseModel):
@@ -307,7 +308,7 @@ def create_app(
         except ValueError:
             raise DeviceError("invalid_request", "the key must be 32 hex digits", http=400) from None
         spec = ConnectSpec(body.kind, body.host, body.port, body.url, key)
-        return await run(mgr.connect(spec))
+        return await run(mgr.connect(spec, start=body.start))
 
     @app.post("/api/disconnect")
     async def disconnect():

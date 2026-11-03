@@ -43,6 +43,9 @@ PING_PERIOD_S = 0.5  # liveness PING (PROTOCOL.md section 1 asks for at least 1 
 STATUS_EVENT_PERIOD_S = 1.0
 NODE_EVENTS_KEPT = 100_000
 HANDSHAKE_TIMEOUT_S = 3.0
+GET_INFO_RESEND_S = 0.75  # serial: repeat GET_INFO inside the handshake window until HELLO arrives (PROTOCOL.md 1)
+SERIAL_OPEN_RETRY_S = 2.0  # serial: keep retrying the open this long (Windows refuses it briefly after a plug-in)
+SERIAL_OPEN_RETRY_PERIOD_S = 0.25
 START_TIMEOUT_S = 2.0
 STOP_TIMEOUT_S = 3.0
 SET_TIMEOUT_S = 2.0
@@ -202,6 +205,7 @@ class DeviceManager:
         self.ring_seconds = ring_seconds
         self.embedded_sim_enabled = embedded_sim
         self._wall = wall
+        self.serial_open_retry_s = SERIAL_OPEN_RETRY_S
         self._cmd_q: queue.Queue = queue.Queue()
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="rzlab-device", daemon=True)
@@ -264,9 +268,10 @@ class DeviceManager:
 
     # ------------------------------------------------------------------------------ public commands
 
-    def connect(self, spec: ConnectSpec) -> concurrent.futures.Future:
+    def connect(self, spec: ConnectSpec, start: bool = False) -> concurrent.futures.Future:
+        """Connect; with ``start`` also START every stream once the session is up (see ``_do_connect``)."""
         spec.validate()
-        return self.submit(lambda: self._do_connect(spec))
+        return self.submit(lambda: self._do_connect(spec, start))
 
     def disconnect(self) -> concurrent.futures.Future:
         return self.submit(lambda: self._do_disconnect(polite=True))
@@ -593,9 +598,9 @@ class DeviceManager:
     # --------------------------------------------------------------------------------- connect
 
     def _open_transport(self, spec: ConnectSpec):
+        if spec.kind == "serial":
+            return self._open_serial(spec.url or "")
         try:
-            if spec.kind == "serial":
-                return SerialTransport(spec.url or "")
             if spec.kind == "tcp":
                 return TcpTransport(spec.host or "127.0.0.1", spec.port or DEFAULT_PORT)
             port = spec.port or DEFAULT_PORT
@@ -610,6 +615,33 @@ class DeviceManager:
             raise
         except Exception as exc:  # noqa: BLE001 - OSError, pyserial's SerialException, ...
             raise DeviceError("connect_failed", f"cannot connect to {spec.target()}: {exc}", http=502) from exc
+
+    def _open_serial(self, url: str) -> SerialTransport:
+        """Open a serial port, retrying for ``serial_open_retry_s``: right after a USB plug-in (or while Windows
+        still holds the handle of a port that was just closed) the open fails for a moment with "Access is denied"
+        or "file not found" although the port is about to work."""
+        t0 = time.monotonic()
+        deadline = t0 + self.serial_open_retry_s
+        tries = 0
+        while True:
+            tries += 1
+            try:
+                transport = SerialTransport(url)
+            except Exception as exc:  # noqa: BLE001 - pyserial's SerialException, OSError, ...
+                if time.monotonic() + SERIAL_OPEN_RETRY_PERIOD_S > deadline:
+                    took = time.monotonic() - t0
+                    raise DeviceError(
+                        "connect_failed",
+                        f"cannot connect to {url} ({tries} tries in {took:.1f} s): {exc}",
+                        http=502,
+                    ) from exc
+                if tries == 1:
+                    self.host_log(f"opening {url} failed, retrying for {self.serial_open_retry_s:g} s: {exc}", 2)
+                time.sleep(SERIAL_OPEN_RETRY_PERIOD_S)
+                continue
+            if tries > 1:
+                self.host_log(f"opened {url} on try {tries} ({time.monotonic() - t0:.1f} s)", 2)
+            return transport
 
     def _start_embedded_sim(self, port: int) -> None:
         if self._embedded is not None:
@@ -644,7 +676,13 @@ class DeviceManager:
                 rings[s.id] = SampleRing(s.n_ch, cap)
         self.rings = rings
 
-    def _do_connect(self, spec: ConnectSpec) -> dict:
+    def _connect_failed(self, err: DeviceError, spec: ConnectSpec) -> DeviceError:
+        """Every failed connect: state back to disconnected, an ``error`` event and a host log line (``/api/logs``)."""
+        self._set_state("disconnected", err.message)
+        self.host_log(f"connect {spec.kind} {spec.target()} failed: {err.code}: {err.message}", 1)
+        return self._error_event(err, "connect")
+
+    def _do_connect(self, spec: ConnectSpec, start: bool = False) -> dict:
         if self._client is not None:
             self._do_disconnect(polite=True)
         self._spec = spec
@@ -657,8 +695,7 @@ class DeviceManager:
         try:
             transport = self._open_transport(spec)
         except DeviceError as exc:
-            self._set_state("disconnected", exc.message)
-            raise self._error_event(exc, "connect") from exc
+            raise self._connect_failed(exc, spec) from exc
         client = LinkClient(transport)
         self._client = client
         self._next_ping = self._wall()
@@ -666,7 +703,12 @@ class DeviceManager:
         self._last_rx = self._wall()
         self._bytes_mark = (self._wall(), 0)
         try:
-            session.open_session(client, self._mon, spec.key, self._handle, self._wall, HANDSHAKE_TIMEOUT_S)
+            resend = GET_INFO_RESEND_S if spec.kind == "serial" else None
+            sent = session.open_session(
+                client, self._mon, spec.key, self._handle, self._wall, HANDSHAKE_TIMEOUT_S, resend_s=resend
+            )
+            if sent > 1:
+                self.host_log(f"HELLO arrived after {sent} GET_INFO (the first ones got no answer)", 2)
             hello = self._mon.hello
             assert hello is not None
             self._setup_rings(hello)
@@ -684,17 +726,29 @@ class DeviceManager:
             if spec.kind == "tcp" and spec.key is None and "no HELLO" in str(exc):
                 hint = " A Wi-Fi node needs its pairing key."
             self._drop_client()
-            self._set_state("disconnected", str(exc) + hint)
-            raise self._error_event(DeviceError("session_failed", str(exc) + hint, http=502), "connect") from exc
+            raise self._connect_failed(DeviceError("session_failed", str(exc) + hint, http=502), spec) from exc
         except TransportClosed as exc:
             self._drop_client()
-            self._set_state("disconnected", f"connection lost: {exc}")
-            raise self._error_event(
-                DeviceError("link_lost", f"connection lost during start-up: {exc}", http=502), "connect"
+            raise self._connect_failed(
+                DeviceError("link_lost", f"connection lost during start-up: {exc}", http=502), spec
             ) from exc
         self._set_state("connected")
         self._publish(self._status_event())
-        return {"state": "connected", "node_id": hello.node_id}
+        out: dict[str, Any] = {"state": "connected", "node_id": hello.node_id}
+        if start:
+            out.update(self._start_after_connect())
+        return out
+
+    def _start_after_connect(self) -> dict:
+        """START every stream right after a connect. The connect itself stands if this fails: the failure comes back
+        as ``start_error`` (and as the usual ``error`` event and a host log line), never silently."""
+        mask = self.stream_mask_all()
+        try:
+            self._do_start(mask)
+        except DeviceError as exc:  # _do_start already published the error event
+            self.host_log(f"start after connect failed: {exc.code}: {exc.message}", 1)
+            return {"started": 0, "start_error": exc.to_dict()}
+        return {"started": mask, "start_error": None}
 
     def _drop_client(self) -> None:
         client, self._client = self._client, None

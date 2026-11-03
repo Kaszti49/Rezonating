@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { api, type ConnectRequest } from '../lib/api';
+  import { api, type ConnectRequest, type ConnectResult } from '../lib/api';
   import { app } from '../lib/store.svelte';
   import type { PortInfo } from '../lib/types';
 
@@ -18,19 +18,36 @@
   const working = $derived(app.busy === 'connect' || app.busy === 'disconnect' || connState === 'connecting' || connState === 'disconnecting');
   const isUp = $derived(connState === 'connected' || connState === 'connecting');
 
+  const PORT_POLL_MS = 2000; // re-list the ports this often while disconnected (a USB replug changes them)
+  let refreshing = false;
+
   async function refresh(): Promise<void> {
+    if (refreshing) return;
+    refreshing = true;
     try {
       const r = await api.ports();
       ports = r.ports;
       portsErr = '';
+      // Keep the user's choice while that port exists; otherwise fall back to the first likely node.
       if (!selPort || !ports.some((p) => p.device === selPort)) {
+        const typed = serialUrl.trim() !== '' && serialUrl.trim() !== selPort; // a hand-typed URL stays
         selPort = ports.find((p) => p.is_node)?.device ?? '';
-        serialUrl = selPort;
+        if (!typed) serialUrl = selPort;
       }
     } catch (e) {
       portsErr = e instanceof Error ? e.message : String(e);
+    } finally {
+      refreshing = false;
     }
   }
+
+  // Refresh at once when the connection drops (the port may have gone with the cable).
+  let prevState = 'disconnected';
+  $effect(() => {
+    const s = connState;
+    if (s === 'disconnected' && prevState !== 'disconnected') void refresh();
+    prevState = s;
+  });
 
   function choose(dev: string): void {
     selPort = dev;
@@ -45,8 +62,13 @@
     }
     const k = key.trim();
     if (k) req.key = k;
-    const err = await app.run('connect', () => api.connect(req), true);
+    req.start = true; // live data straight away; a START failure comes back as start_error
+    const box: { r: ConnectResult | null } = { r: null };
+    const err = await app.run('connect', async () => {
+      box.r = await api.connect(req);
+    }, true);
     if (err) connectErr = err.message;
+    else if (box.r?.start_error) connectErr = `Connected, but the streams did not start: ${box.r.start_error.message}`;
   }
 
   async function disconnect(): Promise<void> {
@@ -54,7 +76,13 @@
     await app.disconnect();
   }
 
-  onMount(() => void refresh());
+  onMount(() => {
+    void refresh();
+    const timer = setInterval(() => {
+      if (connState === 'disconnected' && !working && document.visibilityState === 'visible') void refresh();
+    }, PORT_POLL_MS);
+    return () => clearInterval(timer);
+  });
 </script>
 
 <section class="card">
@@ -81,7 +109,7 @@
             <span class="mono">{p.device}</span>
             <span class="muted" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{p.description}</span>
             {#if p.vid_pid}<span class="chip mono {p.is_node ? 'ok' : ''}">{p.vid_pid}</span>{/if}
-            {#if p.is_node}<span class="chip ok">node</span>{/if}
+            {#if p.is_node}<span class="chip ok" title={p.node_kind ?? ''}>{p.node_kind === 'esp32s3-usb' ? 'node' : 'likely node'}</span>{/if}
           </label>
         {/each}
       </div>
@@ -123,6 +151,6 @@
     </div>
   </div>
 
-  {#if working}<div class="muted" style="margin-top:8px">Working&hellip; a connect can take up to 5 s.</div>{/if}
+  {#if working}<div class="muted" style="margin-top:8px">Working&hellip; a connect usually takes under a second, up to about 10 s when the port or the node is slow to answer.</div>{/if}
   {#if connectErr}<div class="inline-err">{connectErr}</div>{/if}
 </section>

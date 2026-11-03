@@ -32,17 +32,36 @@ def open_session(
     handle: FrameHandler,
     wall: Callable[[], float] = time.perf_counter,
     timeout_s: float | None = None,
-) -> None:
-    """Write the opening 0x00 and the session start; return when HELLO and CONFIG have arrived."""
+    resend_s: float | None = None,
+) -> int:
+    """Write the opening 0x00 and the session start; return when HELLO and CONFIG have arrived.
+
+    ``resend_s`` (GET_INFO sessions only, ignored with a key): while no HELLO has arrived, write 0x00 + GET_INFO
+    again every ``resend_s`` inside the same ``timeout_s`` window. PROTOCOL.md section 1 makes that safe: before a
+    session the node ignores everything but GET_INFO, and in a session a repeated GET_INFO only re-sends HELLO +
+    CONFIG and resets the node's seq. It covers a first GET_INFO lost while a board was still printing its boot
+    text, or written before the port really carried bytes. AUTH is never repeated (a wrong key closes the TCP
+    connection). Returns how many session-start frames were sent.
+    """
     timeout_s = HANDSHAKE_TIMEOUT_S if timeout_s is None else timeout_s
-    client.open_session(Auth(key) if key else GetInfo())
-    deadline = wall() + timeout_s
+    start_msg = Auth(key) if key else GetInfo()
+    client.open_session(start_msg)
+    sent = 1
+    now = wall()
+    deadline = now + timeout_s
+    next_resend = now + resend_s if (resend_s and not key) else None
     while (mon.hello is None or mon.config is None) and wall() < deadline:
         handle(client.poll(0.05))
         if mon.errors:
             raise SessionError(f"node refused the session: ERR {mon.errors[0].code} {mon.errors[0].msg}")
+        if next_resend is not None and mon.hello is None and wall() >= next_resend:
+            client.open_session(start_msg)
+            sent += 1
+            next_resend = wall() + (resend_s or 0.0)
     if mon.hello is None or mon.config is None:
-        raise SessionError("no HELLO and CONFIG within 3 s; is the node (or `rzlab sim`) running?")
+        tries = f" ({sent} GET_INFO sent)" if sent > 1 else ""
+        raise SessionError(f"no HELLO and CONFIG within {timeout_s:g} s{tries}; is the node (or `rzlab sim`) running?")
+    return sent
 
 
 def wait_for_reply(

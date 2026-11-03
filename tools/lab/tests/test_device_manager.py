@@ -407,3 +407,135 @@ def test_stream_mask_of():
     for bad in (["nope"], [7], [True]):
         with pytest.raises(DeviceError):
             stream_mask_of(bad, names)
+
+
+# ------------------------------------------------------------------- connect robustness (serial, start, logs)
+
+
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def _host_logs(events) -> list[str]:
+    return [e["msg"] for e in events.of("log") if e["source"] == "host"]
+
+
+def test_serial_open_is_retried_until_the_port_appears(manager, sim, events, monkeypatch):
+    """Right after a USB plug-in Windows refuses the open for a moment ("Access is denied"): the manager retries."""
+    import serial
+    from rezonating_lab.server import device
+
+    real = device.SerialTransport
+    calls = {"n": 0}
+
+    def flaky(url: str):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise serial.SerialException(
+                f"could not open port '{url}': PermissionError(13, 'Access is denied.', None, 5)"
+            )
+        return real(url)
+
+    monkeypatch.setattr(device, "SerialTransport", flaky)
+    r = manager.connect(serial_url(sim)).result(15)
+    assert r["state"] == "connected" and calls["n"] == 3
+    logs = _host_logs(events)
+    assert any("failed, retrying" in m and "Access is denied" in m for m in logs), logs
+    assert any(" on try 3 " in m for m in logs), logs
+
+
+def test_serial_open_gives_up_after_the_window_and_logs_it(manager, events):
+    manager.serial_open_retry_s = 0.5
+    url = f"socket://127.0.0.1:{_free_port()}"
+    t0 = time.monotonic()
+    with pytest.raises(DeviceError) as ei:
+        manager.connect(ConnectSpec("serial", url=url)).result(30)
+    assert ei.value.code == "connect_failed" and "tries in" in ei.value.message
+    assert time.monotonic() - t0 >= 0.5
+    assert any(f"connect serial {url} failed: connect_failed" in m for m in _host_logs(events))
+    assert events.of("connection")[-1]["state"] == "disconnected"
+
+
+def _first_hello_lost():
+    from rezonating_lab.link.codec import Hello
+
+    state = {"n": 0}
+
+    def fault(msg) -> bool:
+        if isinstance(msg, Hello):
+            state["n"] += 1
+            return state["n"] == 1
+        return False
+
+    return fault
+
+
+def test_serial_handshake_resends_get_info_when_the_first_hello_is_lost(events):
+    with SimThread(SimConfig(speed=10.0, control_fault=_first_hello_lost())) as sim:
+        m = DeviceManager(emit=events, embedded_sim=False)
+        m.start()
+        try:
+            r = m.connect(serial_url(sim)).result(15)
+            assert r["state"] == "connected"
+            assert any("HELLO arrived after 2 GET_INFO" in msg for msg in _host_logs(events))
+        finally:
+            m.close()
+
+
+def test_tcp_handshake_is_not_resent_and_its_failure_is_logged(events, monkeypatch):
+    """TCP (AUTH rules on a real node) keeps the single session start; the session_failed lands in the host log."""
+    from rezonating_lab.server import device
+
+    monkeypatch.setattr(device, "HANDSHAKE_TIMEOUT_S", 1.0)
+    with SimThread(SimConfig(speed=10.0, control_fault=_first_hello_lost())) as sim:
+        m = DeviceManager(emit=events, embedded_sim=False)
+        m.start()
+        try:
+            with pytest.raises(DeviceError) as ei:
+                m.connect(tcp(sim)).result(15)
+            assert ei.value.code == "session_failed"
+            target = f"127.0.0.1:{sim.port}"
+            assert any(f"connect tcp {target} failed: session_failed" in msg for msg in _host_logs(events))
+            assert events.of("error")[-1]["code"] == "session_failed"
+        finally:
+            m.close()
+
+
+def test_connect_with_start_runs_every_stream(manager, sim, events):
+    r = manager.connect(serial_url(sim), start=True).result(15)
+    assert r["started"] == ALL and r["start_error"] is None
+    run_for(manager, 1.2)
+    st = last_status(events)
+    assert all(s["running"] for s in st["streams"])
+    final = finish(manager, events)
+    assert all(s["loss"]["host"] == 0 for s in final["streams"])  # starting on connect keeps exact accounting
+
+
+def test_a_start_failure_after_connect_is_reported_not_swallowed(events, monkeypatch):
+    """The START's ACK is lost: the connect stands, the response carries start_error, and error + log are emitted."""
+    from rezonating_lab.link.codec import Ack
+    from rezonating_lab.server import device
+
+    monkeypatch.setattr(device, "START_TIMEOUT_S", 0.5)
+    acks = {"n": 0}
+
+    def fault(msg) -> bool:
+        if isinstance(msg, Ack):
+            acks["n"] += 1
+            return acks["n"] == 2  # 1st ACK: the clean-up STOP; 2nd: the START after connect
+        return False
+
+    with SimThread(SimConfig(speed=10.0, control_fault=fault)) as sim:
+        m = DeviceManager(emit=events, embedded_sim=False)
+        m.start()
+        try:
+            r = m.connect(serial_url(sim), start=True).result(15)
+            assert r["state"] == "connected" and r["started"] == 0
+            assert r["start_error"]["code"] == "timeout"
+            assert events.of("error")[-1]["code"] == "timeout"
+            assert any("start after connect failed: timeout" in msg for msg in _host_logs(events))
+            assert events.of("connection")[-1]["state"] == "connected"
+        finally:
+            m.close()

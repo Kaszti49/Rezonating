@@ -100,13 +100,23 @@ export interface ConnectRequest {
   port?: number;
   url?: string;
   key?: string;
+  /** START every stream once connected (WEB_API.md 3, POST /api/connect). */
+  start?: boolean;
+}
+
+export interface ConnectResult {
+  state: string;
+  node_id: string;
+  /** Only with `start: true`: the started stream mask, and the START failure if any (the connect still stands). */
+  started?: number;
+  start_error?: { code: string; message: string; event_id?: number } | null;
 }
 
 export const api = {
   state: () => request<StateSnapshot>('GET', '/api/state'),
   ports: () => request<{ ports: PortInfo[] }>('GET', '/api/ports'),
   logs: () => request<{ logs: LogEvent[] }>('GET', '/api/logs?limit=500'),
-  connect: (b: ConnectRequest) => request<{ state: string; node_id: string }>('POST', '/api/connect', b),
+  connect: (b: ConnectRequest) => request<ConnectResult>('POST', '/api/connect', b),
   disconnect: () => request<{ state: string }>('POST', '/api/disconnect', {}),
   acquisition: (action: 'start' | 'stop', streams?: (string | number)[]) =>
     request<Record<string, number>>('POST', '/api/acquisition', { action, streams: streams ?? [] }),

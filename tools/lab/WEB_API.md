@@ -57,7 +57,7 @@ Every non-2xx REST answer has this shape, whatever went wrong:
 | `unknown_key` | 400 | Node `ERR 3`, or a key the UI may not set |
 | `not_authorised` | 403 | Node `ERR 6` (wrong or missing pairing key) |
 | `node_error` | 502 | Any other node `ERR` |
-| `connect_failed` | 502 | Could not open the TCP connection or serial port |
+| `connect_failed` | 502 | Could not open the TCP connection or serial port (serial: still failing after 2 s of retries) |
 | `session_failed` | 502 | Connected, but no `HELLO`/`CONFIG` within 3 s, or the node refused the session |
 | `link_lost` | 502 | The transport died during a command |
 | `timeout` | 504 | No `ACK` for START (2 s), STOP (3 s) or SET (2 s) |
@@ -68,8 +68,9 @@ Every non-2xx REST answer has this shape, whatever went wrong:
 
 ## 3. REST commands
 
-All bodies are `application/json`. Commands run on the server's single device thread, one at a time; `connect`
-can take up to about 5 s (handshake 3 s + clean-up STOP 2 s), so show a spinner.
+All bodies are `application/json`. Commands run on the server's single device thread, one at a time. A `connect`
+normally takes well under 1 s, but can take up to about 9 s (serial open retries 2 s + handshake 3 s + clean-up STOP
+2 s + START 2 s with `start: true`), so show a spinner.
 
 ### `GET /api/state`
 The latest event of each kind, as a snapshot (what a WebSocket client also gets on connect):
@@ -82,12 +83,18 @@ The latest event of each kind, as a snapshot (what a WebSocket client also gets 
 events of the same name (section 4.3).
 
 ### `GET /api/ports`
-Serial ports from pyserial; the ESP32-S3 USB-Serial/JTAG (VID:PID `303A:1001`) sorts first and has `is_node: true`.
+Serial ports from pyserial. `is_node: true` marks a *likely* node, and `node_kind` says why: the ESP32-S3
+USB-Serial/JTAG (`303A:1001`, `"esp32s3-usb"`) or a USB-UART bridge of a classic ESP32 bench board: CP210x
+(`10C4:EA60`, `"cp210x"`), CH340 (`1A86:7523`, `"ch340"`), CH9102 (`1A86:55D4`, `"ch9102"`). A bridge can belong to
+another gadget too, so it is a hint for preselection only. Sort order: `esp32s3-usb`, then the bridges in that order,
+then every other port; inside a group by name with the number compared as a number (COM2 before COM10).
 ```json
-{ "ports": [ { "device": "COM9", "description": "USB Serial Device (COM9)", "hwid": "USB VID:PID=303A:1001 SER=...",
-               "manufacturer": "Espressif", "serial_number": "A1B2C3", "vid_pid": "303A:1001", "is_node": true },
+{ "ports": [ { "device": "COM22", "description": "Silicon Labs CP210x USB to UART Bridge (COM22)",
+               "hwid": "USB VID:PID=10C4:EA60 SER=0001", "manufacturer": "Silicon Labs", "serial_number": "0001",
+               "vid_pid": "10C4:EA60", "is_node": true, "node_kind": "cp210x" },
              { "device": "COM1", "description": "Communications Port (COM1)", "hwid": "ACPI\\PNP0501\\2",
-               "manufacturer": "(Standard port types)", "serial_number": null, "vid_pid": null, "is_node": false } ] }
+               "manufacturer": "(Standard port types)", "serial_number": null, "vid_pid": null, "is_node": false,
+               "node_kind": null } ] }
 ```
 
 ### `POST /api/connect`
@@ -99,13 +106,33 @@ Disconnects the current node (politely: STOP, then close), then connects. Fresh 
 | `host`, `port` | string, int | `tcp` (port default 7350); `sim` uses `127.0.0.1` and `port` (default 7350) |
 | `url` | string | `serial`: `COM5`, `/dev/ttyACM0` or `socket://127.0.0.1:7350`. Nothing else is accepted |
 | `key` | string | pairing key, 32 hex digits. With a key the session starts with `AUTH` (Wi-Fi nodes), otherwise with `GET_INFO` (USB, simulator) |
+| `start` | bool | default `false`. `true`: START every stream once the session is up (after the clean-up STOP), so live data flows without a separate `acquisition` call. The web UI always sends `true` |
 
 `kind: "sim"` is TCP to the simulator at `127.0.0.1:7350`. If nothing listens there the server starts an
 in-process simulator on that port (unless started with `--no-embedded-sim`); the `connection` event then has
 `embedded_sim: true`.
 
 Response `200`: `{ "state": "connected", "node_id": "rzn-sim001" }`. Errors: `connect_failed`, `session_failed`,
-`not_authorised`, `invalid_request`. After success the connection is idle: nothing streams until `acquisition`.
+`link_lost` (the transport died during start-up), `not_authorised`, `invalid_request`. Without `start` the connection
+is idle after success: nothing streams until `acquisition`.
+
+With `start: true` the response also has `started` (the stream mask that was started) and `start_error`:
+`{ "state": "connected", "node_id": "rzn-sim001", "started": 7, "start_error": null }`. If the START fails (ERR or no
+ACK within 2 s) the connect still stands: `started` is `0`, `start_error` is the error object of section 2 (for
+example `{ "code": "timeout", "message": "...", "event_id": 12 }`), and the failure also arrives as an `error` event
+and a host `log` line. A client then offers `POST /api/acquisition` again.
+
+Serial connects are more patient than TCP ones, because a USB port can be briefly unusable:
+- **Open retry:** if the port cannot be opened (Windows answers "Access is denied" or "file not found" for a moment
+  after a plug-in, or while it still holds the handle of a port that was just closed), the server retries every
+  0.25 s for up to 2 s before it answers `connect_failed`. The message says how many tries were made.
+- **GET_INFO resend:** while no `HELLO` has arrived, the server writes `0x00` + `GET_INFO` again every 0.75 s inside
+  the 3 s handshake window (PROTOCOL.md section 1: before a session the node ignores everything but `GET_INFO`, and a
+  repeated `GET_INFO` only re-sends `HELLO` + `CONFIG`). TCP connects send their session start once; `AUTH` is never
+  repeated.
+- **Logging:** every failed connect (any kind) writes a host log line
+  `connect <kind> <target> failed: <code>: <message>` (level `error`, `GET /api/logs`); a retried open and a resent
+  `GET_INFO` write a `warn` line, so a slow or flaky port can be diagnosed afterwards.
 
 ### `POST /api/disconnect`
 Stops running streams (STOP with a 1.5 s wait), closes the transport. The ring buffers and the last accounting stay
@@ -395,7 +422,9 @@ Values are in the channel's unit (`code * scale`); `clipped` counts samples at f
 for history, then append WebSocket frames (section 4.2) -> PSD every 1 s with `/api/view/psd` -> spectrogram with
 `/api/view/spectrogram` using `hop` + `since`. On a `stream_reset` or `epoch` change, clear and refetch.
 
-**Device page.** `GET /api/ports` for the port list (offer the `is_node` one first), a form for `tcp` host/port/key,
+**Device page.** `GET /api/ports` for the port list (offer the first `is_node` one; the web UI re-lists every 2 s
+while disconnected and right after the connection drops, and keeps the user's choice while that port exists), connect
+with `start: true`, a form for `tcp` host/port/key,
 a "Simulator" button (`kind: "sim"`); show `status.link` (type, rtt, bad/lost frames, rx rate), `status.health`
 (heap, temperature, RSSI, queue fill), the three loss counters per stream, the measured rate with `offset_pct`, and the
 `log` list (`GET /api/logs` once, then `log` events). Gain and range selectors call `POST /api/set`; on `busy` show the

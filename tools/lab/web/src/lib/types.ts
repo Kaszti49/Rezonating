@@ -175,7 +175,9 @@ export interface PortInfo {
   manufacturer: string | null;
   serial_number: string | null;
   vid_pid: string | null;
+  /** Likely a node: the ESP32-S3 USB-Serial/JTAG or a bench USB-UART bridge (CP210x, CH340, CH9102). */
   is_node: boolean;
+  node_kind: 'esp32s3-usb' | 'cp210x' | 'ch340' | 'ch9102' | null;
 }
 
 export interface ViewCommon {

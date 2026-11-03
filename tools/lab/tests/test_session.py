@@ -132,3 +132,67 @@ def test_begin_recording_needs_hello():
     client = LinkClient(DeafTransport())
     with pytest.raises(session.SessionError):
         session.begin_recording(client, SessionMonitor(), 1, lambda f: None)
+
+
+# ------------------------------------------------------------------------- handshake: GET_INFO resend
+
+
+def _fake_clock():
+    t = {"now": 0.0}
+
+    def wall() -> float:
+        t["now"] += 0.05  # every poll of the DeafTransport "takes" 50 ms
+        return t["now"]
+
+    return wall
+
+
+def test_open_session_resends_get_info_until_hello_inside_the_window():
+    """With ``resend_s`` a silent node gets 0x00 + GET_INFO again about every ``resend_s`` until the timeout."""
+    from rezonating_lab.link.codec import GetInfo
+
+    tr = DeafTransport()
+    client = LinkClient(tr)
+    with pytest.raises(session.SessionError, match=r"within 2 s \(\d+ GET_INFO sent\)"):
+        session.open_session(client, SessionMonitor(), None, lambda f: None, _fake_clock(), 2.0, resend_s=0.5)
+    starts = [f for f in tr.sent if isinstance(f.msg, GetInfo)]
+    assert 4 <= len(starts) <= 5  # t = 0, 0.5, 1.0, 1.5 (and maybe 2.0) inside a 2 s window
+    assert [f.seq for f in starts] == list(range(len(starts)))  # fresh PC seq for each one
+
+
+def test_open_session_never_resends_auth_or_without_resend_s():
+    from rezonating_lab.link.codec import Auth, GetInfo
+
+    tr = DeafTransport()
+    with pytest.raises(session.SessionError):
+        session.open_session(
+            LinkClient(tr), SessionMonitor(), bytes(16), lambda f: None, _fake_clock(), 2.0, resend_s=0.5
+        )
+    assert [type(f.msg) for f in tr.sent] == [Auth]  # a wrong key closes TCP: AUTH is sent once
+    tr = DeafTransport()
+    with pytest.raises(session.SessionError):
+        session.open_session(LinkClient(tr), SessionMonitor(), None, lambda f: None, _fake_clock(), 2.0)
+    assert [type(f.msg) for f in tr.sent] == [GetInfo]  # the default keeps the old single-shot behaviour
+
+
+def test_lost_first_hello_is_recovered_by_the_get_info_resend():
+    """The sim corrupts its first HELLO on the wire: the resent GET_INFO gets a clean HELLO + CONFIG."""
+    from rezonating_lab.link.codec import Hello
+
+    state = {"hellos": 0}
+
+    def fault(msg) -> bool:
+        if isinstance(msg, Hello):
+            state["hellos"] += 1
+            return state["hellos"] == 1
+        return False
+
+    with SimThread(SimConfig(speed=10.0, control_fault=fault)) as sim:
+        client = LinkClient(TcpTransport("127.0.0.1", sim.port))
+        mon = SessionMonitor()
+        try:
+            sent = session.open_session(client, mon, None, lambda fs: [mon.on_frame(f) for f in fs], resend_s=0.3)
+            assert sent >= 2 and mon.hello is not None and mon.config is not None
+            assert client.rx.bad_frames >= 1  # the corrupted first HELLO was counted, not hidden
+        finally:
+            client.close()
