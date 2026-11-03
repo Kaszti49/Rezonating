@@ -1,0 +1,63 @@
+{
+  "id": "e13", "minutes": 40,
+  "title": {"en": "Op-amps", "hu": "Műveleti erősítők"},
+  "goal": {"en": "After this lesson you can use the two golden rules to find the gain of a buffer, a non-inverting and an inverting stage, explain why a piezo head needs a buffer, and say why the geophone and the load cell need no op-amp of ours in front of the ADS131M0x.", "hu": "A lecke után a két aranyszabállyal ki tudod számolni egy követő, egy neminvertáló és egy invertáló fokozat erősítését, el tudod magyarázni, miért kell puffer a piezo fejhez, és meg tudod mondani, miért nem kell saját műveleti erősítő a geofon és a mérlegcella elé az ADS131M0x előtt."},
+  "parts": ["adc15", "ads131m04", "yzc133", "sm24"],
+  "predict": [
+    {
+      "q": {"en": "A non-inverting amplifier has 0.1 V on its + input and negative feedback working normally. What is the voltage on its − input?", "hu": "Egy neminvertáló erősítő + bemenetén 0,1 V van, és a negatív visszacsatolás rendesen működik. Mekkora a feszültség a − bemenetén?"},
+      "options": [
+        {"en": "0 V, because the − input goes to ground", "hu": "0 V, mert a − bemenet földre megy"},
+        {"en": "Also 0.1 V: feedback adjusts the output until the two inputs match", "hu": "Szintén 0,1 V: a visszacsatolás addig állítja a kimenetet, amíg a két bemenet egyenlő nem lesz"},
+        {"en": "The output voltage divided by the open-loop gain, so it can be anything", "hu": "A kimeneti feszültség osztva a nyílt hurkú erősítéssel, tehát bármi lehet"},
+        {"en": "−0.1 V", "hu": "−0,1 V"}
+      ],
+      "answer": 1,
+      "why": {"en": "Golden rule 1: with negative feedback the output moves until the input difference is almost zero. Inside the chip the gain is huge, so a tiny difference already swings the output. Option 3 is technically close (the difference is output / open-loop gain, microvolts), but in practice you treat it as zero. The − input is tied to the Rf/Rg divider, not to ground.", "hu": "1. aranyszabály: negatív visszacsatolással a kimenet addig mozog, amíg a bemeneti különbség majdnem nulla nem lesz. A chip belső erősítése óriási, így már apró különbség is kimozdítja a kimenetet. A 3. válasz technikailag közel jár (a különbség kimenet / nyílt hurkú erősítés, mikrovolt nagyságrend), de a gyakorlatban nullának vesszük. A − bemenet az Rf/Rg osztóra van kötve, nem földre."}
+    },
+    {
+      "q": {"en": "An inverting stage has Rf = 10 kΩ and Rin = 1 kΩ, on a **single 3.3 V supply** (0 V to 3.3 V rails). You feed it +0.2 V. What does the output do?", "hu": "Egy invertáló fokozat Rf = 10 kΩ és Rin = 1 kΩ, **egyetlen 3,3 V-os tápról** (0 V és 3,3 V sín). +0,2 V-ot adsz rá. Mit csinál a kimenet?"},
+      "options": [
+        {"en": "Goes to −2 V", "hu": "−2 V-ra megy"},
+        {"en": "Goes to +2 V", "hu": "+2 V-ra megy"},
+        {"en": "Sticks at about 0 V (the lower rail) because it cannot go negative", "hu": "Kb. 0 V-on (az alsó sínen) ragad, mert nem mehet negatívba"},
+        {"en": "Sticks at 3.3 V", "hu": "3,3 V-on ragad"}
+      ],
+      "answer": 2,
+      "why": {"en": "The ideal gain is −Rf/Rin = −10, so −2 V is wanted. An output can never go outside its supply rails, so it clips at the lower rail. That is why single-supply stages need a bias voltage (a virtual ground at mid-supply) for AC signals like vibration.", "hu": "Az ideális erősítés −Rf/Rin = −10, tehát −2 V lenne a cél. A kimenet nem mehet a tápsínjein kívülre, ezért az alsó sínen levágódik. Ezért kell az egy tápról működő fokozatokhoz előfeszítés (virtuális föld a táp felénél) az olyan váltakozó jelekhez, mint a rezgés."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "A non-inverting amplifier has Rf = 47 kΩ and Rg = 1 kΩ. What is the gain (× times)?", "hu": "Egy neminvertáló erősítőben Rf = 47 kΩ és Rg = 1 kΩ. Mekkora az erősítés (× szoros)?"},
+      "answer": 48, "unit": "×", "tol": 0.02,
+      "hint": {"en": "G = 1 + Rf / Rg.", "hu": "G = 1 + Rf / Rg."},
+      "solution": {"en": "G = 1 + 47 000 / 1000 = **48**.", "hu": "G = 1 + 47 000 / 1000 = **48**."}
+    },
+    {
+      "q": {"en": "With that gain of 48 and 50 mV at the input, what is the output? Answer in **V**. Does it fit between the rails of a 3.3 V supply?", "hu": "Ezzel a 48-as erősítéssel és 50 mV bemenettel mekkora a kimenet? Válasz **V**-ban. Elfér egy 3,3 V-os táp sínjei között?"},
+      "answer": 2.4, "unit": "V", "tol": 0.02,
+      "solution": {"en": "50 mV × 48 = **2.4 V**. It fits under 3.3 V, but only a rail-to-rail op-amp gets close to the rails. A classic op-amp may stop 1–2 V short of the supply (check the datasheet's output swing).", "hu": "50 mV × 48 = **2,4 V**. 3,3 V alatt elfér, de csak a rail-to-rail műveleti erősítő megy közel a sínekhez. Egy klasszikus típus 1–2 V-tal a tápfeszültség előtt megállhat (nézd meg az adatlap kimeneti kivezérlését)."}
+    },
+    {
+      "q": {"en": "An example only: a sensor with 1 MΩ source resistance drives an op-amp input that draws 1 nA of bias current. What offset voltage does that make? Answer in **mV**.", "hu": "Csak példa: egy 1 MΩ forrásellenállású szenzor egy műveleti erősítő bemenetét hajtja, ami 1 nA előfeszítő áramot vesz fel. Mekkora eltolást okoz? Válasz **mV**-ban."},
+      "answer": 1, "unit": "mV", "tol": 0.02,
+      "hint": {"en": "V = I · R: 1 nA × 1 MΩ.", "hu": "V = I · R: 1 nA × 1 MΩ."},
+      "solution": {"en": "1·10⁻⁹ A × 10⁶ Ω = 10⁻³ V = **1 mV** (example numbers, not a real part). Compare with the load cell's full-scale signal of about 2 mV: a high source resistance and a leaky input would ruin it. Choose a FET-input op-amp whose bias current is tiny.", "hu": "1·10⁻⁹ A × 10⁶ Ω = 10⁻³ V = **1 mV** (példaszámok, nem valódi alkatrész). Vesd össze a mérlegcella kb. 2 mV-os teljes skálájával: nagy forrásellenállás és szivárgó bemenet tönkretenné. Válassz FET-bemenetű műveleti erősítőt, aminek elhanyagolható az előfeszítő árama."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What is the gain of a voltage follower (buffer)?", "hu": "Mekkora a feszültségkövető (puffer) erősítése?"}, "options": [{"en": "0", "hu": "0"}, {"en": "1", "hu": "1"}, {"en": "Open-loop gain", "hu": "A nyílt hurkú erősítés"}, {"en": "−1", "hu": "−1"}], "answer": 1, "why": {"en": "The output is wired straight to the − input, so output = input. The point is not voltage gain but a very high input resistance and a low output resistance: current gain.", "hu": "A kimenet közvetlenül a − bemenetre van kötve, így kimenet = bemenet. A lényege nem a feszültségerősítés, hanem a nagyon nagy bemeneti és kis kimeneti ellenállás: áramerősítés."}},
+    {"q": {"en": "Why does a piezo head need a buffer before the ADC?", "hu": "Miért kell puffer a piezo fejhez az ADC előtt?"}, "options": [{"en": "It has a high source impedance and could be loaded down or distorted by what follows; the buffer isolates it and can also hold a clamp", "hu": "Nagy a forrásimpedanciája, és az utána következő fokozat terhelheti vagy torzíthatja; a puffer leválasztja, és a védődiódák is ide köthetők"}, {"en": "It produces too little voltage to see", "hu": "Túl kevés feszültséget ad, nem látszik"}, {"en": "ADCs cannot read AC", "hu": "Az ADC nem tud váltakozót olvasni"}, {"en": "Because piezos output current only", "hu": "Mert a piezo csak áramot ad ki"}], "answer": 0, "why": {"en": "A piezo is a high-impedance source that can also give large voltage spikes when hit. The ADS131M0x inputs survive only AGND −1.6 V to AVDD +0.3 V, so the head must be clamped and buffered (CLAUDE.md).", "hu": "A piezo nagy impedanciájú forrás, ami ütésre nagy feszültséglökést is adhat. Az ADS131M0x bemenetei csak AGND −1,6 V és AVDD +0,3 V között élik túl, ezért a fejet védeni (clamp) és pufferelni kell (CLAUDE.md)."}},
+    {"q": {"en": "Why does the load cell need no op-amp from us in front of the ADS131M02?", "hu": "Miért nem kell tőlünk műveleti erősítő a mérlegcella és az ADS131M02 közé?"}, "options": [{"en": "The chip's own PGA amplifies the differential input up to ×128", "hu": "A chip saját PGA-ja akár ×128-szorosra erősíti a differenciális bemenetet"}, {"en": "The load cell output is already 3.3 V", "hu": "A mérlegcella kimenete már 3,3 V"}, {"en": "The ESP32 amplifies it in software before conversion", "hu": "Az ESP32 szoftveresen erősíti a konverzió előtt"}, {"en": "It does not need amplification at all", "hu": "Egyáltalán nem kell erősíteni"}], "answer": 0, "why": {"en": "About 2 mV at 5 kg against ±9.375 mV full scale at gain 128. The PGA does the job inside the chip, and the input is differential, so the bridge's S+ and S− go straight in.", "hu": "Kb. 2 mV 5 kg-nál, szemben a ±9,375 mV teljes skálával 128-as erősítésnél. A PGA a chipben elvégzi a munkát, a bemenet differenciális, így a híd S+ és S− vezetéke közvetlenül mehet be."}},
+    {"q": {"en": "For an inverting amplifier with Rf = 20 kΩ and Rin = 2 kΩ, the gain is", "hu": "Egy invertáló erősítőnél Rf = 20 kΩ és Rin = 2 kΩ esetén az erősítés"}, "options": [{"en": "+10", "hu": "+10"}, {"en": "−10", "hu": "−10"}, {"en": "+11", "hu": "+11"}, {"en": "−11", "hu": "−11"}], "answer": 1, "why": {"en": "G = −Rf / Rin = −10. The +11 would be the non-inverting gain with the same resistors (1 + Rf/Rg).", "hu": "G = −Rf / Rin = −10. A +11 a neminvertáló erősítés lenne ugyanezekkel az ellenállásokkal (1 + Rf/Rg)."}}
+  ],
+  "cards": [
+    {"id": "e13-c1", "front": {"en": "The two golden rules (negative feedback)", "hu": "A két aranyszabály (negatív visszacsatolás)"}, "back": {"en": "1) The output moves until the two inputs are at the same voltage. 2) The inputs draw (almost) no current.", "hu": "1) A kimenet addig mozog, amíg a két bemenet feszültsége egyenlő nem lesz. 2) A bemenetek (majdnem) nem vesznek fel áramot."}},
+    {"id": "e13-c2", "front": {"en": "Gain of non-inverting and inverting stages", "hu": "A neminvertáló és az invertáló fokozat erősítése"}, "back": {"en": "Non-inverting: 1 + Rf/Rg. Inverting: −Rf/Rin. Buffer: 1.", "hu": "Neminvertáló: 1 + Rf/Rg. Invertáló: −Rf/Rin. Követő: 1."}},
+    {"id": "e13-c3", "front": {"en": "What rail-to-rail means", "hu": "Mit jelent a rail-to-rail"}, "back": {"en": "The output (and sometimes the input) can swing close to both supply rails. Needed on a 3.3 V supply.", "hu": "A kimenet (néha a bemenet is) közel mehet mindkét tápsínhez. 3,3 V-os tápnál ez kell."}},
+    {"id": "e13-c4", "front": {"en": "Which of our sensors need an external buffer?", "hu": "Melyik szenzorunkhoz kell külső puffer?"}, "back": {"en": "The piezo head (high source impedance, clamp too). The geophone and load cell go straight into the ADS131M0x PGA.", "hu": "A piezo fejhez (nagy forrásimpedancia, védődióda is). A geofon és a mérlegcella közvetlenül a ADS131M0x PGA-jába megy."}},
+    {"id": "e13-c5", "front": {"en": "Why single-supply stages need a bias", "hu": "Miért kell előfeszítés az egy tápos fokozatnak"}, "back": {"en": "The output cannot go below 0 V. Put the signal on a mid-supply level (virtual ground) so both swings fit.", "hu": "A kimenet nem mehet 0 V alá. A jelet a táp feléhez (virtuális földhöz) kell ültetni, hogy mindkét irány elférjen."}}
+  ],
+  "cases": []
+}

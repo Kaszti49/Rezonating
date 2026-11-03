@@ -1,0 +1,65 @@
+{
+  "id": "e03",
+  "minutes": 30,
+  "title": {"en": "Series, parallel and the voltage divider", "hu": "Soros, párhuzamos kapcsolás és feszültségosztó"},
+  "goal": {"en": "After this lesson you can combine resistors in series and parallel, predict a divider's output with and without a load, and compare our 690 Ω series feed with the boss's 220/470 Ω divider.", "hu": "A lecke után tudsz ellenállásokat sorosan és párhuzamosan eredőbe vonni, meg tudod mondani egy feszültségosztó kimenetét terheléssel és anélkül, és össze tudod hasonlítani a mi 690 Ω-os soros betáplálásunkat a főnök 220/470 Ω-os osztójával."},
+  "parts": ["yzc133", "passives", "esp32-devkit"],
+  "predict": [
+    {
+      "q": {"en": "The boss's divider: 220 Ω from 3.3 V to a midpoint, 470 Ω from the midpoint to GND. With nothing connected the midpoint is 2.25 V (3.3 × 470 / 690). Now you connect the load cell (about 1100 Ω) between the midpoint and GND. What does the midpoint do?", "hu": "A főnök osztója: 220 Ω a 3,3 V-tól a középpontig, 470 Ω a középponttól a GND-ig. Terhelés nélkül a középpont 2,25 V (3,3 × 470 / 690). Most a középpont és a GND közé kötöd a mérlegcellát (kb. 1100 Ω). Mit csinál a középpont feszültsége?"},
+      "options": [
+        {"en": "Stays at 2.25 V: a load doesn't change a voltage", "hu": "2,25 V marad: a terhelés nem változtat a feszültségen"},
+        {"en": "Rises, because there is more current", "hu": "Nő, mert több az áram"},
+        {"en": "Falls to about 1.98 V: the cell is in parallel with the 470 Ω, so the lower leg gets smaller", "hu": "Lecsökken kb. 1,98 V-ra: a cella a 470 Ω-mal párhuzamos, így az alsó ág kisebb lesz"},
+        {"en": "Falls to 0 V: the cell short-circuits it", "hu": "Lemegy 0 V-ra: a cella rövidre zárja"}
+      ],
+      "answer": 2,
+      "why": {"en": "470 Ω ∥ 1100 Ω ≈ 329 Ω, so the lower part of the divider is smaller and takes a smaller share: 3.3 × 329 / (220 + 329) ≈ 1.98 V. This is **loading**. The 'stays' and 'rises' options forget that the cell is part of the divider; the 0 V option treats 1100 Ω as a wire.", "hu": "470 Ω ∥ 1100 Ω ≈ 329 Ω, tehát az osztó alsó része kisebb, és kisebb részt kap: 3,3 × 329 / (220 + 329) ≈ 1,98 V. Ezt hívjuk **terhelésnek** ([[loading|terhelés]]). A „marad” és a „nő” válasz elfelejti, hogy a cella az osztó része; a 0 V válasz az 1100 Ω-ot vezetéknek veszi."}
+    },
+    {
+      "q": {"en": "Hypothetical: the cell's resistance rises by 5 % (say with temperature). Which feed changes the voltage on the bridge less: our 690 Ω in series, or the boss's 220/470 divider?", "hu": "Képzeletbeli eset: a cella ellenállása 5 %-kal nő (mondjuk a hőmérséklettől). Melyik betáplálás változtatja kevésbé a híd feszültségét: a mi 690 Ω-os soros ellenállásunk, vagy a főnök 220/470-es osztója?"},
+      "options": [
+        {"en": "Both the same: 5 % is 5 %", "hu": "Mindkettő ugyanannyit: az 5 % az 5 %"},
+        {"en": "The 690 Ω series: more resistance means more stability", "hu": "A 690 Ω soros: több ellenállás, nagyobb stabilitás"},
+        {"en": "The boss's divider: its source resistance is only about 150 Ω, so the cell dominates less of the change", "hu": "A főnök osztója: a forrásellenállása csak kb. 150 Ω, így a cella változása kevésbé érvényesül"},
+        {"en": "Neither: the voltage is fixed by the 3.3 V", "hu": "Egyik sem: a feszültséget a 3,3 V rögzíti"}
+      ],
+      "answer": 2,
+      "why": {"en": "Calculated: the series feed changes the bridge voltage by about 0.385 × 5 % ≈ 1.9 %; the boss's by about 0.12 × 5 % ≈ 0.6 %. The smaller the resistance 'behind' the load (the source resistance), the stiffer the voltage. The 3.3 V only fixes the top of the chain, not the midpoint.", "hu": "Számolva: a soros betáplálás kb. 0,385 × 5 % ≈ 1,9 %-kal változtatja a híd feszültségét; a főnöké kb. 0,12 × 5 % ≈ 0,6 %-kal. Minél kisebb az ellenállás a terhelés „mögött” (a [[source-resistance|forrásellenállás]]), annál merevebb a feszültség. A 3,3 V csak a lánc tetejét rögzíti, a középpontot nem."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "In the boss's divider, the load cell (take 1100 Ω) sits in parallel with the 470 Ω resistor. What is the parallel resistance? Answer in **Ω**.", "hu": "A főnök osztójában a mérlegcella (vegyünk 1100 Ω-ot) a 470 Ω-os ellenállással párhuzamos. Mekkora az eredő? Válasz **Ω**-ban."},
+      "answer": 329.3, "unit": "Ω", "tol": 0.02,
+      "hint": {"en": "R = R1 · R2 / (R1 + R2).", "hu": "R = R1 · R2 / (R1 + R2)."},
+      "solution": {"en": "470 × 1100 / (470 + 1100) = 517 000 / 1570 ≈ **329.3 Ω**. Smaller than either of the two.", "hu": "470 × 1100 / (470 + 1100) = 517 000 / 1570 ≈ **329,3 Ω**. Kisebb, mint bármelyik a kettő közül."}
+    },
+    {
+      "q": {"en": "Now the voltage on the load cell (the midpoint) with 220 Ω on top, from 3.3 V. Answer in **V**.", "hu": "Mekkora feszültség van most a mérlegcellán (a középponton), 220 Ω-mal felül, 3,3 V-ról? Válasz **V**-ban."},
+      "answer": 1.978, "unit": "V", "tol": 0.02,
+      "hint": {"en": "Divider: V = 3.3 × R_lower / (220 + R_lower), with R_lower = 329.3 Ω.", "hu": "Osztó: V = 3,3 × R_alsó / (220 + R_alsó), R_alsó = 329,3 Ω."},
+      "solution": {"en": "3.3 × 329.3 / (220 + 329.3) = 3.3 × 0.5995 ≈ **1.98 V**. With a 1066 Ω cell (the listing's input value) it is 1.97 V, matching the daily note's calculated ≈ 1.97 V.", "hu": "3,3 × 329,3 / (220 + 329,3) = 3,3 × 0,5995 ≈ **1,98 V**. 1066 Ω-os cellával (a leírás bemeneti értéke) 1,97 V, ami egyezik a napi jegyzet számolt ≈ 1,97 V-jával."}
+    },
+    {
+      "q": {"en": "How much current does the boss's divider draw from the 3.3 V supply in total? Answer in **mA**.", "hu": "Összesen mekkora áramot vesz fel a főnök osztója a 3,3 V-os tápból? Válasz **mA**-ben."},
+      "answer": 6.008, "unit": "mA", "tol": 0.03,
+      "hint": {"en": "Total resistance = 220 + the parallel part. I = V / R_total.", "hu": "Eredő = 220 + a párhuzamos rész. I = V / R_eredő."},
+      "solution": {"en": "R_total = 220 + 329.3 = 549.3 Ω. I = 3.3 / 549.3 ≈ **6.0 mA**, about 3.3 times our series rig's 1.84 mA. Of that, 4.2 mA goes through the 470 Ω and 1.8 mA through the cell. Everything here is calculated, not measured.", "hu": "R_eredő = 220 + 329,3 = 549,3 Ω. I = 3,3 / 549,3 ≈ **6,0 mA**, kb. 3,3-szor a soros pultunk 1,84 mA-ének. Ebből 4,2 mA a 470 Ω-on, 1,8 mA a cellán folyik. Minden itt számolt érték, nem mért."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Two 1 kΩ resistors in parallel give…", "hu": "Két 1 kΩ-os ellenállás párhuzamosan…"}, "options": [{"en": "2 kΩ", "hu": "2 kΩ"}, {"en": "500 Ω", "hu": "500 Ω"}, {"en": "1 kΩ", "hu": "1 kΩ"}, {"en": "250 Ω", "hu": "250 Ω"}], "answer": 1, "why": {"en": "Two equal resistors in parallel give half. 1000 × 1000 / 2000 = 500 Ω. 2 kΩ would be series.", "hu": "Két egyforma ellenállás párhuzamosan a felét adja. 1000 × 1000 / 2000 = 500 Ω. A 2 kΩ a soros eredő lenne."}},
+    {"q": {"en": "In a series chain, what is the same through every part?", "hu": "Soros láncban mi egyforma minden elemen?"}, "options": [{"en": "The voltage", "hu": "A feszültség"}, {"en": "The current", "hu": "Az áram"}, {"en": "The power", "hu": "A teljesítmény"}, {"en": "Nothing", "hu": "Semmi"}], "answer": 1, "why": {"en": "Series: one path, one current. Parallel parts share the same voltage instead.", "hu": "Soros: egy út, egy áram. A párhuzamos elemeken a feszültség egyforma."}},
+    {"q": {"en": "A divider of 10 kΩ over 10 kΩ from 3.3 V feeds a load of 10 kΩ at the midpoint. The midpoint is…", "hu": "Egy 10 kΩ / 10 kΩ-os osztó 3,3 V-ról a középpontján 10 kΩ-os terhelést kap. A középpont feszültsége…"}, "options": [{"en": "1.65 V", "hu": "1,65 V"}, {"en": "1.1 V", "hu": "1,1 V"}, {"en": "3.3 V", "hu": "3,3 V"}, {"en": "0 V", "hu": "0 V"}], "answer": 1, "why": {"en": "Lower part: 10 k ∥ 10 k = 5 k. V = 3.3 × 5 / (10 + 5) = 1.1 V. The unloaded 1.65 V sags by a third, because the load is as big as the divider's own resistors.", "hu": "Alsó rész: 10 k ∥ 10 k = 5 k. V = 3,3 × 5 / (10 + 5) = 1,1 V. A terheletlen 1,65 V a harmadával megsüllyed, mert a terhelés akkora, mint az osztó saját ellenállásai."}},
+    {"q": {"en": "Why did the series 690 Ω keep the ADC's sense lines under the 1.5 V limit?", "hu": "Miért tartotta a 690 Ω a soros ellenállás az ADC érzékelő vezetékeit az 1,5 V-os határ alatt?"}, "options": [{"en": "It makes the cell's resistance smaller", "hu": "Csökkenti a cella ellenállását"}, {"en": "It forms a divider with the cell, so the bridge gets ≈ 2.0 V and the sense lines about half of that, ≈ 1.0 V", "hu": "Osztót alkot a cellával, így a híd kb. 2,0 V-ot kap, az érzékelő vezetékek ennek a felét, kb. 1,0 V-ot"}, {"en": "It filters noise", "hu": "Szűri a zajt"}, {"en": "It raises the current", "hu": "Növeli az áramot"}], "answer": 1, "why": {"en": "Straight from 3.3 V the sense lines would sit at 1.65 V, above the limit. The resistor lowers the bridge supply, and the sense lines sit at half of the bridge voltage.", "hu": "Közvetlenül 3,3 V-ról az érzékelő vezetékek 1,65 V-on lennének, a határ fölött. Az ellenállás csökkenti a híd tápfeszültségét, az érzékelő vezetékek pedig a híd feszültségének felén ülnek."}}
+  ],
+  "cards": [
+    {"id": "e03-c1", "front": {"en": "Series and parallel totals", "hu": "Soros és párhuzamos eredő"}, "back": {"en": "Series: R = R1 + R2. Parallel: R = R1·R2 / (R1 + R2), always below the smallest.", "hu": "Soros: R = R1 + R2. Párhuzamos: R = R1·R2 / (R1 + R2), mindig kisebb a legkisebbnél."}},
+    {"id": "e03-c2", "front": {"en": "Voltage divider formula", "hu": "Feszültségosztó képlet"}, "back": {"en": "Vout = Vin · R2 / (R1 + R2), R2 on the ground side. Valid only without a load.", "hu": "Vki = Vbe · R2 / (R1 + R2), az R2 a föld felől. Csak terhelés nélkül érvényes."}},
+    {"id": "e03-c3", "front": {"en": "Loading: what to do about it", "hu": "Terhelés: mit tegyünk vele"}, "back": {"en": "Put the load in parallel with R2, then divide. A load much bigger than R2 barely matters.", "hu": "A terhelést kösd R2-vel párhuzamosan, aztán oszd. R2-nél sokkal nagyobb terhelés alig számít."}},
+    {"id": "e03-c4", "front": {"en": "Boss's divider: midpoint and supply current (calculated)", "hu": "A főnök osztója: középpont és áram (számolt)"}, "back": {"en": "≈ 1.97–1.98 V on the cell, ≈ 6 mA from 3.3 V (220 Ω on top, 470 Ω ∥ cell below).", "hu": "≈ 1,97–1,98 V a cellán, ≈ 6 mA a 3,3 V-ból (felül 220 Ω, alul 470 Ω ∥ cella)."}},
+    {"id": "e03-c5", "front": {"en": "Our series feed vs the boss's divider", "hu": "A mi soros betáplálásunk és a főnök osztója"}, "back": {"en": "Same ≈ 2 V on the bridge. Series: 1.84 mA, source ≈ 690 Ω. Boss: ≈ 6 mA, source ≈ 150 Ω, stiffer.", "hu": "Mindkettő kb. 2 V a hídon. Soros: 1,84 mA, forrás ≈ 690 Ω. Főnök: ≈ 6 mA, forrás ≈ 150 Ω, merevebb."}}
+  ],
+  "cases": ["case-680k"]
+}

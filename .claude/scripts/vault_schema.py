@@ -110,6 +110,12 @@ TYPES: dict[str, dict] = {
         id_re=r"P-\d{3}",
     ),
     "retro": dict(required=["week", "date"], dates=["date"], name_re=r"\d{4}-W\d{2}", name_equals="week"),
+    "study": dict(
+        required=["person", "updated"],
+        enums={"person": HUMANS},
+        dates=["updated"],
+        numbers=["lessons_done", "lessons_total", "quiz_avg", "cards_known", "cards_due", "cases_solved", "parts_seen"],
+    ),
     "project": dict(),
     "hub": dict(),
     "handoff": dict(dates=["updated"]),
@@ -120,6 +126,7 @@ TYPES: dict[str, dict] = {
 FOLDERS = {
     "00 Inbox/": {"inbox", "hub"},
     "10 Project/": {"project", "hub"},
+    "10 Project/Study/": {"study"},
     "20 Work/": {"work", "hub"},
     "30 Hardware/": {"hub"},
     "30 Hardware/Parts/": {"part"},

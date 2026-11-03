@@ -1,0 +1,66 @@
+{
+  "id": "s05",
+  "minutes": 30,
+  "title": {"en": "How chips talk: SPI, I²C, UART", "hu": "Hogyan beszélnek a chipek: SPI, I²C, UART"},
+  "goal": {"en": "After this lesson you can say which bus each of our parts uses and why, read a wrong ADC ID word as a timing fault, and check a link or a pull-up with a few numbers.", "hu": "A lecke után meg tudod mondani, melyik alkatrészünk melyik buszon beszél és miért, egy rossz ADC ID szót időzítési hibaként olvasol, és néhány számmal ellenőrzöd a linket vagy a felhúzó ellenállást."},
+  "parts": ["adc15", "esp32-devkit", "adxl355"],
+  "predict": [
+    {
+      "q": {"en": "Bench, 2026-11-01. The firmware reads the ADC's ID register and expects **0x2205**. It gets **0x1102**. The DRDY pulses show the ADC converts at the right rate. What is the most likely fault?", "hu": "Pult, 2026-11-01. A firmware kiolvassa az ADC ID regiszterét, **0x2205**-öt vár. **0x1102**-t kap. A DRDY impulzusokból látszik, hogy az ADC jó ütemben konvertál. Mi a legvalószínűbb hiba?"},
+      "options": [
+        {"en": "The ADC chip is damaged", "hu": "Az ADC chip megsérült"},
+        {"en": "The SPI clock is far too fast, so bits get lost at random", "hu": "Az SPI órajel túl gyors, ezért véletlenszerűen vesznek el bitek"},
+        {"en": "A clean shift by exactly one bit: the transfer starts one clock edge late (chip select timing)", "hu": "Tiszta, pontosan egy bites csúszás: az átvitel egy órajelélet késve indul (chip select időzítés)"},
+        {"en": "The LTC6903 clock chip is set to the wrong frequency", "hu": "Az LTC6903 órajelchip rossz frekvenciára van állítva"}
+      ],
+      "answer": 2,
+      "why": {"en": "0x2205 shifted right by one bit is exactly 0x1102. A damaged chip or a clock that is too fast gives random garbage, not a clean ÷2. The LTC6903 is fine because DRDY runs at about 1996 Hz. The fix on the bench was giving chip select more lead and lag time (`cs_ena_pretrans` and `cs_ena_posttrans` = 2).", "hu": "A 0x2205 egy bittel jobbra tolva pontosan 0x1102. Egy sérült chip vagy túl gyors órajel véletlen szemetet ad, nem tiszta ÷2-t. Az LTC6903 rendben van, mert a DRDY kb. 1996 Hz-en jár. A pulton a javítás az volt, hogy a chip selectnek több előfutási és utófutási időt adtunk (`cs_ena_pretrans` és `cs_ena_posttrans` = 2)."}
+    },
+    {
+      "q": {"en": "Two I²C devices share SDA and SCL. Each can only pull a line low. Who makes the line go **high** again?", "hu": "Két I²C eszköz osztozik az SDA és SCL vonalon. Mindegyik csak lehúzni tudja a vonalat. Ki viszi vissza **magasra**?"},
+      "options": [
+        {"en": "The master chip drives it high with a strong output", "hu": "A master chip erős kimenettel felhúzza"},
+        {"en": "A pull-up resistor to 3.3 V", "hu": "Egy felhúzó ellenállás 3,3 V-ra"},
+        {"en": "Each device, in turn", "hu": "Mindegyik eszköz felváltva"},
+        {"en": "Nobody: a line stays low until reset", "hu": "Senki: a vonal alacsony marad resetig"}
+      ],
+      "answer": 1,
+      "why": {"en": "The lines are open-drain: devices only pull down. If one device drove high while another drove low, that would be a short circuit. So a resistor to 3.3 V does the pulling up. Its size sets the rise speed: more resistance or more capacitance means a slower edge.", "hu": "A vonalak nyitott nyelőjűek (open-drain): az eszközök csak lehúznak. Ha az egyik magasra hajtana, a másik meg alacsonyra, az zárlat lenne. Ezért egy ellenállás húz fel 3,3 V-ra. A mérete szabja meg a felfutás sebességét: nagyobb ellenállás vagy nagyobb kapacitás lassabb élt ad."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "The ADC ID should be 0x2205, which is **8709** in decimal. The word comes back one bit late, so it is halved (the lowest bit falls off). What decimal number do you read?", "hu": "Az ADC ID-nak 0x2205-nek kellene lennie, ami tízes számrendszerben **8709**. A szó egy bittel később érkezik, így felére csökken (a legalsó bit lecsúszik). Melyik tízes számrendszerbeli értéket olvasod?"},
+      "answer": 4354, "unit": "", "tol": 0.001,
+      "hint": {"en": "A shift right by one bit is an integer division by 2.", "hu": "Egy bites jobbra tolás egész osztás 2-vel."},
+      "solution": {"en": "8709 / 2 = 4354.5, and the half bit is lost: **4354**. In hex that is 0x1102, exactly what the bench printed.", "hu": "8709 / 2 = 4354,5, a fél bit elvész: **4354**. Hexában ez 0x1102, pontosan amit a pult kiírt."}
+    },
+    {
+      "q": {"en": "Our link runs at 115200 baud, 8N1: one start bit, 8 data bits, one stop bit. How many data bytes can it carry per second at most? Answer in **B/s**.", "hu": "A linkünk 115200 baud, 8N1: egy start bit, 8 adatbit, egy stop bit. Legfeljebb hány adatbájtot visz másodpercenként? Válasz **B/s**-ben."},
+      "answer": 11520, "unit": "B/s", "tol": 0.01,
+      "hint": {"en": "Every byte costs 10 bits on the wire.", "hu": "Minden bájt 10 bitbe kerül a vezetéken."},
+      "solution": {"en": "115200 / 10 = **11 520 B/s**. This is the ceiling before any framing. S07 shows how much of it our `adc_dec` stream uses.", "hu": "115200 / 10 = **11 520 B/s**. Ez a keretezés előtti felső határ. Az S07 megmutatja, ebből mennyit használ az `adc_dec` adatfolyamunk."}
+    },
+    {
+      "q": {"en": "I²C pull-up 4.7 kΩ, bus capacitance 100 pF (both assumed, not measured). Rise time from 30 % to 70 % is t = 0.8473 · R · C. How long is it? Answer in **ns**.", "hu": "I²C felhúzó 4,7 kΩ, a busz kapacitása 100 pF (mindkettő feltételezett, nem mért). A 30 %-ról 70 %-ra való felfutás ideje t = 0,8473 · R · C. Mennyi? Válasz **ns**-ben."},
+      "answer": 398, "unit": "ns", "tol": 0.03,
+      "hint": {"en": "Use base units: 4700 Ω and 100·10⁻¹² F.", "hu": "Alapegységben számolj: 4700 Ω és 100·10⁻¹² F."},
+      "solution": {"en": "0.8473 × 4700 × 100·10⁻¹² ≈ 3.98·10⁻⁷ s = **398 ns**. The I²C standard allows 1000 ns in standard mode (100 kHz) and 300 ns in fast mode (400 kHz). So this bus is fine at 100 kHz, but too slow for 400 kHz. Check the standard (UM10204) for the exact limits.", "hu": "0,8473 × 4700 × 100·10⁻¹² ≈ 3,98·10⁻⁷ s = **398 ns**. Az I²C szabvány standard módban (100 kHz) 1000 ns-ot, gyors módban (400 kHz) 300 ns-ot enged. Tehát ez a busz 100 kHz-en jó, 400 kHz-hez túl lassú. A pontos határokat nézd meg a szabványban (UM10204)."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Which line of SPI does the master use to pick one of several devices?", "hu": "Az SPI melyik vonalával választ a master több eszköz közül?"}, "options": [{"en": "SCK", "hu": "SCK"}, {"en": "MOSI", "hu": "MOSI"}, {"en": "MISO", "hu": "MISO"}, {"en": "CS (chip select)", "hu": "CS (chip select)"}], "answer": 3, "why": {"en": "Every device has its own CS, active low. Only the device whose CS is low listens and answers. On the ADC 15 Click, CS1 is the ADC and CS2 is the LTC6903.", "hu": "Minden eszköznek saját CS-e van, aktív alacsony. Csak az hallgat és válaszol, amelyiknek a CS-e alacsony. Az ADC 15 Clicken a CS1 az ADC, a CS2 az LTC6903."}},
+    {"q": {"en": "The LTC6903 uses SPI mode 0, the ADS131M02 uses mode 1, on the same bus. How does that work?", "hu": "Az LTC6903 SPI mode 0-t, az ADS131M02 mode 1-et használ, ugyanazon a buszon. Hogyan megy ez?"}, "options": [{"en": "It can't; they need separate buses", "hu": "Sehogy; külön buszok kellenek"}, {"en": "The mode is set per device: the firmware changes it before each transfer", "hu": "A módot eszközönként állítjuk: a firmware minden átvitel előtt átváltja"}, {"en": "The chips negotiate the mode themselves", "hu": "A chipek maguk egyeznek meg a módban"}, {"en": "Mode 1 is a superset of mode 0", "hu": "A mode 1 a mode 0 bővítése"}], "answer": 1, "why": {"en": "Each SPI device is registered with its own settings (mode, speed, CS pin). The driver applies them for each transfer. Devices never negotiate. Modes differ only in the clock idle level and the sampling edge.", "hu": "Minden SPI eszköz saját beállításokkal van regisztrálva (mód, sebesség, CS láb). A driver ezeket alkalmazza minden átvitelnél. Az eszközök nem tárgyalnak. A módok csak az órajel nyugalmi szintjében és a mintavételi élben különböznek."}},
+    {"q": {"en": "A scan finds no device at all on the I²C bus with the ADXL355. Which check comes first?", "hu": "A keresés egyetlen eszközt sem talál az I²C buszon az ADXL355-tel. Melyik ellenőrzés az első?"}, "options": [{"en": "Is SCLK/VSSIO tied to GND (the I²C mode select)?", "hu": "Az SCLK/VSSIO GND-re van kötve (az I²C mód választó)?"}, {"en": "Replace the ESP32", "hu": "Cseréld ki az ESP32-t"}, {"en": "Lower the baud rate", "hu": "Csökkentsd a baudot"}, {"en": "Try address 0x00", "hu": "Próbáld a 0x00 címet"}], "answer": 0, "why": {"en": "Floating, that pin can leave the chip in SPI mode, and it ignores I²C. This is the likely fault in the training case. A baud rate does not exist on I²C, and a scan already tries every address.", "hu": "Lebegve ez a láb SPI módban hagyhatja a chipet, és az figyelmen kívül hagyja az I²C-t. Ez a gyakorló eset valószínű hibája. I²C-n nincs baud, a keresés pedig már minden címet kipróbál."}},
+    {"q": {"en": "A UART link has no clock wire. How does the receiver stay in step?", "hu": "Egy UART linknek nincs órajel vezetéke. Hogyan marad szinkronban a vevő?"}, "options": [{"en": "Both sides agree on the baud rate and the receiver re-times on each start bit", "hu": "Mindkét oldal megegyezik a baudban, és a vevő minden start bitnél újraidőz"}, {"en": "It uses the SPI clock", "hu": "Az SPI órajelet használja"}, {"en": "It counts the data bits only", "hu": "Csak az adatbiteket számolja"}, {"en": "The CRC supplies timing", "hu": "A CRC adja az időzítést"}], "answer": 0, "why": {"en": "Each byte starts with a start bit (a falling edge). The receiver samples every bit at the agreed rate from there. If the two clocks differ too much, bits are misread.", "hu": "Minden bájt egy start bittel (lefutó éllel) kezdődik. A vevő onnan, az egyeztetett ütemben mintavételezi a biteket. Ha a két óra túlságosan eltér, a bitek félreolvasódnak."}}
+  ],
+  "cards": [
+    {"id": "s05-c1", "front": {"en": "SPI: the four wires", "hu": "SPI: a négy vezeték"}, "back": {"en": "SCK clock, MOSI master out, MISO master in, CS (active low) picks the device.", "hu": "SCK órajel, MOSI master ki, MISO master be, CS (aktív alacsony) választja az eszközt."}},
+    {"id": "s05-c2", "front": {"en": "Which SPI mode for the ADS131M02 and the LTC6903?", "hu": "Melyik SPI mód az ADS131M02-höz és az LTC6903-hoz?"}, "back": {"en": "ADC: mode 1 (CS1). LTC6903: mode 0 (CS2). Same bus, set per device.", "hu": "ADC: mode 1 (CS1). LTC6903: mode 0 (CS2). Ugyanaz a busz, eszközönként beállítva."}},
+    {"id": "s05-c3", "front": {"en": "ID reads 0x1102 instead of 0x2205", "hu": "Az ID 0x1102 a 0x2205 helyett"}, "back": {"en": "A clean one-bit shift: chip select too close to the first clock edge. Fix: cs_ena_pretrans = cs_ena_posttrans = 2.", "hu": "Tiszta egy bites csúszás: a chip select túl közel van az első órajelélhez. Javítás: cs_ena_pretrans = cs_ena_posttrans = 2."}},
+    {"id": "s05-c4", "front": {"en": "ID reads 0xFFFF or 0x0000", "hu": "Az ID 0xFFFF vagy 0x0000"}, "back": {"en": "Nothing drives MISO: a loose jumper. Re-seat the mikroBUS jumpers.", "hu": "Semmi nem hajtja a MISO-t: laza vezeték. Dugd újra a mikroBUS vezetékeket."}},
+    {"id": "s05-c5", "front": {"en": "Why does I²C need pull-ups?", "hu": "Miért kell az I²C-hez felhúzó?"}, "back": {"en": "Lines are open-drain: devices only pull low. The resistor to 3.3 V brings them high; R·C sets the rise time.", "hu": "A vonalak open-drain-ek: az eszközök csak lehúznak. A 3,3 V-ra kötött ellenállás viszi őket magasra; az R·C adja a felfutási időt."}},
+    {"id": "s05-c6", "front": {"en": "UART 115200 8N1: bytes per second?", "hu": "UART 115200 8N1: bájt/s?"}, "back": {"en": "11 520 B/s (10 bits per byte).", "hu": "11 520 B/s (10 bit bájtonként)."}}
+  ],
+  "cases": ["case-cs-shift", "case-id-ffff", "case-i2c-nack"]
+}

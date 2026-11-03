@@ -1,0 +1,65 @@
+{
+  "id": "e01",
+  "minutes": 25,
+  "title": {"en": "Charge, voltage and current", "hu": "Töltés, feszültség és áram"},
+  "goal": {"en": "After this lesson you can say what a voltage reading means (between which two points), why a current needs a closed loop, and count how much charge and energy our bench moves.", "hu": "A lecke után meg tudod mondani, mit jelent egy feszültségmérés (mely két pont között), miért kell az áramnak zárt kör, és ki tudod számolni, mennyi töltést és energiát mozgat a pultunk."},
+  "parts": ["esp32-devkit", "yzc133", "breadboard"],
+  "predict": [
+    {
+      "q": {"en": "The meter's red probe is on the ESP32's 3V3 pin. The black probe is on nothing: it hangs in the air. What does the meter show?", "hu": "A műszer piros mérőzsinórja az ESP32 3V3 lábán van. A fekete sehol: a levegőben lóg. Mit mutat a műszer?"},
+      "options": [
+        {"en": "3.3 V: the pin is at 3.3 V", "hu": "3,3 V: a láb 3,3 V-on van"},
+        {"en": "0 V, or a drifting random number: with only one point touched there is no voltage to measure", "hu": "0 V, vagy valami lebegő, véletlen szám: egyetlen ponttal nincs mit mérni"},
+        {"en": "3.3 V, but only if the USB is plugged in", "hu": "3,3 V, de csak ha be van dugva az USB"},
+        {"en": "The meter's battery voltage", "hu": "A műszer elemének feszültsége"}
+      ],
+      "answer": 1,
+      "why": {"en": "A voltage is a difference between two points. With one probe floating there is no complete measurement, so the display is 0 or noise. 'The pin is at 3.3 V' is shorthand for '3.3 V above GND'. The first option mistakes the shorthand for a physical property of the pin; the third adds a condition that doesn't supply the missing second point.", "hu": "A feszültség két pont közötti különbség. Ha az egyik mérőzsinór lóg, nincs teljes mérés, így a kijelző 0-t vagy zajt mutat. A „a láb 3,3 V-on van” rövidítés: „3,3 V-tal van a GND fölött”. Az első válasz a rövidítést a láb fizikai tulajdonságának hiszi; a harmadik olyan feltételt tesz hozzá, ami a hiányzó második pontot nem pótolja."}
+    },
+    {
+      "q": {"en": "A 3.3 V supply, a resistor, and one wire from the supply's + terminal to the resistor. The resistor's other end hangs free. How much current flows through the resistor?", "hu": "Egy 3,3 V-os tápegység, egy ellenállás, és egy vezeték a táp + kivezetéséről az ellenállásig. Az ellenállás másik vége szabadon lóg. Mekkora áram folyik az ellenálláson?"},
+      "options": [
+        {"en": "Very small, but not zero: the 3.3 V pushes a trickle", "hu": "Nagyon kicsi, de nem nulla: a 3,3 V csordogáltat egy keveset"},
+        {"en": "The same as with the loop closed: current is a property of the supply", "hu": "Ugyanannyi, mint zárt körrel: az áram a tápegység tulajdonsága"},
+        {"en": "Zero (apart from stray effects): charge has nowhere to go, so none can flow", "hu": "Nulla (a mellékhatásoktól eltekintve): a töltésnek nincs hova mennie, ezért nem folyhat"},
+        {"en": "It depends on the resistor's value", "hu": "Az ellenállás értékétől függ"}
+      ],
+      "answer": 2,
+      "why": {"en": "Charge can't pile up at the open end, so none enters. Current needs a closed loop out of the supply and back into it. The same happens on a bench when a joint is open: no current, so no voltage drop across the resistor, and the free end sits at the supply voltage.", "hu": "A töltés nem halmozódhat fel a szabad végen, ezért nem is jut be. Az áramnak zárt kör kell a tápból ki és vissza. Ugyanez történik a pulton, ha egy forrasztás szakadt: nincs áram, így nincs feszültségesés az ellenálláson, és a szabad vég a tápfeszültségen áll."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "On the bench rig the current is about 1.844 mA (calculated, see E02). How much charge moves through the bridge in **60 s**? Answer in **mC** (millicoulombs).", "hu": "A pulton az áram kb. 1,844 mA (számolt, lásd E02). Mennyi töltés halad át a hídon **60 s** alatt? Válasz **mC**-ban (millicoulomb)."},
+      "answer": 110.6, "unit": "mC", "tol": 0.03,
+      "hint": {"en": "Q = I · t, with I in amperes and t in seconds.", "hu": "Q = I · t, az I amperben, a t másodpercben."},
+      "solution": {"en": "Q = 0.001844 A × 60 s = 0.1106 C = **110.6 mC**.", "hu": "Q = 0,001844 A × 60 s = 0,1106 C = **110,6 mC**."}
+    },
+    {
+      "q": {"en": "One electron carries 1.602 × 10⁻¹⁹ C. How many electrons pass through the bridge every second at 1.844 mA? Answer in units of **10¹⁵ per second**.", "hu": "Egy elektron töltése 1,602 × 10⁻¹⁹ C. Hány elektron halad át a hídon másodpercenként 1,844 mA-nél? Válasz **10¹⁵ / másodperc** egységben."},
+      "answer": 11.51, "unit": "×10¹⁵ /s", "tol": 0.03,
+      "hint": {"en": "1 A is 1 C per second. Divide the charge per second by the charge of one electron.", "hu": "1 A = 1 C másodpercenként. Oszd el a másodpercenkénti töltést egy elektron töltésével."},
+      "solution": {"en": "0.001844 C/s ÷ 1.602 × 10⁻¹⁹ C = 1.15 × 10¹⁶ per second = **11.5 × 10¹⁵**. A huge number, which is why we talk about amperes and don't count electrons.", "hu": "0,001844 C/s ÷ 1,602 × 10⁻¹⁹ C = 1,15 × 10¹⁶ másodpercenként = **11,5 × 10¹⁵**. Óriási szám, ezért beszélünk amperről, és nem számoljuk az elektronokat."}
+    },
+    {
+      "q": {"en": "The 3.3 V supply pushes that charge. How much energy does it give to the charge that flows in **10 s** at 1.844 mA? Answer in **mJ**. (Energy = charge × voltage.)", "hu": "A 3,3 V-os táp hajtja ezt a töltést. Mennyi energiát ad le az 1,844 mA-nél **10 s** alatt átfolyó töltésnek? Válasz **mJ**-ban. (Energia = töltés × feszültség.)"},
+      "answer": 60.85, "unit": "mJ", "tol": 0.03,
+      "hint": {"en": "First the charge Q = I · t, then W = Q · V.", "hu": "Először a töltés: Q = I · t, aztán W = Q · V."},
+      "solution": {"en": "Q = 0.001844 A × 10 s = 18.44 mC. W = 0.01844 C × 3.3 V ≈ 0.0609 J = **60.9 mJ**. Per second that is 6.1 mW, which is just V · I: power is energy per second (E02).", "hu": "Q = 0,001844 A × 10 s = 18,44 mC. W = 0,01844 C × 3,3 V ≈ 0,0609 J = **60,9 mJ**. Másodpercenként ez 6,1 mW, ami éppen V · I: a teljesítmény az energia másodpercenként (E02)."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What does 'CH1 is at 1.0 V' mean?", "hu": "Mit jelent, hogy „a CH1 1,0 V-on van”?"}, "options": [{"en": "CH1 carries 1.0 V of charge", "hu": "A CH1-ben 1,0 V töltés van"}, {"en": "CH1 is 1.0 V above the reference, GND", "hu": "A CH1 1,0 V-tal van a referencia, a GND fölött"}, {"en": "1.0 V flows through CH1", "hu": "1,0 V folyik át a CH1-en"}, {"en": "CH1 is 1.0 V above the 3.3 V rail", "hu": "A CH1 1,0 V-tal van a 3,3 V-os sín fölött"}], "answer": 1, "why": {"en": "Voltage is always between two points; when the second isn't named it is GND. Voltage doesn't 'flow': current does.", "hu": "A feszültség mindig két pont között van; ha a másodikat nem nevezzük meg, az a GND. A feszültség nem „folyik”, az áram igen."}},
+    {"q": {"en": "1 A equals…", "hu": "1 A egyenlő…"}, "options": [{"en": "1 V per second", "hu": "1 V másodpercenként"}, {"en": "1 C per second", "hu": "1 C másodpercenként"}, {"en": "1 J per second", "hu": "1 J másodpercenként"}, {"en": "1 Ω per volt", "hu": "1 Ω voltonként"}], "answer": 1, "why": {"en": "Current is charge per time. 1 J per second is 1 W; the others aren't even the right kind of quantity.", "hu": "Az áram idő alatt átfolyt töltés. 1 J másodpercenként 1 W; a többi nem is megfelelő fajta mennyiség."}},
+    {"q": {"en": "Where does the water analogy mislead you?", "hu": "Hol vezet félre a vízhasonlat?"}, "options": [{"en": "Water has no pressure", "hu": "A víznek nincs nyomása"}, {"en": "A wire is already full of charge: the push moves all of it at once, and the individual electrons drift very slowly", "hu": "A vezeték eleve tele van töltéssel: a lökés az egészet egyszerre mozgatja, az egyes elektronok pedig nagyon lassan sodródnak"}, {"en": "Pipes can't be closed loops", "hu": "A csövek nem lehetnek zárt körök"}, {"en": "Water can't be pushed", "hu": "A vizet nem lehet hajtani"}], "answer": 1, "why": {"en": "A switch is felt at the far end almost at once, though the electrons themselves move at a tiny speed. The analogy also hides that a voltage needs a second point: a circuit has only differences.", "hu": "A kapcsoló hatása szinte azonnal érezhető a túlsó végen, bár maguk az elektronok aprócska sebességgel mozognak. A hasonlat azt is elrejti, hogy a feszültséghez második pont kell: az áramkörben csak különbségek vannak."}},
+    {"q": {"en": "Why do we measure all voltages against GND on our bench?", "hu": "Miért mérjük a pulton minden feszültséget a GND-hez képest?"}, "options": [{"en": "GND is always exactly 0 V in nature", "hu": "A GND a természetben mindig pontosan 0 V"}, {"en": "It is the shared reference point we declare to be 0 V, so every reading can be compared", "hu": "Ez a közös referenciapont, amit mi nyilvánítunk 0 V-nak, így minden mérés összevethető"}, {"en": "Because the meter can't measure otherwise", "hu": "Mert a műszer másképp nem tud mérni"}, {"en": "It has the highest voltage", "hu": "Ennek van a legnagyobb feszültsége"}], "answer": 1, "why": {"en": "0 V is a choice, not a law. We pick one point (GND) and everything is a difference from it.", "hu": "A 0 V választás, nem természeti törvény. Kiválasztunk egy pontot (GND), és minden ahhoz képesti különbség."}}
+  ],
+  "cards": [
+    {"id": "e01-c1", "front": {"en": "Voltage: between what?", "hu": "A feszültség: mi között?"}, "back": {"en": "Always between two points. 'Volts at a pin' means volts above GND.", "hu": "Mindig két pont között. A „láb feszültsége” a GND fölötti feszültséget jelenti."}},
+    {"id": "e01-c2", "front": {"en": "Current in terms of charge", "hu": "Az áram a töltés nyelvén"}, "back": {"en": "I = Q / t. 1 A = 1 coulomb per second.", "hu": "I = Q / t. 1 A = 1 coulomb másodpercenként."}},
+    {"id": "e01-c3", "front": {"en": "Why does current need a closed loop?", "hu": "Miért kell az áramnak zárt kör?"}, "back": {"en": "Charge can't pile up or vanish: what leaves the supply must come back. Open joint → no current.", "hu": "A töltés nem halmozódhat fel és nem tűnhet el: ami kimegy a tápból, annak vissza kell jönnie. Szakadt kötés → nincs áram."}},
+    {"id": "e01-c4", "front": {"en": "Energy a supply gives to charge Q at voltage V", "hu": "A táp által a Q töltésnek átadott energia V feszültségnél"}, "back": {"en": "W = Q · V (joules). Divide by time → P = V · I.", "hu": "W = Q · V (joule). Osztva az idővel → P = V · I."}},
+    {"id": "e01-c5", "front": {"en": "Where does the water analogy break?", "hu": "Hol romlik el a vízhasonlat?"}, "back": {"en": "Wires are already full; electrons drift slowly; voltage is only ever a difference.", "hu": "A vezeték eleve tele van; az elektronok lassan sodródnak; a feszültség mindig csak különbség."}}
+  ],
+  "cases": ["case-680k"]
+}

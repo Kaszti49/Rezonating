@@ -1,0 +1,221 @@
+{
+  "_doc": "One entry per part note in 30 Hardware/Parts. Pins: \"NAME|kind|English|Hungarian\" (texts optional; kind gives a default). Features: key -> [name, English, Hungarian]. dims_ok false = typical/estimated size (60 Research/Study site part geometry).",
+  "kinds": {
+    "power": ["Power", "Táp", "#c1937c"],
+    "gnd": ["Ground", "Föld", "#45484c"],
+    "gpio": ["General-purpose I/O", "Általános I/O láb", "#9a9ea3"],
+    "spi": ["SPI bus", "SPI busz", "#7b93ab"],
+    "i2c": ["I²C bus", "I²C busz", "#9b90b5"],
+    "uart": ["UART (serial)", "UART (soros)", "#bda56b"],
+    "analog": ["Analog signal", "Analóg jel", "#7f9c8c"],
+    "clock": ["Clock", "Órajel", "#b98a93"],
+    "ctrl": ["Control", "Vezérlés", "#bda56b"],
+    "nc": ["Not connected", "Nincs bekötve", "#c9ccd0"],
+    "usb": ["USB", "USB", "#7b93ab"],
+    "psram": ["Taken by octal PSRAM", "Az oktális PSRAM foglalja", "#b97a72"],
+    "strap": ["Strapping pin (read at boot)", "Bootoláskor olvasott láb (strapping)", "#d29b6f"]
+  },
+  "parts": [
+    {
+      "id": "esp32-devkit", "note": "ESP32 DevKit V1 with expansion board", "status": "have", "category": "mcu", "dims": "51.8 × 28.2 mm (typical), rows ≈ 25.4 mm apart (to measure)", "dims_ok": false,
+      "name": {"en": "ESP32 DevKit V1 + expansion board", "hu": "ESP32 DevKit V1 + bővítőpanel"},
+      "role": {"en": "The bench brain today: a classic ESP32 that reads the ADC and streams to the Lab site.", "hu": "A mai pult agya: egy klasszikus ESP32, ami olvassa az ADC-t és a Lab oldalra küldi az adatot."},
+      "summary": {"en": "A **classic ESP32** (WROOM-32 module, two 240 MHz cores, Wi-Fi + Bluetooth) on a 30-pin DevKit, plugged into an expansion board that brings every GPIO out as a signal/V/GND triple. A **CP2102** chip turns USB into a serial port (COM22 on pc-10) and an **AMS1117** regulator makes 3.3 V from USB's 5 V. It is *not* the planned ESP32-S3: no octal PSRAM, no native USB. Which chip becomes the node is still open.", "hu": "Egy **klasszikus ESP32** (WROOM-32 modul, két 240 MHz-es mag, Wi-Fi + Bluetooth) egy 30 lábú DevKiten, ami egy bővítőpanelbe van dugva: az minden GPIO-t jel/V/GND hármasként vezet ki. A **CP2102** chip USB-ből soros portot csinál (pc-10-en COM22), az **AMS1117** stabilizátor az USB 5 V-jából 3,3 V-ot. Ez *nem* a tervezett ESP32-S3: nincs oktális PSRAM, nincs natív USB. Hogy melyik chip lesz a node, még nyitott kérdés."},
+      "facts": [["Bench pins", "SCK 18 · MISO 19 · MOSI 23 · CS1 17 · CS2 16 · DRDY 4 · RST 27"], ["HX711 (old)", "DT 34 · SCK 32"], ["I²C", "SDA 21 · SCL 22"], ["Strapping", "0, 2, 5, 12, 15 (GPIO 12 low at boot!)"], ["Input-only", "34, 35, 36 (VP), 39 (VN)"], ["Port", "COM22 (CP210x 10C4:EA60) on pc-10"]],
+      "lessons": ["s06", "e16", "e17"],
+      "headers": {
+        "left": ["EN|ctrl|Enable/reset: pull low to reset the chip|Engedélyezés/reset: lehúzva újraindítja a chipet", "VP|gpio|GPIO 36, input only, no pull-ups|GPIO 36, csak bemenet, nincs felhúzás", "VN|gpio|GPIO 39, input only|GPIO 39, csak bemenet", "D34|gpio|GPIO 34, input only. Was the HX711 DT input|GPIO 34, csak bemenet. Ez volt a HX711 DT bemenete", "D35|gpio|GPIO 35, input only|GPIO 35, csak bemenet", "D32|gpio|GPIO 32. Was the HX711 SCK|GPIO 32. Ez volt a HX711 SCK", "D33|gpio", "D25|gpio|GPIO 25 (also DAC1)|GPIO 25 (DAC1 is)", "D26|gpio|GPIO 26 (also DAC2)|GPIO 26 (DAC2 is)", "D27|ctrl|GPIO 27 → Click RST (ADC SYNC/RESET, active low)|GPIO 27 → Click RST (ADC SYNC/RESET, aktív alacsony)", "D14|gpio", "D12|strap|GPIO 12: must be LOW at boot or the flash voltage is wrong and the board won't start|GPIO 12: bootoláskor ALACSONY kell legyen, különben rossz a flash feszültség és nem indul", "D13|gpio", "GND|gnd", "VIN|power|5 V in (from USB) before the regulator|5 V bemenet (USB-ről) a stabilizátor előtt"],
+        "right": ["D23|spi|GPIO 23 = VSPI MOSI → Click SDI (ADC DIN and LTC6903 SDI)|GPIO 23 = VSPI MOSI → Click SDI (ADC DIN és LTC6903 SDI)", "D22|i2c|GPIO 22 = I²C SCL|GPIO 22 = I²C SCL", "TX0|uart|GPIO 1: UART0 TX to the CP2102, the link to the PC|GPIO 1: UART0 TX a CP2102 felé, ez a link a PC-hez", "RX0|uart|GPIO 3: UART0 RX from the CP2102|GPIO 3: UART0 RX a CP2102-től", "D21|i2c|GPIO 21 = I²C SDA|GPIO 21 = I²C SDA", "D19|spi|GPIO 19 = VSPI MISO ← Click SDO (ADC DOUT)|GPIO 19 = VSPI MISO ← Click SDO (ADC DOUT)", "D18|spi|GPIO 18 = VSPI SCK → Click SCK|GPIO 18 = VSPI SCK → Click SCK", "D5|strap|GPIO 5 (VSPI CS by default, strapping pin)|GPIO 5 (alapból VSPI CS, strapping láb)", "TX2|spi|GPIO 17 → Click CS1 (the ADC's chip select, SPI mode 1)|GPIO 17 → Click CS1 (az ADC chip selectje, SPI mode 1)", "RX2|spi|GPIO 16 → Click CS2 (LTC6903 clock chip, SPI mode 0)|GPIO 16 → Click CS2 (LTC6903 órajel chip, SPI mode 0)", "D4|ctrl|GPIO 4 ← Click INT = ADC DRDY (active low, falling-edge interrupt)|GPIO 4 ← Click INT = ADC DRDY (aktív alacsony, lefutó él megszakítás)", "D2|strap|GPIO 2: blue LED, strapping pin|GPIO 2: kék LED, strapping láb", "D15|strap|GPIO 15, strapping pin|GPIO 15, strapping láb", "GND|gnd", "3V3|power|3.3 V out of the AMS1117: feeds the Click and the load cell|3,3 V az AMS1117-ből: ez táplálja a Clicket és a mérlegcellát"]
+      },
+      "features": {"wroom": ["ESP32-WROOM-32", "The module: ESP32 chip, 4 MB flash and a 40 MHz crystal under the metal can; the zig-zag is the PCB antenna.", "A modul: ESP32 chip, 4 MB flash és 40 MHz-es kristály a fémburkolat alatt; a cikcakk a NYÁK-antenna."], "cp2102": ["CP2102", "USB-to-UART bridge: your PC sees it as a COM port (VID 10C4:EA60).", "USB–UART híd: a PC COM portként látja (VID 10C4:EA60)."], "ams1117": ["AMS1117-3.3", "Linear regulator (LDO): 5 V in, 3.3 V out, burns the difference as heat. About 1.1 V dropout.", "Lineáris stabilizátor (LDO): 5 V be, 3,3 V ki, a különbséget hővé alakítja. Kb. 1,1 V dropout."], "usb": ["micro-USB", "Power and programming. Only this port on the DevKit carries data.", "Táp és programozás. Csak a DevKit saját portja visz adatot."], "en": ["EN button", "Resets the chip.", "Újraindítja a chipet."], "boot": ["BOOT button", "Holds GPIO 0 low at reset → download mode for flashing.", "Reset közben lehúzza a GPIO 0-t → letöltő mód a flasheléshez."], "exp": ["Expansion board", "Every GPIO as a signal/V/GND triple, a 5V/3.3V jumper for the V pins (keep it on 3.3 V), USB-C, micro-USB and a DC jack for power.", "Minden GPIO jel/V/GND hármasként, 5V/3,3V jumper a V lábakhoz (maradjon 3,3 V-on), USB-C, micro-USB és DC aljzat a táphoz."], "jumper": ["5V / 3.3V jumper", "Sets the voltage on every V pin of the expansion board. Keep it on 3.3 V: the Click and the ADC are 3.3 V only.", "Ez állítja a bővítő V lábainak feszültségét. Maradjon 3,3 V-on: a Click és az ADC csak 3,3 V-os."]}
+    },
+    {
+      "id": "esp32-s3", "note": "ESP32-S3-DEV-N16R8 board", "status": "needed", "category": "mcu", "dims": "62.74 × 25.40 mm (Espressif); rows ≈ 22.86 mm (to check)", "dims_ok": true,
+      "name": {"en": "ESP32-S3-DevKitC-1 N16R8", "hu": "ESP32-S3-DevKitC-1 N16R8"},
+      "role": {"en": "The planned node MCU: faster, vector instructions for ML, 8 MB PSRAM for buffers.", "hu": "A tervezett node MCU: gyorsabb, vektorutasítások az ML-hez, 8 MB PSRAM a puffereknek."},
+      "summary": {"en": "ESP32-S3 with **16 MB flash and 8 MB octal PSRAM** (N16R8). The octal PSRAM uses **GPIO 33–37**, so those are off limits; 33 and 34 are not even on the headers. Two USB-C ports: *UART* (through a USB-serial bridge) and *USB* (the chip's native USB). The tables come from Espressif's user guide v1.1. Still marked `needed` in the vault, and the 'which MCU' question is open.", "hu": "ESP32-S3 **16 MB flash-sel és 8 MB oktális PSRAM-mal** (N16R8). Az oktális PSRAM a **GPIO 33–37**-et használja, ezek tiltottak; a 33 és 34 ki sincs vezetve. Két USB-C: *UART* (USB-soros hídon át) és *USB* (a chip natív USB-je). A lábkiosztás az Espressif v1.1 felhasználói útmutatójából. A vaultban még `needed`, és a 'melyik MCU' kérdés nyitott."},
+      "facts": [["Proposed node map (not decided)", "SCK 12 · MISO 13 · MOSI 11 · CS1 10 · CS2 6 · DRDY 4 · RST 5 · SDA 8 · SCL 9 · SD CS 14"], ["Never use", "GPIO 33–37 (octal PSRAM)"], ["RGB LED", "GPIO 38 (v1.1)"], ["USB D−/D+", "GPIO 19 / 20"]],
+      "lessons": ["s06", "e16"],
+      "headers": {
+        "J1": ["3V3|power|3.3 V from the board regulator|3,3 V a panel stabilizátorából", "3V3|power", "RST|ctrl|EN/reset, active low|EN/reset, aktív alacsony", "GPIO4|ctrl|proposal: ADC DRDY|javaslat: ADC DRDY", "GPIO5|ctrl|proposal: ADC RST|javaslat: ADC RST", "GPIO6|spi|proposal: CS2 (LTC6903)|javaslat: CS2 (LTC6903)", "GPIO7|gpio", "GPIO15|gpio", "GPIO16|gpio", "GPIO17|gpio", "GPIO18|gpio", "GPIO8|i2c|proposal: I²C SDA (ADXL355, EEPROMs)|javaslat: I²C SDA (ADXL355, EEPROM-ok)", "GPIO3|strap", "GPIO46|strap", "GPIO9|i2c|proposal: I²C SCL|javaslat: I²C SCL", "GPIO10|spi|proposal: FSPI CS → Click CS1 (ADC)|javaslat: FSPI CS → Click CS1 (ADC)", "GPIO11|spi|proposal: FSPI MOSI → Click SDI|javaslat: FSPI MOSI → Click SDI", "GPIO12|spi|proposal: FSPI SCK → Click SCK|javaslat: FSPI SCK → Click SCK", "GPIO13|spi|proposal: FSPI MISO ← Click SDO|javaslat: FSPI MISO ← Click SDO", "GPIO14|spi|proposal: microSD CS (shares the SPI bus)|javaslat: microSD CS (közös SPI buszon)", "5V|power|5 V from USB|5 V az USB-ről", "G|gnd"],
+        "J3": ["G|gnd", "TX|uart|GPIO 43, UART0 TX|GPIO 43, UART0 TX", "RX|uart|GPIO 44, UART0 RX|GPIO 44, UART0 RX", "GPIO1|gpio", "GPIO2|gpio", "GPIO42|gpio", "GPIO41|gpio", "GPIO40|gpio", "GPIO39|gpio", "GPIO38|gpio|RGB LED on v1.1|RGB LED (v1.1)", "GPIO37|psram|Octal PSRAM: never use|Oktális PSRAM: tilos", "GPIO36|psram|Octal PSRAM: never use|Oktális PSRAM: tilos", "GPIO35|psram|Octal PSRAM: never use|Oktális PSRAM: tilos", "GPIO0|strap|BOOT button|BOOT gomb", "GPIO45|strap", "GPIO48|gpio", "GPIO47|gpio", "GPIO21|gpio", "GPIO20|usb|USB D+|USB D+", "GPIO19|usb|USB D−|USB D−", "G|gnd", "G|gnd"]
+      },
+      "features": {"wroom": ["ESP32-S3-WROOM-1 (N16R8)", "Module with the S3 chip, 16 MB flash and 8 MB octal PSRAM inside the can.", "Modul az S3 chippel, 16 MB flash-sel és 8 MB oktális PSRAM-mal a burkolat alatt."], "usbuart": ["USB-C 'UART'", "Through a USB-serial bridge to UART0: flashing and logs.", "USB-soros hídon át az UART0-ra: flashelés és log."], "usbnative": ["USB-C 'USB'", "The S3's own USB (GPIO 19/20): can act as a USB device itself.", "Az S3 saját USB-je (GPIO 19/20): maga is lehet USB eszköz."], "rgb": ["RGB LED", "Addressable LED on GPIO 38.", "Címezhető LED a GPIO 38-on."], "ldo": ["3.3 V regulator", "5 V → 3.3 V LDO for the module and the 3V3 pins.", "5 V → 3,3 V LDO a modulnak és a 3V3 lábaknak."]}
+    },
+    {
+      "id": "adc15", "note": "ADC 15 Click board", "status": "have", "category": "adc", "dims": "Click size M ≈ 42.9 × 25.4 mm (typical, not measured)", "dims_ok": false,
+      "name": {"en": "ADC 15 Click (ADS131M02)", "hu": "ADC 15 Click (ADS131M02)"},
+      "role": {"en": "The prototype's ADC: 2 simultaneous 24-bit channels at 2 kSPS, with its own programmable clock.", "hu": "A prototípus ADC-je: 2 egyidejű 24 bites csatorna 2 kSPS-sel, saját programozható órajellel."},
+      "summary": {"en": "A MikroE board with a TI **ADS131M02** (2-channel, simultaneous, 24-bit delta-sigma ADC, gain 1–128) and an **LTC6903** programmable oscillator that makes the 8.192 MHz clock the ADC needs. Two SPI devices share one bus: the LTC6903 on **CS2, SPI mode 0**, and the ADC on **CS1, SPI mode 1**. The firmware programs the clock first (word 0xCF60). Measured on our board: **1995.80 Hz at OSR 2048, so CLKIN ≈ 8.1748 MHz (−0.21 %)**. Screw **CH1 = ADC channel 0**, confirmed by the press test.", "hu": "MikroE panel egy TI **ADS131M02**-vel (2 csatornás, egyidejű, 24 bites delta-szigma ADC, erősítés 1–128) és egy **LTC6903** programozható oszcillátorral, ami az ADC-nek kellő 8,192 MHz-es órajelet adja. Két SPI eszköz egy buszon: az LTC6903 a **CS2-n, SPI mode 0**, az ADC a **CS1-en, SPI mode 1**. A firmware előbb az órajelet programozza (0xCF60). A mi panelünkön mérve: **1995,80 Hz OSR 2048-nál, tehát CLKIN ≈ 8,1748 MHz (−0,21 %)**. A **CH1 csavaros kapocs = ADC 0. csatorna**, a nyomáspróba igazolta."},
+      "facts": [["Full scale", "±1.2 V / gain → ±9.375 mV at gain 128"], ["Our rate", "2 kSPS (D-016) → 1 kSPS after FIR (adc_dec 997.96 Hz)"], ["Input limits", "AGND − 1.6 V … AVDD + 0.3 V (abs. max)"], ["Chip ID", "0x2205 = ADS131M02"], ["SPI quirk", "needs cs_ena_pretrans/posttrans = 2 on the ESP32"]],
+      "lessons": ["s04", "e15", "e16", "e18"],
+      "headers": {
+        "left": ["NC|nc|mikroBUS AN, not used on this board|mikroBUS AN, ezen a panelen nincs használva", "RST|ctrl|→ ADC SYNC/RESET (active low)|→ ADC SYNC/RESET (aktív alacsony)", "CS1|spi|ADC chip select (SPI mode 1)|ADC chip select (SPI mode 1)", "SCK|spi|SPI clock for both chips|SPI órajel mindkét chipnek", "SDO|spi|Data OUT of the ADC → MCU MISO|Az ADC adatkimenete → MCU MISO", "SDI|spi|Data IN to the ADC and the LTC6903 ← MCU MOSI|Adatbemenet az ADC-be és az LTC6903-ba ← MCU MOSI", "3V3|power|The only supply: 3.3 V|Az egyetlen táp: 3,3 V", "GND|gnd"],
+        "right": ["CS2|spi|LTC6903 chip select (mikroBUS PWM pin, SPI mode 0)|LTC6903 chip select (mikroBUS PWM láb, SPI mode 0)", "INT|ctrl|ADC DRDY: goes low when a new sample is ready|ADC DRDY: alacsonyra vált, ha új minta kész", "NC|nc", "NC|nc", "NC|nc", "NC|nc", "NC|nc", "GND|gnd"],
+        "terminals": ["CH2+|analog|Channel 1 of the ADC (left terminal, + left)|Az ADC 1. csatornája (bal kapocs, + bal oldalt)", "CH2−|analog", "CH1−|analog|Channel 0 of the ADC: load cell white (S−)|Az ADC 0. csatornája: mérlegcella fehér (S−)", "CH1+|analog|Channel 0 of the ADC: load cell green (S+)|Az ADC 0. csatornája: mérlegcella zöld (S+)"]
+      },
+      "features": {"adc": ["ADS131M02", "2-channel 24-bit ΔΣ ADC, simultaneous sampling, PGA up to 128, CRC on every SPI frame.", "2 csatornás 24 bites ΔΣ ADC, egyidejű mintavétel, PGA 128-ig, CRC minden SPI kereten."], "ltc": ["LTC6903", "Programmable oscillator 1 kHz–68 MHz. Powers up at 1.039 kHz until programmed; 0.5 % typ accuracy.", "Programozható oszcillátor 1 kHz–68 MHz. Programozásig 1,039 kHz-en indul; 0,5 % tipikus pontosság."], "led": ["PWR LED", "Power indicator with R1 = 470 Ω.", "Táp jelző LED, R1 = 470 Ω."]}
+    },
+    {
+      "id": "ads131m04", "note": "ADS131M04IPWR ADC", "status": "later", "category": "adc", "dims": "TSSOP-20: body 6.5 × 4.4 mm, 0.65 mm pitch (footprint name)", "dims_ok": false,
+      "name": {"en": "ADS131M04 (TSSOP-20)", "hu": "ADS131M04 (TSSOP-20)"},
+      "role": {"en": "The 4-channel ADC for our own PCB: same family as the Click's M02.", "hu": "A 4 csatornás ADC a saját NYÁK-unkra: ugyanaz a család, mint a Click M02-je."},
+      "summary": {"en": "4 simultaneous 24-bit channels, up to 64 kSPS, PGA 1–128. **No internal oscillator**: CLKIN needs a continuous 8.192 MHz (our QTM325). 0.65 mm pin pitch, so hand-soldering needs flux and patience; we bought three. Explode the model to see the die and the bond wires inside the package.", "hu": "4 egyidejű 24 bites csatorna, 64 kSPS-ig, PGA 1–128. **Nincs belső oszcillátora**: a CLKIN-re folyamatos 8,192 MHz kell (a mi QTM325-ünk). 0,65 mm-es lábtávolság, a kézi forrasztáshoz folyasztószer és türelem kell; hármat vettünk. Szedd szét a modellt, és látod a szilíciumlapkát és a bondhuzalokat."},
+      "facts": [["Pinout source", "TI ADS131M04(-Q1) datasheet Table 5-1 (verified)"], ["CAP pin", "220 nF to DGND"], ["Supply", "AVDD/DVDD 3.3 V"]],
+      "lessons": ["s04", "e15", "e19", "e20"],
+      "headers": {
+        "pins": ["AVDD|power|Analog supply 3.3 V|Analóg táp 3,3 V", "AGND|gnd|Analog ground|Analóg föld", "AIN0P|analog|Channel 0 +|0. csatorna +", "AIN0N|analog|Channel 0 −|0. csatorna −", "AIN1N|analog|Channel 1 −|1. csatorna −", "AIN1P|analog|Channel 1 +|1. csatorna +", "AIN2P|analog", "AIN2N|analog", "AIN3N|analog", "AIN3P|analog", "SYNC/RESET|ctrl|Active low: short pulse = sync, long = reset|Aktív alacsony: rövid impulzus = szinkron, hosszú = reset", "CS|spi|Chip select, active low|Chip select, aktív alacsony", "DRDY|ctrl|Data ready, active low|Adat kész, aktív alacsony", "SCLK|spi|SPI clock (mode 1)|SPI órajel (mode 1)", "DOUT|spi|Data out → MCU MISO|Adat ki → MCU MISO", "DIN|spi|Data in ← MCU MOSI|Adat be ← MCU MOSI", "CLKIN|clock|8.192 MHz clock input: must run continuously|8,192 MHz órajel bemenet: folyamatosan járnia kell", "CAP|power|220 nF to DGND for the internal digital LDO|220 nF DGND-re a belső digitális LDO-nak", "DGND|gnd|Digital ground|Digitális föld", "DVDD|power|Digital supply|Digitális táp"]
+      },
+      "features": {"die": ["Silicon die", "The actual ADC: four ΔΣ modulators, digital filters and the SPI logic on a few mm² of silicon.", "Maga az ADC: négy ΔΣ modulátor, digitális szűrők és SPI logika néhány mm² szilíciumon."], "bond": ["Bond wires", "Gold wires about 25 µm thick connect the die to the leads.", "Kb. 25 µm vastag aranyhuzalok kötik a lapkát a lábakhoz."]}
+    },
+    {
+      "id": "osc8m", "note": "8.192 MHz oscillator", "status": "have", "category": "clock", "dims": "3.2 × 2.5 × ≈1 mm, 4 pads", "dims_ok": true,
+      "name": {"en": "8.192 MHz oscillator (QTM325)", "hu": "8,192 MHz-es oszcillátor (QTM325)"},
+      "role": {"en": "The crystal clock for the ADS131M04 on our own PCB: ±25 ppm instead of the LTC6903's ±0.5 %.", "hu": "Kristályos órajel a saját NYÁK ADS131M04-éhez: ±25 ppm az LTC6903 ±0,5 %-a helyett."},
+      "summary": {"en": "A complete oscillator in a 3.2 × 2.5 mm can: a quartz crystal plus the amplifier that keeps it ringing, with a 3.3 V CMOS square-wave output. **±25 ppm** means at most 25 samples off per million, about 90 per hour at 1 kSPS, versus thousands with the Click's LTC6903. Leadless, so it needs an adapter board or hot air. Pad 1 is verified as enable; pads 2–4 follow the usual layout (check the drawing).", "hu": "Teljes oszcillátor egy 3,2 × 2,5 mm-es tokban: kvarckristály plusz az erősítő, ami rezgésben tartja, 3,3 V-os CMOS négyszögjel kimenettel. A **±25 ppm** milliónként legfeljebb 25 minta eltérés, 1 kSPS-nél óránként kb. 90, szemben a Click LTC6903-ának ezreivel. Láb nélküli, adapterpanel vagy hőlégfúvó kell hozzá. Az 1. pad igazoltan az engedélyezés; a 2–4. a szokásos kiosztás (ellenőrizd a rajzon)."},
+      "facts": [["Part", "QST/TXC QTM325-8.192MBD-T"], ["Stability", "±25 ppm, −40…85 °C"], ["Output", "CMOS, VOH ≥ 90 % VDD"]],
+      "lessons": ["e18"],
+      "headers": {"pads": ["EN|ctrl|Enable: high or open = output on (verified)|Engedélyezés: magas vagy nyitott = kimenet be (igazolt)", "GND|gnd|(usual layout, check)|(szokásos kiosztás, ellenőrizd)", "OUT|clock|8.192 MHz square wave → ADC CLKIN (usual layout)|8,192 MHz négyszög → ADC CLKIN (szokásos kiosztás)", "VDD|power|3.3 V (usual layout)|3,3 V (szokásos kiosztás)"]},
+      "features": {"quartz": ["Quartz blank", "A thin quartz plate that vibrates at a precise frequency when driven (piezoelectric effect).", "Vékony kvarclapka, ami meghajtva pontos frekvencián rezeg (piezoelektromos hatás)."], "lid": ["Metal lid", "Seals the crystal in a dry atmosphere.", "Száraz légtérben zárja le a kristályt."]}
+    },
+    {
+      "id": "hx711", "note": "HX711 load cell amplifier board", "status": "have", "category": "adc", "dims": "≈ 34 × 21 mm (typical, not measured)", "dims_ok": false,
+      "name": {"en": "HX711 load-cell amplifier", "hu": "HX711 mérlegcella-erősítő"},
+      "role": {"en": "The classic weighing ADC that came with the load cell. Too slow for vibration: 10 or 80 SPS.", "hu": "A klasszikus mérleg-ADC, ami a cellával jött. Rezgéshez túl lassú: 10 vagy 80 SPS."},
+      "summary": {"en": "A 24-bit ADC made for scales: fixed gain 128 or 64 on channel A, 32 on B, only one channel at a time, and its own 2-wire protocol (not SPI). At **80 SPS it sees only below 40 Hz** (Nyquist), while footsteps carry energy up to a few hundred Hz. That's why the bench moved to the ADC 15 Click on 2026-11-03. On pc-10 it read 8388607 (the top of its range).", "hu": "Mérlegekhez készült 24 bites ADC: fix 128-as vagy 64-es erősítés az A csatornán, 32 a B-n, egyszerre csak egy csatorna, és saját kétvezetékes protokoll (nem SPI). **80 SPS-nél csak 40 Hz alatt lát** (Nyquist), a lépések viszont néhány száz Hz-ig hordoznak energiát. Ezért állt át a pult 2026-11-03-án az ADC 15 Clickre. pc-10-en 8388607-et olvasott (a tartománya teteje)."},
+      "facts": [["Rate", "10 or 80 SPS"], ["Interface", "DT (data) + SCK (clock), bit-banged"], ["Old bench pins", "DT → GPIO 34, SCK → GPIO 32"]],
+      "lessons": ["s03", "e15"],
+      "headers": {
+        "J1": ["E+|power|Excitation + → load cell red|Gerjesztés + → cella piros", "E−|gnd|Excitation − → black|Gerjesztés − → fekete", "A−|analog|Channel A − ← white|A csatorna − ← fehér", "A+|analog|Channel A + ← green|A csatorna + ← zöld", "B−|analog|Channel B − (unused)|B csatorna − (nem használt)", "B+|analog"],
+        "JP2": ["VCC|power|2.6–5.5 V; use 3.3 V with the ESP32|2,6–5,5 V; az ESP32-vel 3,3 V", "SCK|ctrl|Clock from the MCU; >60 µs high = power down|Órajel az MCU-tól; >60 µs magas = kikapcsol", "DT|ctrl|Data out; goes low when a sample is ready|Adat ki; alacsony, ha kész a minta", "GND|gnd"]
+      },
+      "features": {"chip": ["HX711 (SOP-16)", "Amplifier + 24-bit ADC + regulator for the bridge excitation.", "Erősítő + 24 bites ADC + stabilizátor a híd gerjesztéséhez."], "transistor": ["S8550 PNP", "Pass transistor of the on-board excitation regulator (typical board).", "A gerjesztő stabilizátor áteresztő tranzisztora (tipikus panel)."]}
+    },
+    {
+      "id": "yzc133", "note": "YZC-133 load cell 5 kg", "status": "have", "category": "sensor", "dims": "≈ 80 × 12.7 × 12.7 mm (typical, not measured)", "dims_ok": false,
+      "name": {"en": "YZC-133 load cell, 5 kg", "hu": "YZC-133 mérlegcella, 5 kg"},
+      "role": {"en": "Our known test signal: press it and the whole chain (sensor → ADC → firmware → link → Lab) must respond.", "hu": "Az ismert tesztjelünk: nyomd meg, és az egész láncnak (szenzor → ADC → firmware → link → Lab) reagálnia kell."},
+      "summary": {"en": "An aluminium parallel beam with a 'binocular' hole: the thin sections bend a few micrometres under load, and four **strain gauges** glued there change resistance. They form a **Wheatstone bridge**. Rated **1.0 mV/V** at 5 kg: with ≈ 2.0 V across it (690 Ω in series from 3.3 V) that's **≈ 0.4 mV per kg**. Presses on the bench gave +400…+900 µV. Bolt one end, load the other.", "hu": "Alumínium párhuzamos gerenda 'binokuláris' furattal: a vékony részek terhelés alatt néhány mikrométert hajlanak, és a rájuk ragasztott négy **nyúlásmérő bélyeg** ellenállása változik. Ezek **Wheatstone-hidat** alkotnak. Névleges kimenet **1,0 mV/V** 5 kg-nál: kb. 2,0 V-tal a hídon (690 Ω sorosan 3,3 V-ról) ez **kb. 0,4 mV kg-onként**. A pulton a nyomások +400…+900 µV-ot adtak. Az egyik végét csavarozd le, a másikat terheld."},
+      "facts": [["E+/E−", "≈ 1070–1120 Ω"], ["S+/S−", "≈ 1000 Ω"], ["Output", "1.0 ± 0.1 mV/V"], ["Bench feed", "3V3 → 470 Ω + 220 Ω → red"], ["Wires", "red E+, black E−, green S+, white S−"]],
+      "lessons": ["e02", "e03", "e06"],
+      "headers": {"wires": ["E+ red|power|Excitation +: from 3V3 through 690 Ω|Gerjesztés +: 3V3-ról 690 Ω-on át", "E− black|gnd|Excitation −: to GND|Gerjesztés −: GND-re", "S+ green|analog|Signal + → Click CH1+|Jel + → Click CH1+", "S− white|analog|Signal − → Click CH1−|Jel − → Click CH1−"]},
+      "features": {"gauge": ["Strain gauge", "A thin metal foil zig-zag on a film: stretched, it gets longer and thinner, so its resistance rises by a few hundred ppm.", "Vékony fémfólia cikcakk egy hordozón: nyújtva hosszabb és vékonyabb lesz, így az ellenállása néhány száz ppm-mel nő."], "flex": ["Flexure", "The thin sections around the binocular hole: this is where the beam bends.", "A binokuláris furat körüli vékony részek: itt hajlik a gerenda."], "hole": ["Threaded mounting hole", "Bolt one end to the base and press or hang weight on the other end.", "Az egyik végét csavarozd az alaphoz, a másikat nyomd vagy terheld."], "potting": ["Silicone cover", "Protects the gauges from moisture and touch.", "Védi a bélyegeket a nedvességtől és az érintéstől."]}
+    },
+    {
+      "id": "sm24", "note": "SM-24 geophone", "status": "needed", "category": "sensor", "dims": "element Ø 25.4 × 32 mm (datasheet summary); with disc ≈ 40 × 65 × 40 mm", "dims_ok": false,
+      "name": {"en": "SM-24 geophone", "hu": "SM-24 geofon"},
+      "role": {"en": "The floor sensor for footstep-id: turns floor velocity into voltage, 10–240 Hz.", "hu": "A footstep-id padló szenzora: a padló sebességét feszültséggé alakítja, 10–240 Hz."},
+      "summary": {"en": "A **coil and a magnet on springs**: the case moves with the floor, the magnet lags behind, and the relative motion induces a voltage. Sensitivity **28.8 V/(m/s)** above its **10 Hz** natural frequency. Coil ≈ 375 Ω. A **shunt resistor** sets the damping (≈ 0.6 with 1339 Ω): without it the spring rings at 10 Hz. It's passive, needs no power, and its output is small enough to go straight into the ADC at gain 32–64.", "hu": "**Rugókon lógó tekercs és mágnes**: a ház a padlóval mozog, a mágnes lemarad, és a relatív mozgás feszültséget indukál. Érzékenység **28,8 V/(m/s)** a **10 Hz**-es sajátfrekvencia felett. Tekercs kb. 375 Ω. Egy **sönt ellenállás** állítja a csillapítást (kb. 0,6 1339 Ω-mal): nélküle a rugó 10 Hz-en cseng. Passzív, nem kell táp, és a kimenete elég kicsi ahhoz, hogy közvetlenül menjen az ADC-be 32–64-es erősítéssel."},
+      "facts": [["Natural frequency", "10 Hz ± 2.5 %"], ["Sensitivity", "28.8 V/(m/s)"], ["Coil", "≈ 375 Ω"], ["Damping", "0.25 open · 0.60 with 1339 Ω · 0.69 with 1000 Ω (secondary source)"], ["Status", "2 ordered from Opencircuit, not here yet"]],
+      "lessons": ["s03", "e08", "e09"],
+      "headers": {"terminals": ["+|analog|Coil + → ADC channel + (via the head cable)|Tekercs + → ADC csatorna + (a fej kábelén át)", "−|analog|Coil − → ADC channel −|Tekercs − → ADC csatorna −"]},
+      "features": {"case": ["Case", "Moves with the floor.", "A padlóval együtt mozog."], "magnet": ["Magnet (proof mass)", "Hangs on springs and lags behind the case: the relative motion is what we measure.", "Rugókon lóg és lemarad a háztól: ezt a relatív mozgást mérjük."], "coil": ["Coil", "Copper winding; moving relative to the magnet it generates a voltage proportional to velocity (Faraday).", "Rézhuzal tekercs; a mágneshez képest mozogva a sebességgel arányos feszültséget kelt (Faraday)."], "spring": ["Leaf springs", "Set the 10 Hz natural frequency.", "Ezek adják a 10 Hz-es sajátfrekvenciát."], "disc": ["Insulating disc", "Base plate that couples the geophone to the floor.", "Talplemez, ami a padlóhoz csatolja a geofont."]}
+    },
+    {
+      "id": "adxl355", "note": "ADXL355 breakout board", "status": "have", "category": "sensor", "dims": "20.3 × 20.3 mm (UG-1030 text); chip 6 × 6 mm LGA-14", "dims_ok": true,
+      "name": {"en": "ADXL355 accelerometer (EVAL-ADXL355Z)", "hu": "ADXL355 gyorsulásmérő (EVAL-ADXL355Z)"},
+      "role": {"en": "3-axis, low-noise MEMS accelerometer for the appliance pack, read over I²C at 2000 Hz.", "hu": "3 tengelyes, kis zajú MEMS gyorsulásmérő az appliance packhez, I²C-n olvasva 2000 Hz-en."},
+      "summary": {"en": "Inside the chip a tiny silicon mass hangs on silicon springs; its motion changes the capacitance between comb fingers. It's **digital** (its own 20-bit ADC), so it skips our ADS131M0x and talks **I²C**: tie **SCLK/VSSIO to GND**, address **0x1D** (ASEL low) or **0x53**. I²C needs pull-ups (2.2–4.7 kΩ); whether the board has them isn't known. The header pin *order* on the model is estimated; the signal names are verified.", "hu": "A chipben egy apró szilícium tömeg lóg szilícium rugókon; a mozgása megváltoztatja a fésűujjak közti kapacitást. **Digitális** (saját 20 bites ADC), ezért nem megy át az ADS131M0x-en, hanem **I²C**-n beszél: **SCLK/VSSIO-t GND-re**, cím **0x1D** (ASEL alacsony) vagy **0x53**. Az I²C-hez felhúzó ellenállás kell (2,2–4,7 kΩ); hogy a panelen van-e, nem tudjuk. A modellen a fejléc lábsorrendje becsült; a jelnevek igazoltak."},
+      "facts": [["Address", "0x1D (ASEL low) / 0x53"], ["Rate for appliance", "2000 Hz (D-016)"], ["Supply", "2.25–3.6 V"]],
+      "lessons": ["s03", "e16"],
+      "headers": {
+        "P1": ["VDDIO|power|I/O supply 3.3 V|I/O táp 3,3 V", "VDD|power|Main supply (VSUPPLY)|Fő táp (VSUPPLY)", "VSS|gnd", "INT1|ctrl|Interrupt 1|1. megszakítás", "INT2|ctrl", "DRDY|ctrl|Data ready|Adat kész"],
+        "P2": ["V1P8ANA|power|Internal 1.8 V analog (don't load)|Belső 1,8 V analóg (ne terheld)", "V1P8DIG|power|Internal 1.8 V digital|Belső 1,8 V digitális", "MISO/ASEL|i2c|In I²C: address select (low = 0x1D)|I²C-ben: címválasztó (alacsony = 0x1D)", "CS/SCL|i2c|In I²C: SCL clock|I²C-ben: SCL órajel", "SCLK/VSSIO|gnd|Tie to GND to select I²C|GND-re kötve I²C módot választ", "MOSI/SDA|i2c|In I²C: SDA data|I²C-ben: SDA adat"]
+      },
+      "features": {"chip": ["ADXL355 (LGA-14)", "MEMS sensor + 20-bit ADC + filters + I²C/SPI. Axes are printed next to it.", "MEMS szenzor + 20 bites ADC + szűrők + I²C/SPI. A tengelyek mellé vannak nyomtatva."], "axes": ["X / Y / Z axes", "Directions of the three measured accelerations.", "A három mért gyorsulás iránya."]}
+    },
+    {
+      "id": "at24c02", "note": "AT24C02 EEPROM", "status": "later", "category": "passive", "dims": "DIP-8: 9.3 × 6.4 mm, rows 7.62 mm (typical)", "dims_ok": false,
+      "name": {"en": "AT24C02 EEPROM (head ID)", "hu": "AT24C02 EEPROM (fej azonosító)"},
+      "role": {"en": "One per sensor head: 256 bytes that tell the node which head is plugged in.", "hu": "Szenzorfejenként egy: 256 bájt, amiből a node tudja, milyen fej van bedugva."},
+      "summary": {"en": "A tiny I²C memory. Each head carries one with its **head descriptor** (type, serial, calibration), so packs can check what's connected. All heads would sit on the same address (0x50), which is why the **TCA9548A mux** is planned.", "hu": "Apró I²C memória. Minden fej hordoz egyet a **fejleíróval** (típus, sorozatszám, kalibráció), így a packok ellenőrizhetik, mi van bekötve. Minden fej ugyanazon a címen (0x50) lenne, ezért tervezzük a **TCA9548A multiplexert**."},
+      "facts": [["Size", "2 kbit = 256 bytes"], ["Address", "0x50 + A2..A0"]],
+      "lessons": ["e16"],
+      "headers": {"pins": ["A0|ctrl|Address bit 0|Címbit 0", "A1|ctrl|Address bit 1|Címbit 1", "A2|ctrl|Address bit 2|Címbit 2", "GND|gnd", "SDA|i2c|I²C data|I²C adat", "SCL|i2c|I²C clock|I²C órajel", "WP|ctrl|Write protect: high = read only|Írásvédelem: magas = csak olvasható", "VCC|power"]},
+      "features": {}
+    },
+    {
+      "id": "tca9548a", "note": "TCA9548A I2C mux board", "status": "later", "category": "prototyping", "dims": "≈ 30 × 21 mm (estimated)", "dims_ok": false,
+      "name": {"en": "TCA9548A I²C multiplexer", "hu": "TCA9548A I²C multiplexer"},
+      "role": {"en": "An I²C switch: 8 separate branches, so identical EEPROMs on every head don't clash.", "hu": "I²C kapcsoló: 8 külön ág, így a fejek azonos EEPROM-jai nem ütköznek."},
+      "summary": {"en": "The MCU writes one byte to the mux (address 0x70–0x77) to choose which of the 8 downstream buses (SD0/SC0 … SD7/SC7) is connected. Then it talks to the device on that branch as usual.", "hu": "Az MCU egy bájtot ír a muxnak (cím 0x70–0x77), ezzel választja ki, melyik 8 lefelé menő busz (SD0/SC0 … SD7/SC7) legyen bekötve. Utána a szokásos módon beszél az azon az ágon lévő eszközzel."},
+      "facts": [["Address", "0x70 + A0·1 + A1·2 + A2·4"]],
+      "lessons": ["e16"],
+      "headers": {
+        "top": ["VIN|power", "GND|gnd", "SCL|i2c|Upstream I²C clock from the MCU|Felfelé menő I²C órajel az MCU-tól", "SDA|i2c|Upstream I²C data|Felfelé menő I²C adat", "RST|ctrl|Reset, active low (pulled high)|Reset, aktív alacsony (fel van húzva)", "A0|ctrl", "A1|ctrl", "A2|ctrl"],
+        "bottom": ["SD0|i2c", "SC0|i2c", "SD1|i2c", "SC1|i2c", "SD2|i2c", "SC2|i2c", "SD3|i2c", "SC3|i2c", "SD4|i2c", "SC4|i2c", "SD5|i2c", "SC5|i2c", "SD6|i2c", "SC6|i2c", "SD7|i2c", "SC7|i2c"]
+      },
+      "features": {"chip": ["TCA9548A", "8-channel I²C switch.", "8 csatornás I²C kapcsoló."]}
+    },
+    {
+      "id": "sd-breakout", "note": "microSD SPI breakout", "status": "have", "category": "storage", "dims": "≈ 42 × 25 mm (typical 6-pin module)", "dims_ok": false,
+      "name": {"en": "microSD SPI breakout", "hu": "microSD SPI modul"},
+      "role": {"en": "Raw recordings straight onto a card, on the same SPI bus with its own chip select.", "hu": "Nyers felvételek közvetlenül kártyára, ugyanazon az SPI buszon, saját chip selecttel."},
+      "summary": {"en": "A socket, a 3.3 V regulator and a 74LVC125 level buffer (on the common 5 V module). In SPI mode the card is just another SPI device. The firmware must **count every sample** even when a card write stalls (a write can take tens of ms), which is why the node buffers in RAM/PSRAM. Header order varies between clones: check the silkscreen.", "hu": "Foglalat, 3,3 V-os stabilizátor és 74LVC125 szintillesztő (a gyakori 5 V-os modulon). SPI módban a kártya csak egy újabb SPI eszköz. A firmware-nek akkor is **minden mintát számolnia kell**, ha egy kártyaírás elakad (egy írás tíz ms-okig is tarthat), ezért pufferel a node RAM-ban/PSRAM-ban. A tüskesor sorrendje klónonként változik: nézd a feliratot."},
+      "facts": [["Bus", "SPI, own CS"], ["Card", "64 GB high endurance"]],
+      "lessons": ["s07", "e16"],
+      "headers": {"pins": ["GND|gnd", "VCC|power|4.5–5.5 V on the 5 V module (it has its own 3.3 V regulator)|4,5–5,5 V az 5 V-os modulon (saját 3,3 V stabilizátora van)", "MISO|spi", "MOSI|spi", "SCK|spi", "CS|spi|Own chip select|Saját chip select"]},
+      "features": {"socket": ["microSD socket", "Push-push socket; contacts touch the card's pads.", "Nyomós foglalat; az érintkezők a kártya padjaihoz érnek."], "buffer": ["74LVC125", "Level buffer between 5 V logic and the 3.3 V card.", "Szintillesztő 5 V-os logika és a 3,3 V-os kártya között."], "ldo": ["AMS1117-3.3", "Makes 3.3 V for the card.", "3,3 V-ot csinál a kártyának."]}
+    },
+    {
+      "id": "sd-card", "note": "microSD card high endurance 64 GB", "status": "have", "category": "storage", "dims": "11 × 15 × 1 mm (standard)", "dims_ok": true,
+      "name": {"en": "microSD card, 64 GB high endurance", "hu": "microSD kártya, 64 GB high endurance"},
+      "role": {"en": "Where the node's raw data lands. 'High endurance' survives constant writing.", "hu": "Ide kerülnek a node nyers adatai. A 'high endurance' bírja a folyamatos írást."},
+      "summary": {"en": "Flash memory plus a controller. In **SPI mode** only 4 signals are used: CS, DI (MOSI), CLK, DO (MISO). Two channels × 1 kSPS × 3 bytes ≈ 6 kB/s, about 0.5 GB per day: 64 GB lasts months.", "hu": "Flash memória plusz vezérlő. **SPI módban** csak 4 jel kell: CS, DI (MOSI), CLK, DO (MISO). Két csatorna × 1 kSPS × 3 bájt ≈ 6 kB/s, napi kb. 0,5 GB: a 64 GB hónapokig elég."},
+      "facts": [["SPI pins", "1 CS · 2 DI · 3 VSS · 4 VDD · 5 CLK · 6 VSS · 7 DO · 8 NC"]],
+      "lessons": ["s08"],
+      "headers": {"pads": ["CS|spi|Pin 1 (DAT3/CD in SD mode)|1. pad (SD módban DAT3/CD)", "DI|spi|Pin 2: data in (MOSI)|2. pad: adat be (MOSI)", "VSS|gnd", "VDD|power|3.3 V", "CLK|spi", "VSS|gnd", "DO|spi|Pin 7: data out (MISO)|7. pad: adat ki (MISO)", "NC|nc"]},
+      "features": {}
+    },
+    {
+      "id": "rj45", "note": "RJ45 jack breakout", "status": "later", "category": "cable", "dims": "≈ 30 × 20 mm (estimated)", "dims_ok": false,
+      "name": {"en": "RJ45 jack breakout (head port)", "hu": "RJ45 aljzat modul (fej csatlakozó)"},
+      "role": {"en": "The plug-in port for each sensor head. Not Ethernet: our own pinout.", "hu": "Minden szenzorfej csatlakozója. Nem Ethernet: saját lábkiosztás."},
+      "summary": {"en": "Our head port pinout (Master plan): **1–2 analog ±** (one twisted pair, so noise hits both wires equally), **3–6 I²C**, **4–5 +3.3 V**, **7–8 GND**. Label the ports 'not Ethernet' so nobody plugs a router in.", "hu": "A fej csatlakozó kiosztása (Master plan): **1–2 analóg ±** (egy csavart érpár, így a zaj mindkét eret egyformán éri), **3–6 I²C**, **4–5 +3,3 V**, **7–8 GND**. Írd rá: 'nem Ethernet', nehogy valaki routert dugjon bele."},
+      "facts": [["Pairs (T568B)", "1-2 orange · 3-6 green · 4-5 blue · 7-8 brown"]],
+      "lessons": ["e14", "e20"],
+      "headers": {"pins": ["1|analog|Analog + (orange pair)|Analóg + (narancs pár)", "2|analog|Analog − (orange pair)|Analóg − (narancs pár)", "3|i2c|I²C (green pair)|I²C (zöld pár)", "4|power|+3.3 V (blue pair)|+3,3 V (kék pár)", "5|power|+3.3 V (blue pair)|+3,3 V (kék pár)", "6|i2c|I²C (green pair)|I²C (zöld pár)", "7|gnd|GND (brown pair)|GND (barna pár)", "8|gnd|GND (brown pair)|GND (barna pár)"]},
+      "features": {"jack": ["RJ45 jack", "8 spring contacts.", "8 rugós érintkező."]}
+    },
+    {
+      "id": "cat5e", "note": "Cat5e cable 20 m", "status": "later", "category": "cable", "dims": "≈ Ø 5 mm, 4 pairs, 24 AWG (typical)", "dims_ok": false,
+      "name": {"en": "Cat5e cable", "hu": "Cat5e kábel"},
+      "role": {"en": "Head cables: four twisted pairs carry analog, I²C and power from each head to the node.", "hu": "Fej kábelek: négy csavart érpár viszi az analóg jelet, az I²C-t és a tápot a fejtől a node-ig."},
+      "summary": {"en": "**Twisting** makes both wires of a pair pick up the same interference, so a **differential** input (like the ADS131M0x's AINxP − AINxN) cancels it. Each pair has a different twist rate to reduce crosstalk. Long I²C runs are the weak spot: capacitance grows with length (about 50 pF/m), so rise times get slower.", "hu": "A **csavarás** miatt egy pár mindkét ere ugyanazt a zavart szedi össze, így egy **differenciális** bemenet (mint az ADS131M0x AINxP − AINxN) kioltja. Minden pár más sodrással készül, ez csökkenti az áthallást. A hosszú I²C a gyenge pont: a kapacitás a hosszal nő (kb. 50 pF/m), így lassul a felfutás."},
+      "facts": [["Pairs", "orange, green, blue, brown"], ["Conductor", "24 AWG solid copper (typical)"]],
+      "lessons": ["e14", "e16"],
+      "headers": {"pairs": ["orange pair|analog|Pins 1–2: analog ±|1–2. láb: analóg ±", "green pair|i2c|Pins 3, 6: I²C|3. és 6. láb: I²C", "blue pair|power|Pins 4–5: +3.3 V|4–5. láb: +3,3 V", "brown pair|gnd|Pins 7–8: GND|7–8. láb: GND"]},
+      "features": {"jacket": ["Jacket", "PVC outer sheath.", "PVC külső köpeny."], "plug": ["RJ45 plug", "8P8C plug, crimped.", "8P8C dugó, krimpelve."]}
+    },
+    {
+      "id": "breadboard", "note": "Breadboard and jumper kit", "status": "have", "category": "prototyping", "dims": "≈ 165 × 55 × 8.5 mm, 2.54 mm pitch, 63 rows", "dims_ok": false,
+      "name": {"en": "Breadboard 830 + jumpers", "hu": "Dugaszolós próbapanel 830 + vezetékek"},
+      "role": {"en": "Solderless wiring: every row of 5 holes is one metal clip.", "hu": "Forrasztás nélküli bekötés: minden 5 lyukas sor egy fém rugó."},
+      "summary": {"en": "Under each group of **5 holes (a–e or f–j)** sits one spring clip, so those 5 points are the same node. The **centre gap** separates the two halves, so an IC can straddle it. The **rails** along the edges run lengthwise (red +, blue −); on some boards they're split in the middle. Explode the model to see the clips.", "hu": "Minden **5 lyukas csoport (a–e vagy f–j)** alatt egy rugós fém van, ez az 5 pont egy csomópont. A **középső árok** választja el a két felet, így egy IC átnyúlhat rajta. A szélső **sínek** hosszanti irányban futnak (piros +, kék −); egyes paneleken középen meg vannak szakítva. Szedd szét a modellt, és látod a rugókat."},
+      "facts": [["Points", "830 = 630 terminal + 200 rail"], ["Gap", "7.62 mm (fits DIP)"]],
+      "lessons": ["e01", "e03"],
+      "headers": {},
+      "features": {"row": ["Terminal strip", "5 holes, one clip, one node.", "5 lyuk, egy rugó, egy csomópont."], "rail": ["Power rail", "Long strip along the edge for + and −.", "Hosszú sín a szélén a + és − számára."], "gap": ["Centre gap", "DIP chips straddle it so each pin gets its own row.", "A DIP chipek átnyúlnak rajta, így minden lábnak saját sora van."], "clip": ["Spring clip", "Phosphor-bronze clip under each row.", "Foszforbronz rugó minden sor alatt."]}
+    },
+    {
+      "id": "passives", "note": "Capacitor and resistor assortment", "status": "have", "category": "passive", "dims": "1/4 W resistor ≈ 6.3 × 2.4 mm; 10 µF can 5 × 11 mm (typical)", "dims_ok": false,
+      "name": {"en": "Resistors and capacitors", "hu": "Ellenállások és kondenzátorok"},
+      "role": {"en": "The 470 Ω + 220 Ω that feed the load cell, 100 nF decoupling, 10 µF bulk, the geophone shunt.", "hu": "A mérlegcellát tápláló 470 Ω + 220 Ω, a 100 nF hidegítő, a 10 µF puffer, a geofon sönt."},
+      "summary": {"en": "**Resistor colour code:** digit, digit, multiplier, tolerance. 470 Ω = yellow violet brown gold, 220 Ω = red red brown gold. The '680 Ω' that turned out to be **680 kΩ** reads blue grey **yellow**: one band changes the value 1000×. **100 nF ceramic** ('104' = 10 × 10⁴ pF) sits next to every chip's supply pin. The **10 µF electrolytic** is polarised: the stripe marks −.", "hu": "**Ellenállás színkód:** számjegy, számjegy, szorzó, tűrés. 470 Ω = sárga lila barna arany, 220 Ω = piros piros barna arany. A '680 Ω', ami **680 kΩ** lett, kék szürke **sárga**: egyetlen sáv 1000×-esére változtatja az értéket. A **100 nF kerámia** ('104' = 10 × 10⁴ pF) minden chip táplábánál ott van. A **10 µF elektrolit** polarizált: a csík jelöli a −-t."},
+      "facts": [["Colours", "0 black 1 brown 2 red 3 orange 4 yellow 5 green 6 blue 7 violet 8 grey 9 white"], ["Tolerance", "gold 5 %, silver 10 %, brown 1 %"]],
+      "lessons": ["e02", "e03", "e07"],
+      "headers": {},
+      "features": {"r470": ["470 Ω", "Yellow, violet, brown (×10), gold. In series with 220 Ω it feeds the load cell.", "Sárga, lila, barna (×10), arany. A 220 Ω-mal sorban táplálja a mérlegcellát."], "r220": ["220 Ω", "Red, red, brown, gold.", "Piros, piros, barna, arany."], "r680k": ["680 kΩ (the wrong one)", "Blue, grey, yellow (×10 000), gold. With 3.3 V it lets only ≈ 5 µA through.", "Kék, szürke, sárga (×10 000), arany. 3,3 V-ról csak kb. 5 µA-t enged át."], "c100n": ["100 nF ceramic", "Code 104. Decoupling: a tiny local charge store next to each chip.", "Kód: 104. Hidegítés: kis helyi töltéstároló minden chip mellett."], "c10u": ["10 µF electrolytic", "Polarised: stripe = −. Bulk storage on the supply.", "Polarizált: csík = −. Nagyobb tároló a tápon."]}
+    },
+    {
+      "id": "flux-pen", "note": "Solder flux pen", "status": "have", "category": "consumable", "dims": "≈ 140 × 16 mm (estimated)", "dims_ok": false,
+      "name": {"en": "Solder flux pen", "hu": "Folyasztószer toll"},
+      "role": {"en": "Makes solder flow on fine-pitch pins (0.65 mm TSSOP) and tinned wire ends.", "hu": "Segít, hogy a forrasz szépen folyjon a sűrű lábakon (0,65 mm TSSOP) és az ónozott vezetékvégeken."},
+      "summary": {"en": "Flux removes the oxide layer on copper and pins as it heats, so solder wets the metal instead of balling up. Use it before tinning the load cell's thin wires and for drag-soldering the ADS131M04. Clean residue with isopropyl alcohol.", "hu": "A folyasztószer melegítéskor eltávolítja a réz és a lábak oxidrétegét, így a forrasz nedvesíti a fémet ahelyett, hogy golyóvá állna. Használd a mérlegcella vékony vezetékeinek ónozása előtt és az ADS131M04 húzásos forrasztásához. A maradékot izopropil-alkohollal tisztítsd."},
+      "facts": [["Use", "tinning, TSSOP drag soldering"]],
+      "lessons": ["e19"],
+      "headers": {},
+      "features": {"tip": ["Felt tip", "Dispenses a thin layer of flux.", "Vékony réteg folyasztószert ad."], "cap": ["Cap", "Keeps the flux from drying out.", "Nem hagyja kiszáradni."]}
+    }
+  ]
+}

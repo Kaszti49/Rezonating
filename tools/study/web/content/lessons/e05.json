@@ -1,0 +1,65 @@
+{
+  "id": "e05",
+  "minutes": 30,
+  "title": {"en": "The multimeter, safely", "hu": "A multiméter, biztonságosan"},
+  "goal": {"en": "After this lesson you can pick the right meter mode and jack, measure V, Ω, continuity and mA on our bench without damaging anything, and explain how a few meter readings found the 680 kΩ resistor.", "hu": "A lecke után ki tudod választani a megfelelő műszerállást és aljzatot, tudsz V-ot, Ω-ot, szakadásvizsgálatot és mA-t mérni a pultunkon anélkül, hogy bármit tönkretennél, és el tudod mondani, hogyan találta meg néhány mérés a 680 kΩ-os ellenállást."},
+  "parts": ["esp32-devkit", "yzc133", "passives"],
+  "predict": [
+    {
+      "q": {"en": "The ESP32 is powered over USB, the circuit is live, and you turn the meter to Ω and touch the two ends of a resistor in the circuit. What happens?", "hu": "Az ESP32 USB-ről kapja a tápot, az áramkör él, te Ω állásba kapcsolod a műszert, és egy bent lévő ellenállás két végéhez érsz. Mi történik?"},
+      "options": [
+        {"en": "The meter shows the resistor's value, as always", "hu": "A műszer az ellenállás értékét mutatja, mint mindig"},
+        {"en": "The reading is meaningless (and can damage the meter), because the circuit's own voltages add to the meter's measuring current", "hu": "A kijelzés értelmetlen (és a műszert is károsíthatja), mert az áramkör saját feszültségei hozzáadódnak a műszer mérőáramához"},
+        {"en": "The meter shows 0 because the circuit overrules it", "hu": "A műszer 0-t mutat, mert az áramkör felülírja"},
+        {"en": "The meter turns itself into a voltmeter", "hu": "A műszer magától voltmérővé válik"}
+      ],
+      "answer": 1,
+      "why": {"en": "In Ω mode the meter pushes a small current of its own and measures the voltage it causes. Another source in the circuit adds its own voltage, so the result is wrong. Hence the rule: Ω and continuity only with the USB unplugged. Meters don't switch modes by themselves.", "hu": "Ω módban a műszer saját kis áramot hajt át, és az általa okozott feszültséget méri. Ha az áramkörben más forrás is van, az hozzáadja a saját feszültségét, így az eredmény hibás. Ezért a szabály: Ω és szakadásvizsgálat csak kihúzott USB-vel. A műszerek nem váltanak maguktól módot."}
+    },
+    {
+      "q": {"en": "The dial is on mA, the red lead is in the mA jack, and you touch red to the 3V3 pin and black to GND, to 'see what the current is'. What happens?", "hu": "A tárcsa mA-en áll, a piros zsinór az mA aljzatban van, és a pirosat a 3V3 lábhoz, a feketét a GND-hez érinted, „hogy lásd, mennyi az áram”. Mi történik?"},
+      "options": [
+        {"en": "The meter shows the small current the ESP32 draws", "hu": "A műszer a kis áramot mutatja, amit az ESP32 felvesz"},
+        {"en": "Nothing: current mode is safe on any voltage", "hu": "Semmi: az áram mód bármilyen feszültségen biztonságos"},
+        {"en": "You short the 3.3 V to GND through the meter's very low resistance: a large current flows and a fuse or the board can suffer", "hu": "A műszer nagyon kicsi ellenállásán át zárlatba hozod a 3,3 V-ot a GND-vel: nagy áram folyik, a biztosíték vagy a panel károsodhat"},
+        {"en": "The meter shows the voltage instead", "hu": "A műszer helyette a feszültséget mutatja"}
+      ],
+      "answer": 2,
+      "why": {"en": "An ammeter has to be in series with the load, with almost zero resistance, so that it doesn't disturb the circuit. Put across a supply it is a near-short. The Handoff says it exactly: a meter lead in the mA jack shorts what it touches. Which parts fail first (meter fuse, USB port, regulator) depends on the meter and board; don't test it.", "hu": "Az árammérőt a terheléssel sorba kell kötni, és szinte nulla az ellenállása, hogy ne zavarja az áramkört. Tápra párhuzamosan kötve majdnem zárlat. A Handoff pontosan ezt írja: az mA aljzatban lévő zsinór rövidre zárja, amihez hozzáér. Hogy mi megy tönkre előbb (a műszer biztosítéka, a USB-port, a szabályozó), a műszertől és a paneltől függ; ne próbáld ki."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "Illustration with an **assumed** 1 Ω resistance in the mA jack path (check your own meter's manual for the real value): what current would flow if you put it across 3.3 V? Answer in **A**.", "hu": "Szemléltetés **feltételezett** 1 Ω-os ellenállással az mA aljzat útjában (a valódi értéket nézd meg a saját műszered kézikönyvében): mekkora áram folyna, ha 3,3 V-ra kötnéd? Válasz **A**-ben."},
+      "answer": 3.3, "unit": "A", "tol": 0.03,
+      "hint": {"en": "I = V / R, with R = 1 Ω.", "hu": "I = V / R, R = 1 Ω."},
+      "solution": {"en": "3.3 V / 1 Ω = **3.3 A**, nearly 2000 times the 1.84 mA of the whole load-cell rig. The real number depends on the meter and the supply, which cannot deliver that much; the point is the order of magnitude.", "hu": "3,3 V / 1 Ω = **3,3 A**, közel 2000-szer annyi, mint az egész mérlegcellás pult 1,84 mA-e. A valódi érték a műszertől és a tápból függ, ami ennyit nem is tud adni; a lényeg a nagyságrend."}
+    },
+    {
+      "q": {"en": "To measure our rig's current you open the loop and put the meter in. Assume the meter adds **10 Ω** (assumed, check the manual) to the 690 + 1100 Ω loop. What current does it show, from 3.3 V? Answer in **mA**.", "hu": "A pult áramának méréséhez megnyitod a hurkot, és beiktatod a műszert. Tegyük fel, hogy a műszer **10 Ω**-ot ad hozzá (feltételezett, nézd a kézikönyvet) a 690 + 1100 Ω-os hurokhoz. Mekkora áramot mutat 3,3 V-ról? Válasz **mA**-ben."},
+      "answer": 1.833, "unit": "mA", "tol": 0.02,
+      "hint": {"en": "Series: add the meter's resistance. I = 3.3 / (690 + 1100 + 10).", "hu": "Soros: add hozzá a műszer ellenállását. I = 3,3 / (690 + 1100 + 10)."},
+      "solution": {"en": "3.3 / 1800 = **1.833 mA**, instead of the true 1.844 mA: about 0.6 % low. Every meter changes what it measures; the question is by how much.", "hu": "3,3 / 1800 = **1,833 mA** a valódi 1,844 mA helyett: kb. 0,6 %-kal alacsonyabb. Minden műszer megváltoztatja, amit mér; a kérdés, hogy mennyivel."}
+    },
+    {
+      "q": {"en": "A voltmeter has a finite input resistance. Hypothetical: a divider of 1 MΩ over 1 MΩ from 3.3 V (midpoint 1.65 V unloaded), measured with a meter of **10 MΩ** input resistance (typical for many meters; check yours). What does it show? Answer in **V**.", "hu": "A voltmérőnek véges a bemeneti ellenállása. Képzeletbeli eset: 1 MΩ / 1 MΩ-os osztó 3,3 V-ról (a középpont terheletlenül 1,65 V), **10 MΩ** bemeneti ellenállású műszerrel mérve (sok műszerre jellemző; nézd meg a tiédet). Mit mutat? Válasz **V**-ban."},
+      "answer": 1.571, "unit": "V", "tol": 0.02,
+      "hint": {"en": "The meter is in parallel with the lower 1 MΩ: 1 M ∥ 10 M ≈ 0.909 MΩ. Then divide.", "hu": "A műszer az alsó 1 MΩ-mal párhuzamos: 1 M ∥ 10 M ≈ 0,909 MΩ. Aztán osztás."},
+      "solution": {"en": "3.3 × 0.909 / (1 + 0.909) = **1.571 V**, 5 % below the true 1.65 V. In our low-resistance circuits (hundreds of ohms to ~1 kΩ) the same meter's effect is negligible; in high-resistance spots it isn't.", "hu": "3,3 × 0,909 / (1 + 0,909) = **1,571 V**, 5 %-kal kisebb a valódi 1,65 V-nál. A mi kis ellenállású áramköreinkben (néhány száz ohmtól kb. 1 kΩ-ig) ugyanennek a műszernek a hatása elhanyagolható; nagy ellenállású pontokon nem az."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "How is a voltmeter connected to measure the drop across a resistor?", "hu": "Hogyan kötöd a voltmérőt, hogy egy ellenállás feszültségesését mérd?"}, "options": [{"en": "In series, breaking the circuit", "hu": "Sorosan, megszakítva az áramkört"}, {"en": "Across the resistor, in parallel, without breaking the circuit", "hu": "Az ellenálláson át, párhuzamosan, az áramkör megszakítása nélkül"}, {"en": "From the resistor to the mA jack", "hu": "Az ellenállástól az mA aljzatig"}, {"en": "Only with the power off", "hu": "Csak kikapcsolt tápnál"}], "answer": 1, "why": {"en": "Voltage is a difference between two points: touch both. Current is measured in series, resistance with the power off.", "hu": "A feszültség két pont különbsége: érintsd meg mindkettőt. Az áramot sorosan mérjük, az ellenállást kikapcsolt tápnál."}},
+    {"q": {"en": "Which jack do you use for volts, ohms and continuity?", "hu": "Melyik aljzatot használod voltokhoz, ohmokhoz és szakadásvizsgálathoz?"}, "options": [{"en": "The mA jack", "hu": "Az mA aljzatot"}, {"en": "The jack marked V/Ω, with the black lead in COM", "hu": "A V/Ω jelű aljzatot, a fekete zsinórral a COM-ban"}, {"en": "Any", "hu": "Bármelyiket"}, {"en": "The 10 A jack", "hu": "A 10 A aljzatot"}], "answer": 1, "why": {"en": "Leads follow the labels on your own meter. After any current measurement, move the red lead back to the V/Ω jack, so you can't short something by accident next time.", "hu": "A zsinórok a saját műszered feliratait követik. Minden árammérés után tedd vissza a pirosat a V/Ω aljzatba, hogy legközelebb véletlenül se zárj rövidre semmit."}},
+    {"q": {"en": "On our load cell, you read about 1.09 kΩ between red and black and about 1.0 kΩ between green and white. What does it tell you?", "hu": "A mérlegcellán kb. 1,09 kΩ-ot olvasol a piros és fekete, kb. 1,0 kΩ-ot a zöld és fehér között. Mit mond ez?"}, "options": [{"en": "The cell is broken", "hu": "A cella elromlott"}, {"en": "That is the expected pattern: E+/E− reads about 1.07–1.12 kΩ, S+/S− about 1 kΩ (shop listing values, to be confirmed by reading)", "hu": "Ez a várt mintázat: E+/E− kb. 1,07–1,12 kΩ, S+/S− kb. 1 kΩ (bolti leírás szerinti értékek, méréssel megerősítendő)"}, {"en": "The two pairs are swapped", "hu": "A két pár fel van cserélve"}, {"en": "The cell is shorted", "hu": "A cella zárlatos"}], "answer": 1, "why": {"en": "The higher pair is the excitation pair (red/black), the other the signal pair (green/white), by the listings. Readings in these ranges tell you the bridge is intact and you've identified the pairs.", "hu": "A leírás szerint a nagyobb ellenállású pár a gerjesztő pár (piros/fekete), a másik a jelpár (zöld/fehér). Az ilyen tartományba eső értékek azt mutatják, hogy a híd ép, és azonosítottad a párokat."}},
+    {"q": {"en": "In-circuit, you measure a resistor in Ω with the USB unplugged and get a lower value than its bands say. Why?", "hu": "Áramkörben, kihúzott USB-vel megmérsz egy ellenállást, és kisebb értéket kapsz, mint a sávjai alapján várnád. Miért?"}, "options": [{"en": "The meter is wrong", "hu": "A műszer rossz"}, {"en": "Other paths in parallel with it are part of the reading: lift one leg to measure it alone", "hu": "A vele párhuzamos egyéb utak is beleszámítanak: emeld ki az egyik lábát, hogy egyedül mérd"}, {"en": "Resistors shrink when cold", "hu": "Az ellenállások hidegben összemennek"}, {"en": "Ω mode adds 10 %", "hu": "Az Ω mód 10 %-ot ad hozzá"}], "answer": 1, "why": {"en": "Parallel paths always lower the total. This is the same parallel rule as in E03.", "hu": "A párhuzamos utak mindig csökkentik az eredőt. Ez ugyanaz a párhuzamos szabály, mint az E03-ban."}}
+  ],
+  "cards": [
+    {"id": "e05-c1", "front": {"en": "Meter safety rule for Ω and continuity", "hu": "Biztonsági szabály Ω-hoz és szakadásvizsgálathoz"}, "back": {"en": "Only with the USB unplugged and the circuit dead.", "hu": "Csak kihúzott USB-vel és holt áramkörnél."}},
+    {"id": "e05-c2", "front": {"en": "The mA-jack trap", "hu": "Az mA aljzat csapdája"}, "back": {"en": "A lead in the mA jack is a near-short: never across a supply. Move it back to V/Ω after use.", "hu": "Az mA aljzatban lévő zsinór majdnem zárlat: soha ne tedd tápra. Használat után vidd vissza a V/Ω aljzatba."}},
+    {"id": "e05-c3", "front": {"en": "V, Ω, A: how connected?", "hu": "V, Ω, A: hogyan kötjük?"}, "back": {"en": "V: across (parallel). Ω: power off, part isolated. A: in series, breaking the loop.", "hu": "V: át (párhuzamosan). Ω: kikapcsolt táp, kiemelt alkatrész. A: sorosan, megszakítva a hurkot."}},
+    {"id": "e05-c4", "front": {"en": "Load cell resistances (shop listing)", "hu": "Mérlegcella ellenállások (bolti leírás)"}, "back": {"en": "E+/E− ≈ 1.07–1.12 kΩ (about 1066 Ω input), S+/S− ≈ 1.0 kΩ.", "hu": "E+/E− ≈ 1,07–1,12 kΩ (kb. 1066 Ω bemenet), S+/S− ≈ 1,0 kΩ."}},
+    {"id": "e05-c5", "front": {"en": "How the 680 kΩ was found", "hu": "Hogyan találtuk meg a 680 kΩ-ot"}, "back": {"en": "3.3 V / 0 V across the resistor → Ω checks with the USB unplugged → bands blue-grey-yellow.", "hu": "3,3 V / 0 V az ellenállás két végén → Ω mérések kihúzott USB-vel → sávok kék-szürke-sárga."}}
+  ],
+  "cases": ["case-680k"]
+}

@@ -1,6 +1,6 @@
 ---
 name: vault-conventions
-description: Exact frontmatter for every Rezonating vault note type (work, part, order, build, pack, experiment, research, decision, daily, weekly, inbox, proposal, retro) and the rules for editing notes. Use before creating or changing any note in the numbered vault folders.
+description: Exact frontmatter for every Rezonating vault note type (work, part, order, build, pack, experiment, research, decision, daily, weekly, inbox, proposal, retro, study) and the rules for editing notes. Use before creating or changing any note in the numbered vault folders.
 ---
 
 # Vault conventions
@@ -133,6 +133,11 @@ daily note's body and change the dates. Claude writes only under `## Claude`.
 `status: proposed | accepted | rejected | applied`, `target: .claude/agents/x.md`, `date:`, `applied:`, `flags: []`.
 
 **retro** — `90 Meta/Agents/Retros/YYYY-Www.md`: `type: retro`, `week: YYYY-Www`, `date: YYYY-MM-DD`.
+
+**study** — `10 Project/Study/<Kaszti|Viktor>.md`: written by the study site (`python tools/study/serve.py`),
+never by hand. `type: study`, `person: kaszti|viktor`, `updated: YYYY-MM-DD`, numbers `lessons_done`,
+`lessons_total`, `quiz_avg`, `cards_known`, `cards_due`, `cases_solved`, `parts_seen`, text `last_lesson`.
+The body ends with a `## State` JSON block the site reads back. The Base is `90 Meta/Bases/Study.base`.
 
 ## Editing rules
 - Work done: `status: done` and `done: <date>` together; tick the "Done when" boxes; add a Log line.

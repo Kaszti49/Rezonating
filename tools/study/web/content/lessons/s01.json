@@ -1,0 +1,58 @@
+{
+  "id": "s01",
+  "minutes": 20,
+  "title": {"en": "The big picture", "hu": "A nagy kép"},
+  "goal": {"en": "After this lesson you can follow one footstep from the floor to a Lab file, name what each stage does and counts, and explain why a new detection is a new pack and not new firmware.", "hu": "A lecke után végig tudsz követni egy lépést a padlótól a Lab fájlig, megmondod, melyik fokozat mit csinál és mit számol, és el tudod magyarázni, miért új pack kell egy új felismeréshez, nem új firmware."},
+  "parts": ["yzc133", "adc15", "esp32-devkit", "sm24", "adxl355"],
+  "predict": [
+    {
+      "q": {"en": "A customer wants the node to flag a washing machine that vibrates abnormally. Footsteps already work. What do we have to build?", "hu": "Egy ügyfél azt szeretné, hogy a node jelezze, ha egy mosógép rendellenesen rezeg. A lépésfelismerés már megy. Mit kell megépítenünk?"},
+      "options": [
+        {"en": "A new firmware for the ESP32 and a new ADC board", "hu": "Új firmware az ESP32-re és új ADC panel"},
+        {"en": "A new node: footsteps and machines are different products", "hu": "Új node: a lépés és a gép két külön termék"},
+        {"en": "A new pack (software), plus the head that pack asks for. The firmware and the board stay", "hu": "Egy új pack (szoftver), meg a fej, amit a pack kér. A firmware és a panel marad"},
+        {"en": "Nothing: the footstep pack already sees machines", "hu": "Semmit: a footstep pack már látja a gépeket"}
+      ],
+      "answer": 2,
+      "why": {"en": "That is the whole idea of D-002: one node, swappable heads, software packs. The appliance pack asks for an accelerometer head (ADXL355), the footstep pack for a geophone. Options 1 and 2 are what the 'separate device per application' alternative would cost, and we rejected it. Option 4 is wrong too: the footstep pack only listens for footstep-shaped bursts and was never trained on machines.", "hu": "Ez a D-002 lényege: egy node, cserélhető fejek, szoftveres packok. Az appliance pack gyorsulásmérő fejet kér (ADXL355), a footstep pack geofont. Az 1. és 2. válasz az 'alkalmazásonként külön eszköz' változat ára lenne, ezt elvetettük. A 4. is rossz: a footstep pack csak lépés alakú csomagokra figyel, gépekkel sosem tanítottuk."}
+    },
+    {
+      "q": {"en": "A floor vibrates at 800 Hz. The ADC samples at 1 kSPS and nothing filters the signal before. At what frequency does it appear in the data?", "hu": "A padló 800 Hz-en rezeg. Az ADC 1 kSPS-sel mintavételez, és előtte semmi nem szűri a jelet. Milyen frekvencián jelenik meg az adatban?"},
+      "options": [
+        {"en": "800 Hz: the data shows what the floor did", "hu": "800 Hz: az adat azt mutatja, amit a padló csinált"},
+        {"en": "Nowhere: 800 Hz is above 500 Hz, so it is simply dropped", "hu": "Sehol: az 800 Hz az 500 Hz felett van, egyszerűen eltűnik"},
+        {"en": "200 Hz: it folds back around 500 Hz", "hu": "200 Hz: visszahajlik az 500 Hz körül"},
+        {"en": "500 Hz: the highest frequency the data can hold", "hu": "500 Hz: a legmagasabb frekvencia, amit az adat tárolni tud"}
+      ],
+      "answer": 2,
+      "why": {"en": "Sampled at 1000 SPS, an 800 Hz tone looks exactly like a 1000 − 800 = **200 Hz** tone. Once it is in the numbers, no software can tell them apart. That is why the order of the chain matters: filtering before or inside the ADC cannot be repaired later. D-016 (record at 2 kSPS, filter, then decimate) exists because of this.", "hu": "1000 SPS-sel mintavételezve egy 800 Hz-es hang pontosan úgy néz ki, mint egy 1000 − 800 = **200 Hz**-es. Ha egyszer a számok között van, semmilyen szoftver nem tudja megkülönböztetni. Ezért számít a lánc sorrendje: a szűrést az ADC előtt vagy benne kell megoldani, utólag nem javítható. A D-016 (2 kSPS-sel rögzítünk, szűrünk, aztán decimálunk) emiatt van."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "The lab recorder stores the `adc_raw` stream: 2 channels, 2 kSPS, 32-bit (4-byte) samples. How many MB does one hour take? Answer in **MB** (1 MB = 1 000 000 bytes).", "hu": "A lab felvevő az `adc_raw` adatfolyamot menti: 2 csatorna, 2 kSPS, 32 bites (4 bájtos) minták. Hány MB egy óra? Válasz **MB**-ban (1 MB = 1 000 000 bájt)."},
+      "answer": 57.6, "unit": "MB", "tol": 0.03,
+      "hint": {"en": "Samples per second × bytes per sample × seconds.", "hu": "Minta/s × bájt/minta × másodperc."},
+      "solution": {"en": "2 × 2000 × 4 B = 16 000 B/s; × 3600 s = **57.6 MB**. D-020 quotes 'about 58 MB per hour', the same number.", "hu": "2 × 2000 × 4 B = 16 000 B/s; × 3600 s = **57,6 MB**. A D-020 'kb. 58 MB óránként'-t ír, ugyanez a szám."}
+    },
+    {
+      "q": {"en": "D-018 says the link carries about 50 kB/s with every stream on. Check it: `adc_raw` (2 ch × 2 kSPS) + `adc_dec` (2 ch × 1 kSPS) + `accel` (3 ch × 2000 Hz), all int32. Total in **kB/s** (1 kB = 1000 B).", "hu": "A D-018 szerint a link kb. 50 kB/s-ot visz, ha minden adatfolyam megy. Ellenőrizd: `adc_raw` (2 csat. × 2 kSPS) + `adc_dec` (2 csat. × 1 kSPS) + `accel` (3 csat. × 2000 Hz), mind int32. Az összeg **kB/s**-ban (1 kB = 1000 B)."},
+      "answer": 48, "unit": "kB/s", "tol": 0.03,
+      "solution": {"en": "adc_raw 16 kB/s + adc_dec 8 kB/s + accel 24 kB/s = **48 kB/s**, so 'about 50' holds (headers and STATUS lines add a little). A 115200-baud UART carries about 11.5 kB/s, far too little for this.", "hu": "adc_raw 16 kB/s + adc_dec 8 kB/s + accel 24 kB/s = **48 kB/s**, tehát a 'kb. 50' stimmel (a fejlécek és a STATUS sorok még hozzáadnak egy keveset). Egy 115200 baudos UART kb. 11,5 kB/s-ot visz, ehhez messze kevés."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "In which order does a signal pass through the node?", "hu": "Milyen sorrendben megy át a jel a node-on?"}, "options": [{"en": "ADC → sensor head → firmware → pack", "hu": "ADC → szenzorfej → firmware → pack"}, {"en": "Sensor head → ADC → firmware → link → pack", "hu": "Szenzorfej → ADC → firmware → link → pack"}, {"en": "Sensor head → firmware → ADC → link", "hu": "Szenzorfej → firmware → ADC → link"}, {"en": "Pack → sensor head → ADC → firmware", "hu": "Pack → szenzorfej → ADC → firmware"}], "answer": 1, "why": {"en": "Floor → head (vibration to volts) → ADC (volts to numbers) → firmware (collect, filter, count) → link → Lab files and packs.", "hu": "Padló → fej (rezgés → volt) → ADC (volt → számok) → firmware (gyűjt, szűr, számol) → link → Lab fájlok és packok."}},
+    {"q": {"en": "What does a pack decide?", "hu": "Mit dönt el egy pack?"}, "options": [{"en": "How the ADC clock is generated", "hu": "Hogyan készül az ADC órajele"}, {"en": "What the node detects: which head it needs, which filter and trigger, which features and model", "hu": "Mit ismer fel a node: milyen fejet kér, milyen szűrőt és triggert, milyen jellemzőket és modellt"}, {"en": "The SPI mode of the ADC", "hu": "Az ADC SPI módja"}, {"en": "The size of the microSD card", "hu": "A microSD kártya mérete"}], "answer": 1, "why": {"en": "The pack manifest names the heads, sample rate, DSP, trigger, features, model and outputs. Hardware details like the SPI mode belong to the firmware.", "hu": "A pack manifest megnevezi a fejeket, a mintavételi frekvenciát, a DSP-t, a triggert, a jellemzőket, a modellt és a kimeneteket. A hardverrészletek, például az SPI mód, a firmware dolgai."}},
+    {"q": {"en": "Which Year 1 pack uses an accelerometer head instead of a geophone?", "hu": "Melyik első évi pack használ geofon helyett gyorsulásmérő fejet?"}, "options": [{"en": "footstep-id", "hu": "footstep-id"}, {"en": "fall", "hu": "fall"}, {"en": "appliance", "hu": "appliance"}, {"en": "All three", "hu": "Mind a három"}], "answer": 2, "why": {"en": "footstep-id and fall use the geophone; appliance uses the ADXL355 (2000 Hz over I²C).", "hu": "A footstep-id és a fall geofont használ; az appliance az ADXL355-öt (2000 Hz, I²C)."}},
+    {"q": {"en": "'Count every sample.' Who is responsible, and why?", "hu": "'Minden mintát számolj meg.' Ki felel érte, és miért?"}, "options": [{"en": "The pack: it ignores gaps", "hu": "A pack: a hézagokat figyelmen kívül hagyja"}, {"en": "The firmware: it reports dropped samples and never hides them, so recordings can be trusted", "hu": "A firmware: jelenti az eldobott mintákat, és sosem rejti el, így a felvételekben megbízhatunk"}, {"en": "The sensor head", "hu": "A szenzorfej"}, {"en": "Nobody: a missing sample is not important", "hu": "Senki: egy hiányzó minta nem fontos"}], "answer": 1, "why": {"en": "A gap shifts timing and fools features and models. The firmware counts DRDY gaps, FIFO left-overs and bad-CRC frames as lost.", "hu": "Egy hézag eltolja az időzítést, és megtéveszti a jellemzőket és a modelleket. A firmware a DRDY-hézagokat, a FIFO-maradékot és a rossz CRC-s kereteket elveszettnek számolja."}}
+  ],
+  "cards": [
+    {"id": "s01-c1", "front": {"en": "The chain in one line", "hu": "A lánc egy sorban"}, "back": {"en": "Floor → head → ADC → ESP32 firmware → link → Lab / packs.", "hu": "Padló → fej → ADC → ESP32 firmware → link → Lab / packok."}},
+    {"id": "s01-c2", "front": {"en": "Year 1 packs, in order", "hu": "Az első évi packok sorrendben"}, "back": {"en": "footstep-id (geophone), fall (geophone), appliance (accelerometer).", "hu": "footstep-id (geofon), fall (geofon), appliance (gyorsulásmérő)."}},
+    {"id": "s01-c3", "front": {"en": "Why packs and not new firmware?", "hu": "Miért pack és nem új firmware?"}, "back": {"en": "One node and one firmware serve many uses; a pack declares what it needs (D-002).", "hu": "Egy node és egy firmware sok célra jó; a pack deklarálja, mit kér (D-002)."}},
+    {"id": "s01-c4", "front": {"en": "Raw recording size, 2 ch at 2 kSPS, 32-bit", "hu": "Nyers felvétel mérete, 2 csat., 2 kSPS, 32 bit"}, "back": {"en": "16 kB/s ≈ 57.6 MB per hour.", "hu": "16 kB/s ≈ 57,6 MB óránként."}},
+    {"id": "s01-c5", "front": {"en": "What does the load cell do on our bench?", "hu": "Mi a mérlegcella dolga a pultunkon?"}, "back": {"en": "A known test signal for the whole chain. It is not a product sensor.", "hu": "Ismert tesztjel az egész láncnak. Nem terméksenzor."}}
+  ],
+  "cases": ["case-680k"]
+}

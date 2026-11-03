@@ -1,0 +1,63 @@
+{
+  "id": "e12", "minutes": 30,
+  "title": {"en": "Transistors and logic levels", "hu": "Tranzisztorok és logikai szintek"},
+  "goal": {"en": "After this lesson you can size a base resistor for a BJT switch, tell when a MOSFET is the better switch, say what a 3.3 V logic high and low really are, and explain why I²C lines are open-drain and how the pull-up sets the speed.", "hu": "A lecke után ki tudod számolni egy BJT-kapcsoló bázisellenállását, el tudod dönteni, mikor jobb kapcsoló a MOSFET, tudod, mit jelent valójában a 3,3 V-os logikai magas és alacsony szint, és meg tudod magyarázni, miért nyitott kollektoros az I²C, és hogyan szabja meg a felhúzó ellenállás a sebességet."},
+  "parts": ["esp32-devkit", "adxl355", "tca9548a", "passives"],
+  "predict": [
+    {
+      "q": {"en": "Two chips share one wire. Chip A drives it **high** (3.3 V), chip B drives it **low** (0 V) at the same moment. Both outputs are push-pull. What happens?", "hu": "Két chip osztozik egy vezetéken. Az A chip **magasra** (3,3 V) hajtja, a B chip ugyanabban a pillanatban **alacsonyra** (0 V). Mindkét kimenet push-pull. Mi történik?"},
+      "options": [
+        {"en": "The wire settles at about 1.65 V and both chips are fine", "hu": "A vezeték kb. 1,65 V-ra áll be, és mindkét chip jól van"},
+        {"en": "The wire follows whoever started first", "hu": "A vezeték azt követi, aki előbb kezdte"},
+        {"en": "A large current flows from 3.3 V through A's top switch and B's bottom switch to ground; the level is undefined and the chips can be damaged", "hu": "Nagy áram folyik a 3,3 V-ról A felső kapcsolóján és B alsó kapcsolóján át a földre; a szint nem meghatározott, és a chipek károsodhatnak"},
+        {"en": "Nothing: logic outputs are protected against this", "hu": "Semmi: a logikai kimenetek védettek ez ellen"}
+      ],
+      "answer": 2,
+      "why": {"en": "Push-pull means one switch to 3.3 V and one to GND inside each output. Fighting outputs make a short circuit through two small switches. 'Whoever started first' makes no difference: both switches are simply on. 1.65 V is the divider result if the switches were equal, but no receiver can read that level as 0 or 1, so it is not 'fine'. Open-drain removes the fight: nobody ever drives high.", "hu": "A push-pull azt jelenti, hogy minden kimenetben van egy kapcsoló a 3,3 V felé és egy a GND felé. Ha két kimenet egymás ellen dolgozik, két kis kapcsolón át zárlat alakul ki. A \"ki kezdte\" nem számít: mindkét kapcsoló egyszerűen nyitva van. Az 1,65 V a feszültségosztó eredménye lenne egyforma kapcsolóknál, de ezt a szintet egy bemenet sem tudja 0-nak vagy 1-nek olvasni, tehát nem \"jó\". A nyitott kollektor megszünteti a küzdelmet: senki nem hajt soha magasra."}
+    },
+    {
+      "q": {"en": "An I²C bus has 4.7 kΩ pull-ups and 100 pF of wire and pin capacitance. You swap to 2.2 kΩ pull-ups. What changes?", "hu": "Egy I²C buszon 4,7 kΩ-os felhúzók és 100 pF vezeték- és lábkapacitás van. 2,2 kΩ-osra cseréled a felhúzókat. Mi változik?"},
+      "options": [
+        {"en": "The rising edge gets faster (RC is smaller), but each low level draws more current from the chip", "hu": "A felfutó él gyorsabb lesz (kisebb az RC), de az alacsony szint alatt több áramot kell a chipnek elnyelnie"},
+        {"en": "The falling edge gets slower", "hu": "A lefutó él lassabb lesz"},
+        {"en": "Nothing: only the chip decides the speed", "hu": "Semmi: a sebességet csak a chip dönti el"},
+        {"en": "The bus can no longer go low", "hu": "A busz már nem tud alacsonyra menni"}
+      ],
+      "answer": 0,
+      "why": {"en": "The chip pulls the line low actively and quickly. The way back up is only the pull-up charging the capacitance: time ∝ R · C. A smaller R is faster. The price is I = 3.3 V / R flowing into the chip whenever it holds the line low (1.5 mA instead of 0.7 mA). The falling edge is not slowed: the chip's own switch does that.", "hu": "A chip a vonalat aktívan és gyorsan húzza le. A visszaút felfelé csak annyi, hogy a felhúzó tölti a kapacitást: idő ∝ R · C. Kisebb R gyorsabb. Az ár: valahányszor a chip lent tartja a vonalat, I = 3,3 V / R folyik bele (1,5 mA 0,7 mA helyett). A lefutó élt ez nem lassítja: azt a chip saját kapcsolója adja."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "You switch a 20 mA load with an NPN BJT from a 3.3 V GPIO. Design for saturation with a **forced gain of 10** (base current = load current / 10) and V_BE = 0.7 V. What base resistor? Answer in **kΩ**.", "hu": "Egy 20 mA-es terhelést kapcsolsz NPN BJT-vel 3,3 V-os GPIO-ról. Méretezz telítésre **10-es kényszerített erősítéssel** (bázisáram = terhelési áram / 10), V_BE = 0,7 V. Mekkora a bázisellenállás? Válasz **kΩ**-ban."},
+      "answer": 1.3, "unit": "kΩ", "tol": 0.03,
+      "hint": {"en": "I_B = 20 mA / 10 = 2 mA. The resistor drops 3.3 V − 0.7 V.", "hu": "I_B = 20 mA / 10 = 2 mA. Az ellenálláson 3,3 V − 0,7 V esik."},
+      "solution": {"en": "I_B = 20 mA / 10 = 2 mA. R_B = (3.3 V − 0.7 V) / 2 mA = **1.3 kΩ**. Use the next standard value down (1.2 kΩ) so the BJT is surely saturated. The GPIO must be able to give 2 mA; check the datasheet's output current limits.", "hu": "I_B = 20 mA / 10 = 2 mA. R_B = (3,3 V − 0,7 V) / 2 mA = **1,3 kΩ**. Válaszd a legközelebbi kisebb szabványos értéket (1,2 kΩ), hogy a BJT biztosan telítésben legyen. A GPIO-nak 2 mA-t kell tudnia adni: nézd meg az adatlap kimeneti áramhatárait."}
+    },
+    {
+      "q": {"en": "I²C rise time from 30 % to 70 % of the supply is t ≈ 0.8473 · R · C. For 4.7 kΩ and 100 pF, what is it? Answer in **ns**. (Fast mode, 400 kHz, allows at most 300 ns.)", "hu": "Az I²C felfutási ideje a tápfeszültség 30 %-áról a 70 %-ára t ≈ 0,8473 · R · C. 4,7 kΩ és 100 pF esetén mennyi? Válasz **ns**-ban. (A gyors mód, 400 kHz, legfeljebb 300 ns-ot enged.)"},
+      "answer": 398, "unit": "ns", "tol": 0.03,
+      "hint": {"en": "4700 Ω × 100·10⁻¹² F = 470 ns, then × 0.8473.", "hu": "4700 Ω × 100·10⁻¹² F = 470 ns, aztán × 0,8473."},
+      "solution": {"en": "t = 0.8473 × 4700 × 100·10⁻¹² ≈ **398 ns**. That meets standard mode (100 kHz, ≤ 1000 ns) but fails fast mode (≤ 300 ns). With 2.2 kΩ: 186 ns, which passes. (Textbook formula and I²C-spec limits.)", "hu": "t = 0,8473 × 4700 × 100·10⁻¹² ≈ **398 ns**. Ez megfelel a normál módnak (100 kHz, ≤ 1000 ns), de a gyors módnak (≤ 300 ns) nem. 2,2 kΩ-mal: 186 ns, ami megfelel. (Tankönyvi képlet és az I²C-specifikáció határai.)"}
+    },
+    {
+      "q": {"en": "How much current does a 4.7 kΩ pull-up to 3.3 V draw while the line is held low? Answer in **mA**.", "hu": "Mennyi áramot vesz fel egy 3,3 V-ra kötött 4,7 kΩ-os felhúzó, amíg a vonal alacsonyra van húzva? Válasz **mA**-ben."},
+      "answer": 0.702, "unit": "mA", "tol": 0.03,
+      "solution": {"en": "I = 3.3 V / 4700 Ω ≈ **0.70 mA** (the low level is near 0 V, so almost the full 3.3 V is across the resistor). SDA and SCL are not low all the time, so the average is lower.", "hu": "I = 3,3 V / 4700 Ω ≈ **0,70 mA** (az alacsony szint közel 0 V, tehát majdnem a teljes 3,3 V az ellenálláson esik). Az SDA és az SCL nincs mindig alacsonyan, így az átlag kisebb."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "For a 3.3 V CMOS input with thresholds 0.3·VDD and 0.7·VDD, which voltage is guaranteed to read as high?", "hu": "Egy 3,3 V-os CMOS bemenetnél a küszöbök 0,3·VDD és 0,7·VDD. Melyik feszültség biztosan magasnak olvasódik?"}, "options": [{"en": "1.0 V", "hu": "1,0 V"}, {"en": "1.65 V", "hu": "1,65 V"}, {"en": "2.0 V", "hu": "2,0 V"}, {"en": "2.4 V", "hu": "2,4 V"}], "answer": 3, "why": {"en": "0.7 × 3.3 V = 2.31 V. Only 2.4 V is above it. 2.0 V is in the undefined zone between 0.99 V and 2.31 V: the input may read either, or flicker.", "hu": "0,7 × 3,3 V = 2,31 V. Csak a 2,4 V van fölötte. A 2,0 V a meghatározatlan sávban van 0,99 V és 2,31 V között: a bemenet bármelyiket olvashatja, vagy ugrálhat."}},
+    {"q": {"en": "Why is a MOSFET usually better than a BJT for switching a load from a GPIO?", "hu": "Miért jobb általában a MOSFET, mint a BJT, ha GPIO-ról kapcsolsz terhelést?"}, "options": [{"en": "It needs almost no steady gate current: the gate is an insulated capacitor", "hu": "Állandósult állapotban szinte nem kell gate-áram: a gate egy szigetelt kondenzátor"}, {"en": "It works from any gate voltage", "hu": "Bármilyen gate-feszültségről működik"}, {"en": "It has no losses", "hu": "Nincs vesztesége"}, {"en": "It can be driven with a negative voltage only", "hu": "Csak negatív feszültséggel vezérelhető"}], "answer": 0, "why": {"en": "The gate draws current only while it charges. But check V_GS(th) and R_DS(on) **at 3.3 V gate drive**: many MOSFETs need 4.5–10 V to turn fully on and are useless from an ESP32 pin. You need a logic-level one.", "hu": "A gate csak töltés közben vesz fel áramot. De nézd meg a V_GS(th)-t és az R_DS(on)-t **3,3 V-os gate-vezérlésnél**: sok MOSFET 4,5–10 V-ot kér a teljes nyitáshoz, és ESP32-lábról használhatatlan. Logikai szintű típus kell."}},
+    {"q": {"en": "In an open-drain output, which level can the chip drive actively?", "hu": "Egy nyitott kollektoros kimenetnél melyik szintet hajtja a chip aktívan?"}, "options": [{"en": "Low only", "hu": "Csak az alacsonyat"}, {"en": "High only", "hu": "Csak a magasat"}, {"en": "Both", "hu": "Mindkettőt"}, {"en": "Neither", "hu": "Egyiket sem"}], "answer": 0, "why": {"en": "The only switch is the one to GND. High comes from the pull-up resistor when the switch lets go.", "hu": "Az egyetlen kapcsoló a GND felé van. A magas szintet a felhúzó adja, ha a kapcsoló elenged."}},
+    {"q": {"en": "The I²C scan on the ADXL355 finds nothing, yet SDA and SCL both read 3.3 V at idle. What does that tell you?", "hu": "Az I²C keresés semmit nem talál az ADXL355-ön, de az SDA és az SCL is 3,3 V-on van nyugalomban. Mit mond ez?"}, "options": [{"en": "The pull-ups exist, so the bus idles correctly; look at the chip's mode and address pins next", "hu": "Van felhúzás, tehát a busz helyesen nyugszik; a chip üzemmód- és címlábait nézd meg ezután"}, {"en": "The chip is dead", "hu": "A chip tönkrement"}, {"en": "The ESP32 has no I²C", "hu": "Az ESP32-nek nincs I²C-je"}, {"en": "The pull-ups are too weak", "hu": "A felhúzók túl gyengék"}], "answer": 0, "why": {"en": "Idle high on both lines means pull-ups are present and nobody holds a line low. It does not prove the chip is awake. For the ADXL355 the SCLK/VSSIO pin must be tied to ground for I²C (part note, datasheet pin description).", "hu": "Ha mindkét vonal nyugalomban magas, van felhúzás, és senki nem tartja lent a vonalat. Ez nem bizonyítja, hogy a chip ébren van. Az ADXL355-nél az SCLK/VSSIO lábat I²C-hez földre kell kötni (alkatrészjegyzet, adatlap lábleírás)."}}
+  ],
+  "cards": [
+    {"id": "e12-c1", "front": {"en": "Push-pull vs open-drain", "hu": "Push-pull és nyitott kollektor"}, "back": {"en": "Push-pull drives both high and low. Open-drain drives low only; a pull-up makes the high, so many devices can share a wire.", "hu": "A push-pull magasra és alacsonyra is hajt. A nyitott kollektor csak lehúz; a magasat a felhúzó adja, így sok eszköz osztozhat egy vezetéken."}},
+    {"id": "e12-c2", "front": {"en": "BJT base resistor", "hu": "BJT bázisellenállás"}, "back": {"en": "R_B = (V_drive − 0.7 V) / I_B, with I_B = I_load / 10 for a solid switch.", "hu": "R_B = (V_vezérlés − 0,7 V) / I_B, ahol I_B = I_terhelés / 10 a biztos kapcsoláshoz."}},
+    {"id": "e12-c3", "front": {"en": "What to check on a MOSFET for a 3.3 V GPIO", "hu": "Mit nézz meg egy MOSFET-en 3,3 V-os GPIO-hoz"}, "back": {"en": "R_DS(on) specified at V_GS = 3.3 V (or lower), and V_GS(th) well below 3.3 V.", "hu": "Az R_DS(on) legyen megadva V_GS = 3,3 V-on (vagy kisebben), és a V_GS(th) jóval 3,3 V alatt legyen."}},
+    {"id": "e12-c4", "front": {"en": "3.3 V CMOS thresholds", "hu": "3,3 V-os CMOS küszöbök"}, "back": {"en": "Low ≤ 0.3·VDD ≈ 1.0 V. High ≥ 0.7·VDD ≈ 2.3 V. Between: undefined.", "hu": "Alacsony ≤ 0,3·VDD ≈ 1,0 V. Magas ≥ 0,7·VDD ≈ 2,3 V. Köztük: meghatározatlan."}},
+    {"id": "e12-c5", "front": {"en": "I²C rise time", "hu": "I²C felfutási idő"}, "back": {"en": "t ≈ 0.8473 · R_pullup · C_bus. 4.7 kΩ and 100 pF → 398 ns: fine for 100 kHz, too slow for 400 kHz.", "hu": "t ≈ 0,8473 · R_felhúzó · C_busz. 4,7 kΩ és 100 pF → 398 ns: 100 kHz-hez jó, 400 kHz-hez lassú."}}
+  ],
+  "cases": ["case-i2c-nack"]
+}

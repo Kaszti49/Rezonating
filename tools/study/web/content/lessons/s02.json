@@ -1,0 +1,64 @@
+{
+  "id": "s02",
+  "minutes": 25,
+  "title": {"en": "Vibration: what a footstep looks like", "hu": "Rezgés: hogyan néz ki egy lépés"},
+  "goal": {"en": "After this lesson you can convert between displacement, velocity and acceleration at a given frequency, describe a footstep, a fall and a running machine as signals, and say why the same step looks different on different floors.", "hu": "A lecke után át tudsz váltani elmozdulás, sebesség és gyorsulás között adott frekvencián, le tudod írni a lépést, az esést és a járó gépet mint jelet, és el tudod mondani, miért néz ki másként ugyanaz a lépés különböző padlókon."},
+  "parts": ["sm24", "adxl355"],
+  "predict": [
+    {
+      "q": {"en": "A floor shakes with the same **velocity** amplitude at 10 Hz and at 100 Hz. At which frequency is the **acceleration** larger, and by how much?", "hu": "A padló ugyanakkora **sebesség**-amplitúdóval rezeg 10 Hz-en és 100 Hz-en. Melyik frekvencián nagyobb a **gyorsulás**, és mennyivel?"},
+      "options": [
+        {"en": "Equal: same velocity means same acceleration", "hu": "Egyenlő: ugyanaz a sebesség, ugyanaz a gyorsulás"},
+        {"en": "At 10 Hz, 10× larger: slow shaking has more push", "hu": "10 Hz-en, tízszer nagyobb: a lassú rázkódásnak több lökése van"},
+        {"en": "At 100 Hz, 10× larger: acceleration grows with frequency", "hu": "100 Hz-en, tízszer nagyobb: a gyorsulás a frekvenciával nő"},
+        {"en": "At 100 Hz, 100× larger", "hu": "100 Hz-en, százszor nagyobb"}
+      ],
+      "answer": 2,
+      "why": {"en": "a = 2π · f · v. Same v, ten times the f, ten times the a. (The 100× answer mixes it up with the displacement-to-acceleration step, which has f².) This is why accelerometers show high frequencies strongly and geophones show them weakly.", "hu": "a = 2π · f · v. Ugyanaz a v, tízszeres f, tízszeres a. (A 100× válasz összekeveri az elmozdulás–gyorsulás lépéssel, ahol f² van.) Ezért mutatják a gyorsulásmérők erősen a magas frekvenciákat, a geofonok pedig gyengén."}
+    },
+    {
+      "q": {"en": "Which description fits a single footstep on a floor best?", "hu": "Melyik leírás illik legjobban egyetlen lépésre a padlón?"},
+      "options": [
+        {"en": "A steady tone at one frequency, like a motor", "hu": "Egyenletes hang egyetlen frekvencián, mint egy motoré"},
+        {"en": "A short burst: sudden start, ring-down over tens to a few hundred milliseconds, then quiet until the next step", "hu": "Rövid csomag: hirtelen kezdet, kicsengés néhány tíz–pár száz ezredmásodperc alatt, aztán csend a következő lépésig"},
+        {"en": "A slow drift that takes seconds", "hu": "Lassú elmozdulás, ami másodpercekig tart"},
+        {"en": "Random noise with no structure", "hu": "Szerkezet nélküli, véletlen zaj"}
+      ],
+      "answer": 1,
+      "why": {"en": "A step is a transient. That is why the footstep pack uses a trigger (STA/LTA) and cuts a window around it: 100 ms before and 400 ms after. A motor would be option 1, the appliance case. Option 3 is below the 5 Hz high-pass.", "hu": "A lépés tranziens. Ezért használ a footstep pack triggert (STA/LTA), és vág ki egy ablakot körülötte: 100 ms előtte, 400 ms utána. A motor az 1. válasz lenne, az appliance eset. A 3. az 5 Hz-es felüláteresztő alatt van."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "A floor moves with a velocity amplitude of 1 mm/s at 50 Hz. What is the displacement amplitude? Answer in **µm**.", "hu": "A padló 1 mm/s sebesség-amplitúdóval rezeg 50 Hz-en. Mekkora az elmozdulás-amplitúdó? Válasz **µm**-ben."},
+      "answer": 3.183, "unit": "µm", "tol": 0.03,
+      "hint": {"en": "x = v / (2π · f). Use metres and seconds: 1 mm/s = 0.001 m/s.", "hu": "x = v / (2π · f). Méterben és másodpercben számolj: 1 mm/s = 0,001 m/s."},
+      "solution": {"en": "x = 0.001 / (2π · 50) = 0.001 / 314.16 ≈ 3.18 µm. The floor moves less than a hair's width, and the geophone still sees it.", "hu": "x = 0,001 / (2π · 50) = 0,001 / 314,16 ≈ 3,18 µm. A padló egy hajszálnyinál is kevesebbet mozdul, a geofon mégis látja."}
+    },
+    {
+      "q": {"en": "Same motion (1 mm/s, 50 Hz). What is the acceleration amplitude? Answer in **m/s²**.", "hu": "Ugyanaz a mozgás (1 mm/s, 50 Hz). Mekkora a gyorsulás-amplitúdó? Válasz **m/s²**-ben."},
+      "answer": 0.3142, "unit": "m/s²", "tol": 0.03,
+      "hint": {"en": "a = 2π · f · v.", "hu": "a = 2π · f · v."},
+      "solution": {"en": "a = 2π · 50 · 0.001 ≈ 0.314 m/s², about 0.032 g (1 g = 9.81 m/s²).", "hu": "a = 2π · 50 · 0,001 ≈ 0,314 m/s², kb. 0,032 g (1 g = 9,81 m/s²)."}
+    },
+    {
+      "q": {"en": "The footstep window is 100 ms before plus 400 ms after the trigger. How many samples does it hold in the recorded `adc_raw` stream at 2 kSPS?", "hu": "A lépés ablaka a trigger előtt 100 ms, utána 400 ms. Hány mintát tartalmaz a rögzített, 2 kSPS-es `adc_raw` adatfolyamban?"},
+      "answer": 1000, "unit": "samples", "tol": 0.01,
+      "solution": {"en": "0.5 s × 2000 samples/s = **1000 samples**. At 1 kSPS (`adc_dec`, what the pack sees) the same window has 500.", "hu": "0,5 s × 2000 minta/s = **1000 minta**. 1 kSPS-nél (`adc_dec`, amit a pack lát) ugyanez az ablak 500 minta."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Which pair is correct? Velocity is the rate of change of …, acceleration is the rate of change of …", "hu": "Melyik pár helyes? A sebesség a … változási üteme, a gyorsulás a … változási üteme."}, "options": [{"en": "acceleration; displacement", "hu": "gyorsulás; elmozdulás"}, {"en": "displacement; velocity", "hu": "elmozdulás; sebesség"}, {"en": "displacement; displacement", "hu": "elmozdulás; elmozdulás"}, {"en": "velocity; acceleration", "hu": "sebesség; gyorsulás"}], "answer": 1, "why": {"en": "Position changes → velocity; velocity changes → acceleration.", "hu": "A hely változik → sebesség; a sebesség változik → gyorsulás."}},
+    {"q": {"en": "The SM-24 outputs a voltage proportional to which quantity?", "hu": "Az SM-24 melyik mennyiséggel arányos feszültséget ad?"}, "options": [{"en": "Displacement", "hu": "Elmozdulás"}, {"en": "Velocity", "hu": "Sebesség"}, {"en": "Acceleration", "hu": "Gyorsulás"}, {"en": "Force", "hu": "Erő"}], "answer": 1, "why": {"en": "28.8 V/(m/s): volts per velocity. The ADXL355 gives acceleration, the load cell force.", "hu": "28,8 V/(m/s): volt per sebesség. Az ADXL355 gyorsulást ad, a mérlegcella erőt."}},
+    {"q": {"en": "A floor is stiff concrete in one flat and flexible wooden joists in another. What changes for the footstep pack?", "hu": "Az egyik lakásban merev beton a padló, a másikban rugalmas fa gerendázat. Mi változik a footstep packnak?"}, "options": [{"en": "Nothing: a step is a step", "hu": "Semmi: a lépés az lépés"}, {"en": "The floor shapes the signal (amplitude, ring-down, which frequencies carry), so the same person looks different. That is why we enrol on the floor we test on", "hu": "A padló alakítja a jelet (amplitúdó, kicsengés, melyik frekvenciák vezetnek), így ugyanaz a személy másként látszik. Ezért a tesztelt padlón vesszük fel a személyeket"}, {"en": "Only the sampling rate", "hu": "Csak a mintavételi frekvencia"}, {"en": "Only the ADC gain", "hu": "Csak az ADC erősítése"}], "answer": 1, "why": {"en": "The floor is part of the sensor chain. The Year 1 target is stated 'with 3 people on our own floor' for this reason.", "hu": "A padló a szenzorlánc része. Az első évi cél ezért szól így: '3 emberrel a saját padlónkon'."}},
+    {"q": {"en": "Which Year 1 case should look like a steady, repeating pattern with narrow peaks in the spectrum (an expectation, to confirm with recordings)?", "hu": "Melyik első évi eset nézzen ki egyenletes, ismétlődő mintázatnak, keskeny csúcsokkal a spektrumban (várakozás, felvételekkel ellenőrizendő)?"}, "options": [{"en": "A footstep", "hu": "Egy lépés"}, {"en": "A fall", "hu": "Egy esés"}, {"en": "A running appliance", "hu": "Egy járó háztartási gép"}, {"en": "A door slam", "hu": "Egy ajtócsapódás"}], "answer": 2, "why": {"en": "The appliance pack learns a baseline spectrum per machine state and flags drift. Steps and falls are one-off events.", "hu": "Az appliance pack gépállapotonként megtanul egy alap-spektrumot, és az eltérést jelzi. A lépés és az esés egyszeri esemény."}}
+  ],
+  "cards": [
+    {"id": "s02-c1", "front": {"en": "Sine motion: v from x, a from v", "hu": "Szinuszos mozgás: v az x-ből, a a v-ből"}, "back": {"en": "v = 2πf · x, a = 2πf · v = (2πf)² · x", "hu": "v = 2πf · x, a = 2πf · v = (2πf)² · x"}},
+    {"id": "s02-c2", "front": {"en": "1 mm/s at 50 Hz: displacement and acceleration?", "hu": "1 mm/s 50 Hz-en: elmozdulás és gyorsulás?"}, "back": {"en": "3.18 µm and 0.314 m/s² (≈ 0.032 g).", "hu": "3,18 µm és 0,314 m/s² (≈ 0,032 g)."}},
+    {"id": "s02-c3", "front": {"en": "A footstep as a signal", "hu": "A lépés mint jel"}, "back": {"en": "A transient: sudden start, ring-down, quiet. Packs cut a window (100 ms before, 400 ms after the trigger).", "hu": "Tranziens: hirtelen kezdet, kicsengés, csend. A packok ablakot vágnak ki (a trigger előtt 100 ms, utána 400 ms)."}},
+    {"id": "s02-c4", "front": {"en": "Which quantity grows fastest with frequency?", "hu": "Melyik mennyiség nő leggyorsabban a frekvenciával?"}, "back": {"en": "Acceleration (×f² from displacement). Displacement shrinks as 1/f for fixed velocity.", "hu": "A gyorsulás (az elmozduláshoz képest ×f²). Állandó sebességnél az elmozdulás 1/f szerint csökken."}},
+    {"id": "s02-c5", "front": {"en": "Fall pack rule (from the pack note)", "hu": "A fall pack szabálya (a pack jegyzetből)"}, "back": {"en": "Impact trigger → classifier (fall / object drop / jump) → no footsteps for 20 s afterwards.", "hu": "Ütés-trigger → osztályozó (esés / tárgy leejtése / ugrás) → utána 20 s-ig nincs lépés."}}
+  ],
+  "cases": []
+}

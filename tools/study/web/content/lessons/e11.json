@@ -1,0 +1,64 @@
+{
+  "id": "e11", "minutes": 30,
+  "title": {"en": "Diodes, LEDs and input protection", "hu": "Diódák, LED-ek és bemenetvédelem"},
+  "goal": {"en": "After this lesson you can size an LED resistor, explain how a series resistor plus two diodes protect an ADC input, and say why our piezo heads must be clamped and buffered.", "hu": "A lecke után ki tudod számolni egy LED előtét-ellenállását, el tudod magyarázni, hogyan véd egy soros ellenállás és két dióda egy ADC-bemenetet, és meg tudod mondani, miért kell a piezo fejeinket határolni és pufferelni."},
+  "parts": ["ads131m04", "adc15"],
+  "predict": [
+    {
+      "q": {"en": "A piezo head gives a 5 V peak when hit. You wire it straight to an ADS131M0x input on a 3.3 V supply, no resistor, no diodes. What is the real danger?", "hu": "Egy piezo fej ütéskor 5 V csúcsot ad. Közvetlenül egy ADS131M0x bemenetre kötöd, 3,3 V-os tápnál, ellenállás és dióda nélkül. Mi a valódi veszély?"},
+      "options": [
+        {"en": "The reading clips at full scale, which is harmless", "hu": "A leolvasás a teljes skálán telítődik, ami ártalmatlan"},
+        {"en": "5 V is above the absolute maximum (AVDD + 0.3 V = 3.6 V): the input can be damaged", "hu": "Az 5 V az abszolút maximum (AVDD + 0,3 V = 3,6 V) fölött van: a bemenet károsodhat"},
+        {"en": "Nothing: 24 bits can take it", "hu": "Semmi: a 24 bit elbírja"},
+        {"en": "The ADC just reads 5 V", "hu": "Az ADC egyszerűen 5 V-ot olvas"}
+      ],
+      "answer": 1,
+      "why": {"en": "Clipping happens much earlier (full scale is ±1.2 V / gain) and is only a bad reading. The **absolute maximum** is the point where the part can be destroyed: AGND − 1.6 V … AVDD + 0.3 V. 5 V is far over the upper end. The number of bits has nothing to do with it.", "hu": "A telítődés jóval előbb jön (a teljes skála ±1,2 V / erősítés), és csak rossz leolvasás. Az **abszolút maximum** az a pont, ahol az alkatrész tönkremehet: AGND − 1,6 V … AVDD + 0,3 V. Az 5 V messze a felső határ fölött van. A bitszámnak ehhez semmi köze."}
+    },
+    {
+      "q": {"en": "A clamp diode to the 3.3 V rail should keep the input at or under AVDD + 0.3 V = 3.6 V. Which diode manages that, on paper?", "hu": "A 3,3 V-os sínre kötött határoló dióda az AVDD + 0,3 V = 3,6 V alatt vagy azon tartsa a bemenetet. Melyik dióda képes erre papíron?"},
+      "options": [
+        {"en": "A silicon diode (Vf ≈ 0.7 V)", "hu": "Szilíciumdióda (Vf ≈ 0,7 V)"},
+        {"en": "A Schottky diode (Vf ≈ 0.3 V), with little margin", "hu": "Schottky-dióda (Vf ≈ 0,3 V), kevés tartalékkal"},
+        {"en": "Both, equally", "hu": "Mindkettő egyformán"},
+        {"en": "Neither: diodes can't clamp", "hu": "Egyik sem: a dióda nem tud határolni"}
+      ],
+      "answer": 1,
+      "why": {"en": "The input is held at rail + Vf. Silicon: 3.3 + 0.7 = 4.0 V: over the limit. Schottky: 3.3 + 0.3 = 3.6 V: exactly at the limit. And Vf rises with current, so a real Schottky at tens of mA sits a bit higher: keep the current small with a big series resistor, and check the diode's datasheet curve.", "hu": "A bemenet a sín + Vf értéken áll meg. Szilícium: 3,3 + 0,7 = 4,0 V: a határ fölött. Schottky: 3,3 + 0,3 = 3,6 V: pontosan a határon. A Vf az árammal nő, ezért egy valódi Schottky tíz mA-nél kicsit magasabban áll: tartsd kicsin az áramot nagy soros ellenállással, és nézd meg a dióda adatlapi görbéjét."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "A piezo peaks at 20 V. The clamp (Schottky, upper diode) holds the pin at about 3.6 V, and the series resistor is 10 kΩ. What peak current flows through the resistor and the diode? Answer in **mA**.", "hu": "Egy piezo 20 V-ig csúcsosodik. A határoló (Schottky, felső dióda) kb. 3,6 V-on tartja a lábat, a soros ellenállás 10 kΩ. Mekkora csúcsáram folyik az ellenálláson és a diódán? Válasz **mA**-ben."},
+      "answer": 1.64, "unit": "mA", "tol": 0.03,
+      "hint": {"en": "The resistor drops the difference: I = (20 − 3.6) / 10 000.", "hu": "Az ellenállás viszi el a különbséget: I = (20 − 3,6) / 10 000."},
+      "solution": {"en": "I = 16.4 V / 10 kΩ = **1.64 mA**. The pin stays at 3.6 V; the rest of the voltage drops across the resistor. This is the figure the live diagram prints as 'diode current peak'.", "hu": "I = 16,4 V / 10 kΩ = **1,64 mA**. A láb 3,6 V-on marad, a többi feszültség az ellenálláson esik. Ezt írja ki az élő diagram 'dióda csúcsáram' néven."}
+    },
+    {
+      "q": {"en": "What peak power does that 10 kΩ resistor dissipate? Answer in **mW**.", "hu": "Mekkora csúcsteljesítményt disszipál az a 10 kΩ-os ellenállás? Válasz **mW**-ban."},
+      "answer": 26.9, "unit": "mW", "tol": 0.03,
+      "hint": {"en": "P = I² · R, with I in amperes.", "hu": "P = I² · R, az áram amperben."},
+      "solution": {"en": "P = (0.00164 A)² × 10 000 Ω ≈ **26.9 mW**, only at the peak and about a ninth of a ¼ W rating. Fine.", "hu": "P = (0,00164 A)² × 10 000 Ω ≈ **26,9 mW**, csak a csúcson, és a ¼ W-os terhelhetőségnek kb. a kilencede. Rendben van."}
+    },
+    {
+      "q": {"en": "An LED with forward voltage about 2.0 V (typical for red; check your part) should run at 5 mA from 3.3 V. What series resistor? Answer in **Ω**.", "hu": "Egy kb. 2,0 V nyitófeszültségű LED-et (pirosnál jellemző; nézd meg az alkatrészt) 5 mA-rel akarsz járatni 3,3 V-ról. Mekkora soros ellenállás kell? Válasz **Ω**-ban."},
+      "answer": 260, "unit": "Ω", "tol": 0.03,
+      "hint": {"en": "The resistor drops what the LED doesn't: R = (3.3 − Vf) / I.", "hu": "Az ellenállás viszi el, amit a LED nem: R = (3,3 − Vf) / I."},
+      "solution": {"en": "R = (3.3 − 2.0) V / 0.005 A = **260 Ω**. Take the next standard value up, 270 Ω (E12). Typical value, not measured on our parts.", "hu": "R = (3,3 − 2,0) V / 0,005 A = **260 Ω**. Vedd a következő szabványos értéket, a 270 Ω-ot (E12). Tipikus érték, nem a mi alkatrészünkön mért."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "The stripe on a diode marks the …", "hu": "A dióda csíkja a … jelöli."}, "options": [{"en": "anode", "hu": "anódot"}, {"en": "cathode", "hu": "katódot"}, {"en": "the + supply", "hu": "a + tápot"}, {"en": "the maximum current", "hu": "a maximális áramot"}], "answer": 1, "why": {"en": "Current flows anode → cathode; the stripe is on the cathode side, the 'bar' of the arrow symbol.", "hu": "Az áram anód → katód irányba folyik; a csík a katód oldalán van, a nyíl-jelölés 'vonala'."}},
+    {"q": {"en": "Why does an LED need a series resistor?", "hu": "Miért kell egy LED-hez soros ellenállás?"}, "options": [{"en": "To make it brighter", "hu": "Hogy fényesebb legyen"}, {"en": "Above its forward voltage a LED conducts almost freely, so something else must set the current", "hu": "A nyitófeszültség fölött a LED szinte szabadon vezet, ezért valami másnak kell beállítania az áramot"}, {"en": "To lower the supply voltage", "hu": "A tápfeszültség csökkentésére"}, {"en": "It doesn't need one", "hu": "Nem kell hozzá"}], "answer": 1, "why": {"en": "The current rises very steeply once the LED conducts. The resistor sets it: I = (Vsupply − Vf) / R.", "hu": "Az áram nagyon meredeken nő, amint a LED vezet. Az ellenállás állítja be: I = (Vtáp − Vf) / R."}},
+    {"q": {"en": "With ADS131M0x at gain ≥ 8 and AVDD = 3.3 V, what is the recommended input range?", "hu": "ADS131M0x esetén ≥ 8 erősítésnél és AVDD = 3,3 V-nál mi az ajánlott bemeneti tartomány?"}, "options": [{"en": "−1.6 V … 3.6 V", "hu": "−1,6 V … 3,6 V"}, {"en": "−1.3 V … 1.5 V", "hu": "−1,3 V … 1,5 V"}, {"en": "0 V … 3.3 V", "hu": "0 V … 3,3 V"}, {"en": "−1.2 V … 1.2 V", "hu": "−1,2 V … 1,2 V"}], "answer": 1, "why": {"en": "AGND − 1.3 V … AVDD − 1.8 V = −1.3 … 1.5 V. The −1.6 … 3.6 V pair is the absolute maximum: survive, but don't expect good readings.", "hu": "AGND − 1,3 V … AVDD − 1,8 V = −1,3 … 1,5 V. A −1,6 … 3,6 V az abszolút maximum: túléli, de jó leolvasást ne várj."}},
+    {"q": {"en": "What does the clamp's series resistor do?", "hu": "Mit csinál a határoló soros ellenállása?"}, "options": [{"en": "Limits the current into the diodes", "hu": "Korlátozza a diódákba folyó áramot"}, {"en": "Lowers the voltage at the pin by itself", "hu": "Önmagában csökkenti a feszültséget a lábon"}, {"en": "Makes the signal bigger", "hu": "Nagyobbá teszi a jelet"}, {"en": "Nothing, the diodes do it all", "hu": "Semmit, a diódák mindent megoldanak"}], "answer": 0, "why": {"en": "Diodes fix the voltage, the resistor takes the surplus voltage and so sets the current. Without it, a big spike would push huge current through the diodes and burn them.", "hu": "A diódák rögzítik a feszültséget, az ellenállás veszi át a felesleget, és így az áramot állítja be. Nélküle egy nagy tüske hatalmas áramot húzna át a diódákon, és kiégetné őket."}}
+  ],
+  "cards": [
+    {"id": "e11-c1", "front": {"en": "ADS131M0x absolute maximum on inputs", "hu": "ADS131M0x abszolút maximum a bemeneteken"}, "back": {"en": "AGND − 1.6 V … AVDD + 0.3 V (survive). At gain ≥ 8 keep inputs AGND − 1.3 V … AVDD − 1.8 V.", "hu": "AGND − 1,6 V … AVDD + 0,3 V (túléli). ≥ 8 erősítésnél tartsd AGND − 1,3 V … AVDD − 1,8 V között."}},
+    {"id": "e11-c2", "front": {"en": "Forward voltage rules of thumb", "hu": "Nyitófeszültség, hüvelykujjszabály"}, "back": {"en": "Schottky ≈ 0.3 V, silicon ≈ 0.7 V, LED about 2 V (red) and more for blue/white. Rises with current.", "hu": "Schottky ≈ 0,3 V, szilícium ≈ 0,7 V, LED kb. 2 V (piros), kéknél/fehérnél több. Az árammal nő."}},
+    {"id": "e11-c3", "front": {"en": "LED resistor", "hu": "LED előtét-ellenállás"}, "back": {"en": "R = (Vsupply − Vf) / I. 3.3 V, Vf 2.0 V, 5 mA → 260 Ω → use 270 Ω.", "hu": "R = (Vtáp − Vf) / I. 3,3 V, Vf 2,0 V, 5 mA → 260 Ω → használj 270 Ω-ot."}},
+    {"id": "e11-c4", "front": {"en": "Clamp circuit", "hu": "Határoló kapcsolás"}, "back": {"en": "Series R, then a diode to AVDD and a diode to AGND at the pin. Input held to AVDD + Vf and AGND − Vf.", "hu": "Soros R, majd a lábnál egy dióda az AVDD-re és egy az AGND-re. A bemenet AVDD + Vf és AGND − Vf között marad."}},
+    {"id": "e11-c5", "front": {"en": "Why do piezo heads need clamp and buffer?", "hu": "Miért kell a piezo fejekhez határoló és puffer?"}, "back": {"en": "Big voltage spikes (beyond the absolute maximum) from a high-impedance source. The clamp protects, the buffer drives the ADC (E13).", "hu": "Nagy feszültségtüskék (az abszolút maximum fölött) nagy impedanciájú forrásból. A határoló véd, a puffer hajtja az ADC-t (E13)."}}
+  ],
+  "cases": []
+}

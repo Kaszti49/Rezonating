@@ -1,0 +1,65 @@
+{
+  "id": "e09", "minutes": 30,
+  "title": {"en": "AC signals, frequency and decibels", "hu": "Váltakozó jelek, frekvencia és decibel"},
+  "goal": {"en": "After this lesson you can describe a sine wave with three numbers, turn peak into RMS, read a spectrum as 'how much of each frequency', and convert between decibels and plain ratios.", "hu": "A lecke után három számmal le tudsz írni egy szinuszjelet, át tudod váltani a csúcsértéket effektív értékre, a spektrumot úgy olvasod, hogy 'melyik frekvenciából mennyi', és oda-vissza váltasz a decibel és az egyszerű arány között."},
+  "parts": ["sm24", "adc15"],
+  "predict": [
+    {
+      "q": {"en": "A signal's amplitude falls to half of what it was. How many decibels is that?", "hu": "Egy jel amplitúdója a felére esik. Hány decibel ez?"},
+      "options": [
+        {"en": "−3 dB", "hu": "−3 dB"},
+        {"en": "−6 dB", "hu": "−6 dB"},
+        {"en": "−10 dB", "hu": "−10 dB"},
+        {"en": "−50 dB", "hu": "−50 dB"}
+      ],
+      "answer": 1,
+      "why": {"en": "For amplitudes (volts), dB = 20 · log10(ratio) = 20 · log10(0.5) = **−6.02 dB**. The −3 dB figure is the half-power point, where the amplitude is 0.707, the one used for filter cut-offs. −10 dB would be an amplitude of 0.316.", "hu": "Amplitúdóknál (voltoknál) dB = 20 · log10(arány) = 20 · log10(0,5) = **−6,02 dB**. A −3 dB a félteljesítmény pont, ahol az amplitúdó 0,707; ezt használjuk a szűrők határfrekvenciájánál. A −10 dB 0,316-os amplitúdó volna."}
+    },
+    {
+      "q": {"en": "D-016 says that at 1 kSPS the ADC's own filter attenuates only −4.4 dB at 500 Hz. How much of the amplitude of a 500 Hz tone is left?", "hu": "A D-016 szerint 1 kSPS-nél az ADC saját szűrője 500 Hz-en csak −4,4 dB-t vág. A 500 Hz-es hang amplitúdójának mekkora része marad meg?"},
+      "options": [
+        {"en": "About 4 %", "hu": "Kb. 4 %"},
+        {"en": "About 36 %", "hu": "Kb. 36 %"},
+        {"en": "About 60 %", "hu": "Kb. 60 %"},
+        {"en": "About 95 %", "hu": "Kb. 95 %"}
+      ],
+      "answer": 2,
+      "why": {"en": "10^(−4.4 / 20) = 0.603. A lot is left: that's why D-016 calls it almost unattenuated, and why we record at 2 kSPS instead. The tempting 4 % just reads '4.4' as a percentage.", "hu": "10^(−4,4 / 20) = 0,603. Sok marad meg: ezért mondja a D-016, hogy szinte csillapítatlan, és ezért veszünk fel inkább 2 kSPS-sel. A csábító 4 % csak a '4,4'-et olvassa százaléknak."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "A sine wave has a peak of 10 mV. What is its RMS value? Answer in **mV**.", "hu": "Egy szinuszjel csúcsértéke 10 mV. Mennyi az effektív értéke? Válasz **mV**-ban."},
+      "answer": 7.071, "unit": "mV", "tol": 0.02,
+      "hint": {"en": "RMS = peak / √2.", "hu": "Effektív = csúcs / √2."},
+      "solution": {"en": "10 mV / 1.4142 = **7.07 mV**.", "hu": "10 mV / 1,4142 = **7,07 mV**."}
+    },
+    {
+      "q": {"en": "D-016: tones at 1600–2400 Hz are cut by at least 17.5 dB in the ADC. By what factor is their amplitude multiplied (at the very least)? Answer as a plain number.", "hu": "D-016: az 1600–2400 Hz-es hangokat az ADC legalább 17,5 dB-lel vágja. Legfeljebb hányszoros marad az amplitúdójuk? Válasz sima számként."},
+      "answer": 0.1334, "unit": "×", "tol": 0.03,
+      "hint": {"en": "ratio = 10^(−dB / 20).", "hu": "arány = 10^(−dB / 20)."},
+      "solution": {"en": "10^(−17.5 / 20) = 10^(−0.875) ≈ **0.133**: at most 13 % of the amplitude is left.", "hu": "10^(−17,5 / 20) = 10^(−0,875) ≈ **0,133**: legfeljebb az amplitúdó 13 %-a marad."}
+    },
+    {
+      "q": {"en": "A 400 Hz tone is sampled at 2 kSPS. How many samples fall into one period?", "hu": "Egy 400 Hz-es hangot 2 kSPS-sel mintavételezünk. Hány minta esik egy periódusra?"},
+      "answer": 5, "unit": "samples", "tol": 0.02,
+      "hint": {"en": "samples per period = fs / f.", "hu": "minták száma periódusonként = fs / f."},
+      "solution": {"en": "2000 / 400 = **5 samples** (period 2.5 ms). At the 500 Hz Nyquist limit of 1 kSPS you would get only 2.", "hu": "2000 / 400 = **5 minta** (a periódus 2,5 ms). Az 1 kSPS 500 Hz-es Nyquist-határán már csak 2 jutna."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "A 50 Hz sine. What is its period?", "hu": "Egy 50 Hz-es szinusz. Mennyi a periódusideje?"}, "options": [{"en": "50 ms", "hu": "50 ms"}, {"en": "20 ms", "hu": "20 ms"}, {"en": "2 ms", "hu": "2 ms"}, {"en": "0.5 s", "hu": "0,5 s"}], "answer": 1, "why": {"en": "T = 1 / f = 1 / 50 Hz = 0.02 s = 20 ms.", "hu": "T = 1 / f = 1 / 50 Hz = 0,02 s = 20 ms."}},
+    {"q": {"en": "−20 dB (on voltage) means the signal is …", "hu": "A −20 dB (feszültségre) azt jelenti, hogy a jel …"}, "options": [{"en": "divided by 2", "hu": "felére csökkent"}, {"en": "divided by 10", "hu": "tizedére csökkent"}, {"en": "divided by 20", "hu": "huszadára csökkent"}, {"en": "divided by 100", "hu": "századára csökkent"}], "answer": 1, "why": {"en": "20 · log10(0.1) = −20. Each −20 dB is a factor 10; −40 dB is a factor 100.", "hu": "20 · log10(0,1) = −20. Minden −20 dB tízszeres csökkenés; a −40 dB százszoros."}},
+    {"q": {"en": "Why do we use dB for filter responses?", "hu": "Miért használunk dB-t a szűrők átvitelére?"}, "options": [{"en": "It is the SI unit of voltage", "hu": "Ez a feszültség SI egysége"}, {"en": "The values span huge ranges (1 to 0.000001), and in dB they stack by adding", "hu": "Az értékek óriási tartományt fognak át (1-től 0,000001-ig), dB-ben pedig összeadással kombinálódnak"}, {"en": "It makes the signal smaller", "hu": "Kisebbé teszi a jelet"}, {"en": "No reason", "hu": "Nincs rá ok"}], "answer": 1, "why": {"en": "Two stages of −6 dB each give −12 dB: you add logarithms where you would multiply ratios (0.5 × 0.5 = 0.25).", "hu": "Két −6 dB-es fokozat együtt −12 dB: a logaritmusokat összeadod, ahol az arányokat szoroznád (0,5 × 0,5 = 0,25)."}},
+    {"q": {"en": "A spectrum shows …", "hu": "A spektrum azt mutatja, …"}, "options": [{"en": "voltage against time", "hu": "a feszültséget az idő függvényében"}, {"en": "how much of each frequency a signal contains", "hu": "hogy egy jel melyik frekvenciából mennyit tartalmaz"}, {"en": "the sample rate", "hu": "a mintavételi frekvenciát"}, {"en": "the supply noise only", "hu": "csak a tápzajt"}], "answer": 1, "why": {"en": "Any signal is a sum of sine waves; the spectrum lists their amplitudes by frequency.", "hu": "Minden jel szinuszok összege; a spektrum ezek amplitúdóit sorolja fel frekvenciánként."}}
+  ],
+  "cards": [
+    {"id": "e09-c1", "front": {"en": "A sine wave in one line", "hu": "A szinuszjel egy sorban"}, "back": {"en": "x(t) = A · sin(2π·f·t + φ).  Period T = 1 / f.", "hu": "x(t) = A · sin(2π·f·t + φ).  Periódusidő T = 1 / f."}},
+    {"id": "e09-c2", "front": {"en": "Peak to RMS for a sine", "hu": "Csúcs és effektív érték szinusznál"}, "back": {"en": "RMS = peak / √2 ≈ 0.707 × peak.", "hu": "Effektív = csúcs / √2 ≈ 0,707 × csúcs."}},
+    {"id": "e09-c3", "front": {"en": "dB for voltage ratios", "hu": "dB feszültségarányra"}, "back": {"en": "dB = 20 · log10(V2 / V1). −6 dB ≈ ÷2, −20 dB = ÷10, −40 dB = ÷100.", "hu": "dB = 20 · log10(V2 / V1). −6 dB ≈ ÷2, −20 dB = ÷10, −40 dB = ÷100."}},
+    {"id": "e09-c4", "front": {"en": "−3 dB means …", "hu": "A −3 dB azt jelenti, …"}, "back": {"en": "Amplitude × 0.707, power × 0.5. The cut-off point of a filter.", "hu": "Az amplitúdó × 0,707, a teljesítmény × 0,5. A szűrő határfrekvenciája."}},
+    {"id": "e09-c5", "front": {"en": "D-016 in dB", "hu": "A D-016 dB-ben"}, "back": {"en": "At 1 kSPS: −4.4 dB at 500 Hz. At 2 kSPS: −0.9 dB across 0–400 Hz, ≥ 17.5 dB cut at 1600–2400 Hz.", "hu": "1 kSPS-nél: −4,4 dB 500 Hz-en. 2 kSPS-nél: −0,9 dB a 0–400 Hz sávban, legalább 17,5 dB vágás 1600–2400 Hz-en."}},
+    {"id": "e09-c6", "front": {"en": "Samples per period", "hu": "Minták száma periódusonként"}, "back": {"en": "fs / f. 400 Hz at 2 kSPS: 5.", "hu": "fs / f. 400 Hz 2 kSPS-nél: 5."}}
+  ],
+  "cases": []
+}

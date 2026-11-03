@@ -1,0 +1,65 @@
+{
+  "id": "s03",
+  "minutes": 30,
+  "title": {"en": "Sensor heads: geophone, load cell, accelerometer", "hu": "Szenzorfejek: geofon, mérlegcella, gyorsulásmérő"},
+  "goal": {"en": "After this lesson you can say what each head measures and in what form it delivers it, estimate its output voltage for a given shake or load, and name the head each Year 1 pack uses.", "hu": "A lecke után meg tudod mondani, mit mér az egyes fej és milyen formában adja, ki tudod becsülni a kimeneti feszültségét adott rázkódásnál vagy terhelésnél, és meg tudod nevezni, melyik fejet használja az egyes első évi pack."},
+  "parts": ["sm24", "yzc133", "adxl355", "adc15"],
+  "predict": [
+    {
+      "q": {"en": "You press the floor down 1 mm slowly, then hold it there. What does a geophone on that floor output **while you hold it still**?", "hu": "Lassan lenyomod a padlót 1 mm-rel, aztán ott tartod. Mit ad a padlón álló geofon **amíg mozdulatlanul tartod**?"},
+      "options": [
+        {"en": "A steady voltage proportional to the 1 mm displacement", "hu": "Állandó feszültséget, ami arányos az 1 mm-es elmozdulással"},
+        {"en": "Zero: it only responds to the floor's velocity, and the velocity is zero while held", "hu": "Nullát: csak a padló sebességére reagál, és tartás közben a sebesség nulla"},
+        {"en": "A steady voltage proportional to gravity", "hu": "Állandó feszültséget, ami a nehézséggel arányos"},
+        {"en": "It saturates", "hu": "Telítésbe megy"}
+      ],
+      "answer": 1,
+      "why": {"en": "The geophone's coil only produces voltage while the magnet moves relative to it. No relative motion, no voltage. That is also why it is blind to very slow changes (below its 10 Hz natural frequency the response drops). An accelerometer like the ADXL355 would show gravity as a constant (option 3): that is a feature of a different head.", "hu": "A geofon tekercse csak akkor ad feszültséget, ha a mágnes mozog hozzá képest. Nincs relatív mozgás, nincs feszültség. Ezért vak a nagyon lassú változásokra is (a 10 Hz-es sajátfrekvencia alatt a válasz esik). Egy gyorsulásmérő, például az ADXL355 a nehézséget állandóként mutatná (3. válasz): ez egy másik fej tulajdonsága."}
+    },
+    {
+      "q": {"en": "The load cell has 2.03 V across its bridge and **nothing on it**. What do you expect between green and white?", "hu": "A mérlegcella hídján 2,03 V van, és **semmi nincs rajta**. Mit vársz a zöld és a fehér között?"},
+      "options": [
+        {"en": "Exactly 0 V: a perfect bridge is perfectly balanced", "hu": "Pontosan 0 V: egy tökéletes híd tökéletesen kiegyenlített"},
+        {"en": "About 2 mV, the full rated output", "hu": "Kb. 2 mV, a teljes névleges kimenet"},
+        {"en": "A small offset: the 'zero balance' of the cell (listed ±0.1 mV/V, so up to ±0.2 mV here)", "hu": "Kis offszet: a cella 'nullpont-eltérése' (a lista ±0,1 mV/V, azaz itt legfeljebb ±0,2 mV)"},
+        {"en": "2.03 V", "hu": "2,03 V"}
+      ],
+      "answer": 2,
+      "why": {"en": "Real bridges never balance perfectly. On our bench channel 0 rests at about −20 µV, which is inside that zero-balance band. Presses then add +400 to +900 µV. Option 2 is the output at 5 kg, not at rest; option 4 is the voltage across the bridge, not across the signal pair.", "hu": "A valódi hidak sosem egyenlítődnek ki tökéletesen. A mi pultunkon a 0. csatorna kb. −20 µV-on áll nyugalomban, ez ezen a sávon belül van. A megnyomás ehhez ad +400…+900 µV-ot. A 2. válasz az 5 kg-nál adódó kimenet, nem a nyugalmi; a 4. a híd gerjesztő feszültsége, nem a jelpáré."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "The SM-24 gives 28.8 V/(m/s). The floor moves at 0.1 mm/s (a gentle step far from the sensor). What voltage comes out? Answer in **µV**.", "hu": "Az SM-24 28,8 V/(m/s)-ot ad. A padló 0,1 mm/s-mal mozog (egy halk, távoli lépés). Mekkora feszültség jön ki? Válasz **µV**-ban."},
+      "answer": 2880, "unit": "µV", "tol": 0.02,
+      "hint": {"en": "0.1 mm/s = 0.0001 m/s. Multiply by 28.8.", "hu": "0,1 mm/s = 0,0001 m/s. Szorozd 28,8-cal."},
+      "solution": {"en": "0.0001 × 28.8 = 0.00288 V = **2880 µV** = 2.88 mV. That is about 1.4 times the load cell's 5 kg output, from a tiny floor motion.", "hu": "0,0001 × 28,8 = 0,00288 V = **2880 µV** = 2,88 mV. Ez kb. 1,4-szerese a mérlegcella 5 kg-os kimenetének, egy parányi padlómozgásból."}
+    },
+    {
+      "q": {"en": "The plan is to feed the geophone straight into the ADC at gain 32 (full scale ±37.5 mV). At what velocity does the input reach full scale? Answer in **mm/s**.", "hu": "A terv az, hogy a geofon közvetlenül az ADC-re megy 32-es erősítéssel (teljes skála ±37,5 mV). Mekkora sebességnél éri el a bemenet a teljes skálát? Válasz **mm/s**-ban."},
+      "answer": 1.302, "unit": "mm/s", "tol": 0.02,
+      "hint": {"en": "v = V / 28.8 V/(m/s). Assume the ADC loads the coil only slightly.", "hu": "v = V / 28,8 V/(m/s). Tegyük fel, hogy az ADC alig terheli a tekercset."},
+      "solution": {"en": "0.0375 / 28.8 = 0.001302 m/s = **1.30 mm/s** (calculated; at gain 64 it would be 0.65 mm/s). A hard fall near the sensor may exceed that, which is why gain is a per-pack choice.", "hu": "0,0375 / 28,8 = 0,001302 m/s = **1,30 mm/s** (számolt érték; 64-es erősítésnél 0,65 mm/s lenne). Egy kemény esés a szenzor közelében ezt meghaladhatja, ezért az erősítés packenként választandó."}
+    },
+    {
+      "q": {"en": "With 2.03 V on the bridge, the cell gives about 0.406 mV per kg (1 mV/V over 5 kg, calculated from the shop listing). A press reads +600 µV. How many kg is that? Answer in **kg**.", "hu": "2,03 V-tal a hídon a cella kb. 0,406 mV-ot ad kilogrammonként (1 mV/V 5 kg-on, a bolti lista alapján számolva). Egy megnyomás +600 µV-ot mutat. Hány kg ez? Válasz **kg**-ban."},
+      "answer": 1.478, "unit": "kg", "tol": 0.03,
+      "solution": {"en": "0.600 mV / 0.406 mV/kg ≈ **1.48 kg**. The cell is not calibrated, so this is an estimate. The measured presses (+400 to +900 µV) match about 1 to 2.2 kg.", "hu": "0,600 mV / 0,406 mV/kg ≈ **1,48 kg**. A cella nincs kalibrálva, ez tehát becslés. A mért megnyomások (+400…+900 µV) kb. 1–2,2 kg-nak felelnek meg."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Which head gives a digital output over I²C and does not go through the ADC?", "hu": "Melyik fej ad digitális kimenetet I²C-n, és nem megy át az ADC-n?"}, "options": [{"en": "SM-24 geophone", "hu": "SM-24 geofon"}, {"en": "YZC-133 load cell", "hu": "YZC-133 mérlegcella"}, {"en": "ADXL355 accelerometer", "hu": "ADXL355 gyorsulásmérő"}, {"en": "A piezo disc", "hu": "Piezo korong"}], "answer": 2, "why": {"en": "The ADXL355 has its own converter inside. It sits at address 0x1D or 0x53 (SCLK/VSSIO to ground for I²C) and runs at 2000 Hz for the appliance pack.", "hu": "Az ADXL355-ben saját átalakító van. A 0x1D vagy 0x53 címen ül (az SCLK/VSSIO földre kötve az I²C-hez), és 2000 Hz-en fut az appliance packnak."}},
+    {"q": {"en": "Why is the load cell on our bench?", "hu": "Miért van a mérlegcella a pultunkon?"}, "options": [{"en": "It is a product sensor for the footstep pack", "hu": "Terméksenzor a footstep packnak"}, {"en": "It is a known test signal for the whole chain before the geophones arrive", "hu": "Ismert tesztjel az egész láncnak, mielőtt a geofonok megérkeznek"}, {"en": "It replaces the ADC", "hu": "Az ADC-t helyettesíti"}, {"en": "It measures the temperature", "hu": "Hőmérsékletet mér"}], "answer": 1, "why": {"en": "It measures force in a Wheatstone bridge and gives a repeatable millivolt step when you press it. It is not part of any Year 1 pack.", "hu": "Erőt mér Wheatstone-hídban, és megnyomva ismételhető millivolt-szintet ad. Nem része egyetlen első évi paknak sem."}},
+    {"q": {"en": "Which head does the `fall` pack use?", "hu": "Melyik fejet használja a `fall` pack?"}, "options": [{"en": "Accelerometer", "hu": "Gyorsulásmérő"}, {"en": "Load cell", "hu": "Mérlegcella"}, {"en": "Geophone", "hu": "Geofon"}, {"en": "Microphone", "hu": "Mikrofon"}], "answer": 2, "why": {"en": "footstep-id and fall: geophone. appliance: accelerometer. No microphones, ever: that is part of the project's promise.", "hu": "footstep-id és fall: geofon. appliance: gyorsulásmérő. Mikrofon soha: ez a projekt ígéretének része."}},
+    {"q": {"en": "Why do piezo heads need clamping and buffering before the ADC?", "hu": "Miért kell a piezo fejeket az ADC előtt határolni és pufferelni?"}, "options": [{"en": "They are too slow", "hu": "Túl lassúak"}, {"en": "They can produce voltage spikes beyond what the ADC inputs survive (AGND −1.6 V to AVDD +0.3 V), and they are a weak, high-impedance source", "hu": "Olyan feszültséglökéseket adhatnak, amit az ADC bemenete nem visel el (AGND −1,6 V … AVDD +0,3 V), és gyenge, nagy impedanciájú forrás"}, {"en": "They need 12 V", "hu": "12 V kell nekik"}, {"en": "They output digital data", "hu": "Digitális adatot adnak"}], "answer": 1, "why": {"en": "Spikes can damage the inputs; a high source impedance needs a buffer so the ADC does not load the signal. Piezo heads are for later, not the first rig.", "hu": "A lökések károsíthatják a bemeneteket; a nagy forrásimpedanciához puffer kell, hogy az ADC ne terhelje a jelet. A piezo fejek későbbre valók, nem az első rigre."}}
+  ],
+  "cards": [
+    {"id": "s03-c1", "front": {"en": "SM-24: what does it measure and how?", "hu": "SM-24: mit mér és hogyan?"}, "back": {"en": "Ground velocity. A magnet on a spring moves in a coil: passive, 28.8 V/(m/s), 10 Hz natural frequency.", "hu": "A talaj sebességét. Rugón lévő mágnes mozog egy tekercsben: passzív, 28,8 V/(m/s), 10 Hz sajátfrekvencia."}},
+    {"id": "s03-c2", "front": {"en": "SM-24 at 0.1 mm/s?", "hu": "SM-24 0,1 mm/s-nál?"}, "back": {"en": "2.88 mV (28.8 V/(m/s) × 0.0001 m/s).", "hu": "2,88 mV (28,8 V/(m/s) × 0,0001 m/s)."}},
+    {"id": "s03-c3", "front": {"en": "YZC-133: signal and size on our bench", "hu": "YZC-133: jel és mérete a pultunkon"}, "back": {"en": "1 mV/V rated; at ≈ 2.0 V excitation about 0.4 mV/kg. Presses gave +400 … +900 µV.", "hu": "1 mV/V névleges; kb. 2,0 V gerjesztésnél kb. 0,4 mV/kg. A megnyomások +400…+900 µV-ot adtak."}},
+    {"id": "s03-c4", "front": {"en": "ADXL355 in one line", "hu": "ADXL355 egy sorban"}, "back": {"en": "3-axis MEMS accelerometer, digital, I²C 0x1D / 0x53, 2000 Hz for the appliance pack.", "hu": "3 tengelyes MEMS gyorsulásmérő, digitális, I²C 0x1D / 0x53, 2000 Hz az appliance packhoz."}},
+    {"id": "s03-c5", "front": {"en": "Which head for which pack?", "hu": "Melyik fej melyik packhoz?"}, "back": {"en": "footstep-id: geophone. fall: geophone. appliance: accelerometer. Piezo: later, clamped and buffered.", "hu": "footstep-id: geofon. fall: geofon. appliance: gyorsulásmérő. Piezo: később, határolva és pufferelve."}},
+    {"id": "s03-c6", "front": {"en": "What does a geophone output when the floor stands still?", "hu": "Mit ad a geofon, ha a padló áll?"}, "back": {"en": "Zero (plus noise). It responds to velocity only.", "hu": "Nullát (meg zajt). Csak a sebességre reagál."}}
+  ],
+  "cases": ["case-680k", "case-i2c-nack"]
+}

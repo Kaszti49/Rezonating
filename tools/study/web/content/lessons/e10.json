@@ -1,0 +1,64 @@
+{
+  "id": "e10", "minutes": 35,
+  "title": {"en": "Filters", "hu": "Szűrők"},
+  "goal": {"en": "After this lesson you can compute an RC filter's cut-off, read a Bode plot, and explain why our firmware filters with a 63-tap FIR before it throws away every second sample.", "hu": "A lecke után ki tudod számolni egy RC szűrő határfrekvenciáját, el tudsz olvasni egy Bode-diagramot, és el tudod magyarázni, miért szűr a firmware egy 63 együtthatós FIR-rel, mielőtt minden második mintát eldobna."},
+  "parts": ["adc15", "ads131m04", "esp32-devkit"],
+  "predict": [
+    {
+      "q": {"en": "The 2 kSPS stream holds a 700 Hz tone. You build the 1 kSPS stream by simply keeping every second sample, with no filter. Where does the tone appear?", "hu": "A 2 kSPS-es adatfolyamban van egy 700 Hz-es hang. Az 1 kSPS-es folyamot úgy készíted, hogy minden második mintát megtartod, szűrő nélkül. Hol jelenik meg a hang?"},
+      "options": [
+        {"en": "At 700 Hz, unchanged", "hu": "700 Hz-en, változatlanul"},
+        {"en": "At 300 Hz", "hu": "300 Hz-en"},
+        {"en": "At 200 Hz", "hu": "200 Hz-en"},
+        {"en": "It disappears", "hu": "Eltűnik"}
+      ],
+      "answer": 1,
+      "why": {"en": "At 1 kSPS the highest frequency that can exist is 500 Hz (Nyquist). A 700 Hz tone folds around 500 Hz down to 1000 − 700 = **300 Hz**, right inside the band the packs use. It looks like a real 300 Hz vibration and can't be removed afterwards. That's why the filter must come first.", "hu": "1 kSPS-nél a létező legmagasabb frekvencia 500 Hz (Nyquist). A 700 Hz-es hang 500 Hz körül visszahajlik: 1000 − 700 = **300 Hz**, éppen a csomagok által használt sávba. Úgy néz ki, mint egy valódi 300 Hz-es rezgés, és utólag nem lehet eltávolítani. Ezért kell a szűrőnek előbb jönnie."}
+    },
+    {
+      "q": {"en": "The decimated stream needs a clean 0–400 Hz band. From which frequency must the FIR's stop band start, in a 2 kSPS stream?", "hu": "A decimált folyamnak tiszta 0–400 Hz-es sáv kell. Melyik frekvenciától kell kezdődnie a FIR záró sávjának a 2 kSPS-es folyamban?"},
+      "options": [
+        {"en": "400 Hz", "hu": "400 Hz"},
+        {"en": "500 Hz", "hu": "500 Hz"},
+        {"en": "600 Hz", "hu": "600 Hz"},
+        {"en": "1000 Hz", "hu": "1000 Hz"}
+      ],
+      "answer": 2,
+      "why": {"en": "After ÷2 a tone at f lands at 1000 − f. To keep 0–400 Hz clean, everything that would land there (600–1000 Hz) must be removed. Tones at 500–600 Hz fold to 400–500 Hz, just outside our band, so the filter may let them slope down. That gap is the transition band. That's the design: pass 0–400 Hz, stop 600–1000 Hz.", "hu": "A ÷2 után az f frekvenciájú hang 1000 − f-re kerül. A 0–400 Hz tisztán tartásához mindent el kell távolítani, ami oda esne (600–1000 Hz). Az 500–600 Hz-es hangok a 400–500 Hz-es sávba hajlanak, éppen a sávunkon kívülre, ezért a szűrő hagyhatja őket fokozatosan lecsengeni. Ez az átmeneti sáv. Ez a terv: áteresztő 0–400 Hz, záró 600–1000 Hz."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "An RC low-pass with R = 1 kΩ and C = 100 nF. What is the cut-off frequency? Answer in **Hz**.", "hu": "Egy RC aluláteresztő R = 1 kΩ, C = 100 nF értékkel. Mekkora a határfrekvenciája? Válasz **Hz**-ben."},
+      "answer": 1591.5, "unit": "Hz", "tol": 0.02,
+      "hint": {"en": "fc = 1 / (2π · R · C), in ohms and farads.", "hu": "fc = 1 / (2π · R · C), ohmban és faradban."},
+      "solution": {"en": "RC = 1000 × 100·10⁻⁹ = 10⁻⁴ s. fc = 1 / (2π · 10⁻⁴) ≈ **1592 Hz**. (τ is the same 100 µs from E07.)", "hu": "RC = 1000 × 100·10⁻⁹ = 10⁻⁴ s. fc = 1 / (2π · 10⁻⁴) ≈ **1592 Hz**. (A τ ugyanaz a 100 µs, mint az E07-ben.)"}
+    },
+    {
+      "q": {"en": "For the same filter, how many dB below the input is the output at 10 × fc? Give a positive number in **dB**.", "hu": "Ugyanennél a szűrőnél hány dB-lel van a bemenet alatt a kimenet 10 × fc-n? Pozitív számot adj meg **dB**-ben."},
+      "answer": 20.04, "unit": "dB", "tol": 0.03,
+      "hint": {"en": "|H| = 1 / √(1 + (f/fc)²). Then 20 · log10.", "hu": "|H| = 1 / √(1 + (f/fc)²). Utána 20 · log10."},
+      "solution": {"en": "|H| = 1 / √101 = 0.0995 → 20 · log10(0.0995) = −20.04 dB. One decade above fc: about 20 dB down. That's the one-pole slope of −20 dB per decade.", "hu": "|H| = 1 / √101 = 0,0995 → 20 · log10(0,0995) = −20,04 dB. fc-től egy dekáddal feljebb: kb. 20 dB-lel lejjebb. Ez az egypólusú −20 dB/dekád meredekség."}
+    },
+    {
+      "q": {"en": "The firmware FIR has 63 taps and is symmetric, so its delay is (63 − 1) / 2 raw samples. How long is that at 2 kSPS? Answer in **ms**.", "hu": "A firmware FIR-je 63 együtthatós és szimmetrikus, ezért a késleltetése (63 − 1) / 2 nyers minta. Mennyi ez 2 kSPS-nél? Válasz **ms**-ban."},
+      "answer": 15.5, "unit": "ms", "tol": 0.02,
+      "solution": {"en": "31 samples × 0.5 ms = **15.5 ms**. The code names it RZ_DECIM_DELAY = 31. It is a fixed delay for all frequencies.", "hu": "31 minta × 0,5 ms = **15,5 ms**. A kódban RZ_DECIM_DELAY = 31. Minden frekvenciára ugyanannyi, állandó késleltetés."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What happens to the amplitude at exactly fc of an RC low-pass?", "hu": "Mi történik az amplitúdóval pontosan egy RC aluláteresztő fc frekvenciáján?"}, "options": [{"en": "Drops to 50 %", "hu": "50 %-ra esik"}, {"en": "Drops to 70.7 % (−3 dB)", "hu": "70,7 %-ra esik (−3 dB)"}, {"en": "Drops to 0", "hu": "Nullára esik"}, {"en": "Stays at 100 %", "hu": "100 % marad"}], "answer": 1, "why": {"en": "At fc, R and the capacitor's reactance are equal and the gain is 1/√2 = 0.707, which is −3.01 dB.", "hu": "fc-n az R és a kondenzátor reaktanciája egyenlő, az erősítés 1/√2 = 0,707, vagyis −3,01 dB."}},
+    {"q": {"en": "Swap R and C in an RC low-pass (output across R). What do you get?", "hu": "Cseréld meg az R-t és a C-t egy RC aluláteresztőben (a kimenet az R-en van). Mit kapsz?"}, "options": [{"en": "A high-pass with the same fc", "hu": "Felüláteresztőt ugyanazzal az fc-vel"}, {"en": "A faster low-pass", "hu": "Gyorsabb aluláteresztőt"}, {"en": "An amplifier", "hu": "Erősítőt"}, {"en": "A short circuit", "hu": "Rövidzárat"}], "answer": 0, "why": {"en": "DC can't pass the capacitor, high frequencies can. fc = 1 / (2πRC) still.", "hu": "Az egyenáram nem jut át a kondenzátoron, a magas frekvenciák igen. Az fc továbbra is 1 / (2πRC)."}},
+    {"q": {"en": "Why does the FIR come before the ÷2 and not after?", "hu": "Miért jön a FIR a ÷2 előtt, és nem utána?"}, "options": [{"en": "After ÷2, the unwanted frequencies have already folded into the band and look real", "hu": "A ÷2 után a nemkívánatos frekvenciák már beleátlapolódtak a sávba, és valódinak látszanak"}, {"en": "It is faster", "hu": "Gyorsabb"}, {"en": "No reason", "hu": "Nincs rá ok"}, {"en": "The ADC demands it", "hu": "Az ADC megköveteli"}], "answer": 0, "why": {"en": "Aliasing can't be undone. The filter must remove the energy above the new Nyquist before samples are dropped.", "hu": "Az aliasing nem vonható vissza. A szűrőnek az új Nyquist feletti energiát kell eltávolítania, mielőtt mintákat dobunk el."}},
+    {"q": {"en": "How many taps does our decimation FIR have?", "hu": "Hány együtthatós a decimáló FIR-ünk?"}, "options": [{"en": "15", "hu": "15"}, {"en": "31", "hu": "31"}, {"en": "63", "hu": "63"}, {"en": "255", "hu": "255"}], "answer": 2, "why": {"en": "63 taps (RZ_DECIM_TAPS in the firmware, DECIM_N_TAPS in dsp.py). The live diagram offers 15, 31 and 63 so you can see the sharper edge of the bigger one.", "hu": "63 (RZ_DECIM_TAPS a firmware-ben, DECIM_N_TAPS a dsp.py-ban). Az élő diagram 15, 31 és 63 közül választ, hogy lásd a nagyobb meredekebb élét."}}
+  ],
+  "cards": [
+    {"id": "e10-c1", "front": {"en": "RC cut-off", "hu": "RC határfrekvencia"}, "back": {"en": "fc = 1 / (2π·R·C). 1 kΩ + 100 nF → 1.59 kHz. −3 dB at fc.", "hu": "fc = 1 / (2π·R·C). 1 kΩ + 100 nF → 1,59 kHz. fc-n −3 dB."}},
+    {"id": "e10-c2", "front": {"en": "One RC: roll-off", "hu": "Egy RC: meredekség"}, "back": {"en": "−20 dB per decade (≈ −6 dB per octave) above fc.", "hu": "fc felett −20 dB dekádonként (≈ −6 dB oktávonként)."}},
+    {"id": "e10-c3", "front": {"en": "Our decimation FIR", "hu": "A mi decimáló FIR-ünk"}, "back": {"en": "63 taps, pass 0–400 Hz, stop 600–1000 Hz at 2 kSPS, then keep every 2nd sample → 1 kSPS (D-016).", "hu": "63 együttható, áteresztő 0–400 Hz, záró 600–1000 Hz 2 kSPS-nél, utána minden 2. minta → 1 kSPS (D-016)."}},
+    {"id": "e10-c4", "front": {"en": "Where does a tone at f fold when halving the rate?", "hu": "Hova hajlik egy f hang a mintavétel felezésekor?"}, "back": {"en": "To 1000 − f (for 500 < f < 1000 Hz at 2 kSPS). 700 → 300 Hz.", "hu": "1000 − f-re (500 < f < 1000 Hz, 2 kSPS-nél). 700 → 300 Hz."}},
+    {"id": "e10-c5", "front": {"en": "FIR group delay", "hu": "FIR csoportkésleltetés"}, "back": {"en": "(taps − 1) / 2 samples: 31 raw samples = 15.5 ms at 2 kSPS.", "hu": "(együtthatók − 1) / 2 minta: 31 nyers minta = 15,5 ms 2 kSPS-nél."}},
+    {"id": "e10-c6", "front": {"en": "FIR in one sentence", "hu": "A FIR egy mondatban"}, "back": {"en": "Each output is a weighted sum of the last N inputs.", "hu": "Minden kimenet az utolsó N bemenet súlyozott összege."}}
+  ],
+  "cases": []
+}

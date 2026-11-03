@@ -1,0 +1,66 @@
+{
+  "id": "e06",
+  "minutes": 35,
+  "title": {"en": "Wheatstone bridges and strain gauges", "hu": "Wheatstone-hidak és nyúlásmérő bélyegek"},
+  "goal": {"en": "After this lesson you can explain why a load cell is a bridge, compute its output from the load and the excitation, and see why our chain needs gain 128 and has an offset to deal with.", "hu": "A lecke után el tudod magyarázni, miért híd a mérlegcella, ki tudod számolni a kimenetét a terhelésből és a gerjesztésből, és érted, miért kell a láncunkban 128-as erősítés, és miért kell az offszettel foglalkozni."},
+  "parts": ["yzc133", "adc15", "hx711"],
+  "predict": [
+    {
+      "q": {"en": "Instead of a bridge you use one 1000 Ω strain gauge and one fixed 1000 Ω resistor as a divider from 2.0 V. The gauge changes by 0.1 % at full load (1 Ω). The midpoint rests at 1.0 V. You send it to the ADC at gain 128 (range ±9.375 mV). What happens?", "hu": "Híd helyett egy 1000 Ω-os nyúlásmérő bélyeget és egy rögzített 1000 Ω-os ellenállást használsz osztóként 2,0 V-ról. A bélyeg teljes terhelésnél 0,1 %-ot változik (1 Ω). A középpont nyugalomban 1,0 V-on áll. 128-as erősítéssel az ADC-re vezeted (tartomány ±9,375 mV). Mi történik?"},
+      "options": [
+        {"en": "It works: 1.0 V is a normal voltage", "hu": "Működik: az 1,0 V normális feszültség"},
+        {"en": "It clips: the 1.0 V resting level is more than 100 times the ADC's range at gain 128, and the change (about 0.5 mV, calculated) sits on top of it", "hu": "Levágódik: az 1,0 V nyugalmi szint több mint százszorosa az ADC tartományának 128-as erősítésnél, és a változás (kb. 0,5 mV, számolt) ennek tetején ül"},
+        {"en": "It reads 1 mV above zero", "hu": "1 mV-ot mutat nulla fölött"},
+        {"en": "It reads zero: the ADC is differential", "hu": "Nullát mutat: az ADC differenciális"}
+      ],
+      "answer": 1,
+      "why": {"en": "A tiny change on a big resting value is the problem the bridge solves. With a second divider (the other half of the bridge) the 1.0 V rests cancel in the difference, and only the ~mV change remains. The clipped reading is exactly what the ADC does at its range end: negative or positive full scale (±9375 µV at gain 128).", "hu": "Egy nagy nyugalmi érték tetején ülő apró változás: pont ezt a problémát oldja meg a híd. Egy második osztóval (a híd másik fele) az 1,0 V-os nyugalmi szintek kivonódnak a különbségben, és csak a ~mV-os változás marad. A levágott olvasat pontosan az, amit az ADC a tartománya végén tesz: pozitív vagy negatív teljes skála (±9375 µV 128-as erősítésnél)."}
+    },
+    {
+      "q": {"en": "On the bench, pressing the cell gave positive steps (+400 … +900 µV) with green on Click CH1+ and white on CH1−. You swap the green and white wires. What do the presses look like now?", "hu": "A pulton a cella megnyomása pozitív lépcsőket adott (+400 … +900 µV), a zöld a Click CH1+-on, a fehér a CH1−-on. Felcseréled a zöld és a fehér vezetéket. Hogyan néznek ki most a nyomások?"},
+      "options": [
+        {"en": "The same", "hu": "Ugyanúgy"},
+        {"en": "Same size, negative direction", "hu": "Ugyanakkora, de negatív irányú"},
+        {"en": "Half the size", "hu": "Fele akkora"},
+        {"en": "No signal at all", "hu": "Egyáltalán nincs jel"}
+      ],
+      "answer": 1,
+      "why": {"en": "The ADC measures AIN+ minus AIN−. Swapping the two wires negates the difference, but not its size. A negative step on a press therefore means either reversed polarity or something electrical. It is relevant for the open spikes case, but a swap alone does not explain brief spikes.", "hu": "Az ADC az AIN+ mínusz AIN− különbséget méri. A két vezeték cseréje a különbség előjelét fordítja meg, a nagyságát nem. A negatív lépcső nyomásra tehát vagy fordított polaritás, vagy valami elektromos. Ez fontos a nyitott tüske-esetnél, de egy csere önmagában nem magyaráz rövid tüskéket."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "A press gives +650 µV above baseline at 2.0 V excitation, with the cell at 1 mV/V rated for 5 kg (0.4 mV/kg at 2.0 V). How many kg is that (calculated, not calibrated)? Answer in **kg**.", "hu": "Egy nyomás +650 µV-ot ad az alapvonal fölött 2,0 V gerjesztésnél; a cella névleges 1 mV/V 5 kg-ra (0,4 mV/kg 2,0 V-on). Hány kg ez (számolt, nem kalibrált)? Válasz **kg**-ban."},
+      "answer": 1.625, "unit": "kg", "tol": 0.03,
+      "hint": {"en": "kg = signal / (sensitivity per kg). Keep µV and mV apart.", "hu": "kg = jel / (érzékenység kg-onként). Ne keverd a µV-ot és az mV-ot."},
+      "solution": {"en": "0.65 mV / 0.4 mV per kg = **1.625 kg**. The bench presses of +400 … +900 µV are therefore about 1–2 kg. The 0.4 mV/kg is calculated from the shop listing's 1.0 mV/V.", "hu": "0,65 mV / 0,4 mV kg-onként = **1,625 kg**. A pult +400 … +900 µV-os nyomásai tehát kb. 1–2 kg-nak felelnek meg. A 0,4 mV/kg a bolti leírás 1,0 mV/V értékéből számolt."}
+    },
+    {
+      "q": {"en": "What would 5 kg give if the bridge were fed with the full 3.3 V instead of about 2 V? Answer in **mV**.", "hu": "Mennyit adna 5 kg, ha a hidat a teljes 3,3 V-tal táplálnánk a kb. 2 V helyett? Válasz **mV**-ban."},
+      "answer": 3.3, "unit": "mV", "tol": 0.02,
+      "hint": {"en": "Output = sensitivity (mV/V) × excitation (V) at full load.", "hu": "Kimenet = érzékenység (mV/V) × gerjesztés (V) teljes terhelésnél."},
+      "solution": {"en": "1 mV/V × 3.3 V = **3.3 mV**, against about 2.0 mV at 2.03 V. A third more signal, but the sense lines would sit at 1.65 V, above the ADC's input limit at gain 128 (≈ 1.5 V), which is why the series resistor exists.", "hu": "1 mV/V × 3,3 V = **3,3 mV**, szemben a kb. 2,0 mV-tal 2,03 V-on. Harmadával több jel, de az érzékelő vezetékek 1,65 V-on ülnének, az ADC bemeneti határa fölött 128-as erősítésnél (≈ 1,5 V); ezért van a soros ellenállás."}
+    },
+    {
+      "q": {"en": "At gain 128 the ADC's range is ±9.375 mV over 24 bits (ideal LSB ≈ 1.118 nV). How many ADC codes does one kilogram (0.4 mV) correspond to, ideally? Answer in **codes**.", "hu": "128-as erősítésnél az ADC tartománya ±9,375 mV 24 biten (ideális LSB ≈ 1,118 nV). Ideális esetben hány ADC-kódnak felel meg egy kilogramm (0,4 mV)? Válasz **kód**-ban."},
+      "answer": 357900, "unit": "codes", "tol": 0.03,
+      "hint": {"en": "0.4 mV / 1.118 nV. Convert both to the same unit first.", "hu": "0,4 mV / 1,118 nV. Előbb váltsd ugyanarra az egységre."},
+      "solution": {"en": "0.4 × 10⁻³ V / 1.1176 × 10⁻⁹ V ≈ **358 000 codes** per kg (ideal, calculated). Real noise is far larger than one LSB, so the useful resolution is set by noise, not by the code count.", "hu": "0,4 × 10⁻³ V / 1,1176 × 10⁻⁹ V ≈ **358 000 kód** kilogrammonként (ideális, számolt). A valódi zaj sokkal nagyobb egy LSB-nél, így a használható felbontást a zaj szabja meg, nem a kódok száma."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "A full bridge with four active gauges (two stretched, two compressed) gives…", "hu": "Négy aktív bélyeges (kettő nyúlik, kettő zsugorodik) teljes híd kimenete…"}, "options": [{"en": "Vout = Vex · ΔR/R", "hu": "Vki = Vgerj · ΔR/R"}, {"en": "Vout = Vex · ΔR", "hu": "Vki = Vgerj · ΔR"}, {"en": "Vout = Vex / ΔR", "hu": "Vki = Vgerj / ΔR"}, {"en": "Vout = 0", "hu": "Vki = 0"}], "answer": 0, "why": {"en": "For the full bridge the output is the excitation times the fractional resistance change. A single active gauge (quarter bridge) gives about a quarter of it.", "hu": "Teljes hídnál a kimenet a gerjesztés szorozva a relatív ellenállásváltozással. Egyetlen aktív bélyeg (negyedhíd) ennek kb. negyedét adja."}},
+    {"q": {"en": "The load cell is rated 1.0 mV/V. At 5 V excitation the full-load output would be…", "hu": "A mérlegcella névleges értéke 1,0 mV/V. 5 V gerjesztésnél a teljes terhelés kimenete…"}, "options": [{"en": "1 mV", "hu": "1 mV"}, {"en": "5 mV", "hu": "5 mV"}, {"en": "0.2 mV", "hu": "0,2 mV"}, {"en": "5 V", "hu": "5 V"}], "answer": 1, "why": {"en": "mV per volt times volts: 1 mV/V × 5 V = 5 mV. That linear scaling with excitation is why a bridge is called ratiometric.", "hu": "mV voltonként szorozva voltokkal: 1 mV/V × 5 V = 5 mV. A gerjesztéssel való lineáris skálázás miatt hívjuk a hidat arányosnak (ratiometrikusnak)."}},
+    {"q": {"en": "Why do we need gain 128 on the load-cell channel?", "hu": "Miért kell 128-as erősítés a mérlegcella csatornáján?"}, "options": [{"en": "To make the supply bigger", "hu": "Hogy nagyobb legyen a táp"}, {"en": "At gain 1 the 2 mV signal would use only about 0.17 % of the ±1.2 V range; at gain 128 it uses about 22 %", "hu": "1-es erősítésnél a 2 mV-os jel a ±1,2 V-os tartomány csak kb. 0,17 %-át használná; 128-nál kb. 22 %-át"}, {"en": "Because the cell is broken", "hu": "Mert a cella elromlott"}, {"en": "To reduce the offset", "hu": "Hogy csökkentse az offszetet"}], "answer": 1, "why": {"en": "The PGA scales the signal up before digitising, so more of the 24-bit range is used. It does not remove an offset: it scales the offset too.", "hu": "A PGA digitalizálás előtt felskálázza a jelet, így a 24 bites tartomány nagyobb részét használjuk. Az offszetet nem szünteti meg, azt is felskálázza."}},
+    {"q": {"en": "The cell's zero balance is listed as ±0.1 mV/V. At about 2 V excitation, how big can the resting offset be?", "hu": "A cella nullpont-eltérése ±0,1 mV/V a leírás szerint. Kb. 2 V gerjesztésnél mekkora lehet a nyugalmi offszet?"}, "options": [{"en": "±0.2 µV", "hu": "±0,2 µV"}, {"en": "±0.2 mV (≈ ±0.5 kg equivalent)", "hu": "±0,2 mV (≈ ±0,5 kg-nak megfelelő)"}, {"en": "±20 mV", "hu": "±20 mV"}, {"en": "Exactly 0", "hu": "Pontosan 0"}], "answer": 1, "why": {"en": "0.1 mV/V × 2 V = 0.2 mV, which is 200 µV, or 0.2/0.4 = 0.5 kg of apparent load. The bench saw baselines of tens to hundreds of µV; we tare in software.", "hu": "0,1 mV/V × 2 V = 0,2 mV, vagyis 200 µV, azaz 0,2/0,4 = 0,5 kg látszólagos terhelés. A pulton tíz-száz µV-os alapvonalat láttunk; szoftveresen nullázunk."}}
+  ],
+  "cards": [
+    {"id": "e06-c1", "front": {"en": "Full bridge output", "hu": "A teljes híd kimenete"}, "back": {"en": "Vout = Vex · ΔR/R (four active gauges). Load cell: 1.0 mV/V at rated load.", "hu": "Vki = Vgerj · ΔR/R (négy aktív bélyeg). Mérlegcella: 1,0 mV/V névleges terhelésnél."}},
+    {"id": "e06-c2", "front": {"en": "YZC-133 sensitivity at ≈ 2 V (calculated from the listing)", "hu": "A YZC-133 érzékenysége ≈ 2 V-on (a leírásból számolva)"}, "back": {"en": "≈ 0.4 mV per kg; 5 kg → ≈ 2 mV.", "hu": "≈ 0,4 mV kg-onként; 5 kg → ≈ 2 mV."}},
+    {"id": "e06-c3", "front": {"en": "Why a bridge, not a divider?", "hu": "Miért híd, és nem osztó?"}, "back": {"en": "It cancels the big resting voltage and leaves only the tiny change, near zero.", "hu": "Kivonja a nagy nyugalmi feszültséget, és csak az apró változás marad, nulla közelében."}},
+    {"id": "e06-c4", "front": {"en": "Gain 128: full scale and our signal", "hu": "128-as erősítés: teljes skála és a jelünk"}, "back": {"en": "±1.2 V / 128 = ±9.375 mV; 5 kg ≈ 2 mV ≈ 22 % of it.", "hu": "±1,2 V / 128 = ±9,375 mV; 5 kg ≈ 2 mV ≈ ennek 22 %-a."}},
+    {"id": "e06-c5", "front": {"en": "Offset: listing and fix", "hu": "Offszet: a leírás és a megoldás"}, "back": {"en": "Zero balance ±0.1 mV/V ≈ ±0.2 mV at 2 V. Tare: subtract the resting value.", "hu": "Nullpont-eltérés ±0,1 mV/V ≈ ±0,2 mV 2 V-on. Nullázás: vond ki a nyugalmi értéket."}},
+    {"id": "e06-c6", "front": {"en": "Excitation we use vs the listing", "hu": "Az általunk használt gerjesztés és a leírás"}, "back": {"en": "We use ≈ 2.0 V; the listing says 3–10 V. Below the range: works, accuracy at 2 V isn't specified.", "hu": "Mi ≈ 2,0 V-ot használunk; a leírás 3–10 V. A tartomány alatt: működik, a pontosság 2 V-on nincs megadva."}}
+  ],
+  "cases": ["case-spikes", "case-hx-max"]
+}

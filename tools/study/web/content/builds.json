@@ -1,0 +1,121 @@
+{
+  "_doc": "Assemblies for the Build view. instances place part models (mm); wires join [instance, header, pin name]. Extra builders: series690 and shunt (pins A, B). A step shows its instances and wires (cumulative).",
+  "builds": [
+    {
+      "id": "bench", "code": "B1",
+      "title": {"en": "Today's bench rig", "hu": "A mai pult"},
+      "blurb": {"en": "Classic ESP32 + ADC 15 Click + YZC-133 load cell through 470 Ω + 220 Ω, exactly as wired on 2026-11-03 (press test passed).", "hu": "Klasszikus ESP32 + ADC 15 Click + YZC-133 mérlegcella 470 Ω + 220 Ω-on át, pontosan úgy, ahogy 2026-11-03-án bekötöttük (a nyomáspróba sikerült)."},
+      "source": "firmware/bringup-esp32/main/bringup_main.c · 30 Hardware/Builds/Load cell on the ADC 15 Click",
+      "instances": [
+        {"id": "mcu", "part": "esp32-devkit", "pos": [0, 0, 0]},
+        {"id": "adc", "part": "adc15", "pos": [82, 11, -6]},
+        {"id": "cell", "part": "yzc133", "pos": [-30, 0, 82]},
+        {"id": "r690", "part": "series690", "pos": [52, 2, 60]}
+      ],
+      "wires": [
+        {"id": "p3v3", "from": ["mcu", "exp-right", "3V3"], "to": ["adc", "left", "3V3"], "color": "red", "kind": "power"},
+        {"id": "pgnd", "from": ["mcu", "exp-right", "GND"], "to": ["adc", "left", "GND"], "color": "black", "kind": "gnd"},
+        {"id": "sck", "from": ["mcu", "exp-right", "D18"], "to": ["adc", "left", "SCK"], "color": "violet", "kind": "spi"},
+        {"id": "miso", "from": ["mcu", "exp-right", "D19"], "to": ["adc", "left", "SDO"], "color": "green", "kind": "spi"},
+        {"id": "mosi", "from": ["mcu", "exp-right", "D23"], "to": ["adc", "left", "SDI"], "color": "blue", "kind": "spi"},
+        {"id": "cs1", "from": ["mcu", "exp-right", "TX2"], "to": ["adc", "left", "CS1"], "color": "yellow", "kind": "spi"},
+        {"id": "cs2", "from": ["mcu", "exp-right", "RX2"], "to": ["adc", "right", "CS2"], "color": "orange", "kind": "spi"},
+        {"id": "drdy", "from": ["mcu", "exp-right", "D4"], "to": ["adc", "right", "INT"], "color": "white", "kind": "ctrl"},
+        {"id": "rst", "from": ["mcu", "exp-left", "D27"], "to": ["adc", "left", "RST"], "color": "grey", "kind": "ctrl"},
+        {"id": "exc", "from": ["mcu", "exp-right", "3V3"], "to": ["r690", "ends", "A"], "color": "red", "kind": "power"},
+        {"id": "eplus", "from": ["r690", "ends", "B"], "to": ["cell", "wires", "E+ red"], "color": "red", "kind": "power"},
+        {"id": "eminus", "from": ["cell", "wires", "E− black"], "to": ["mcu", "exp-left", "GND"], "color": "black", "kind": "gnd"},
+        {"id": "splus", "from": ["cell", "wires", "S+ green"], "to": ["adc", "terminals", "CH1+"], "color": "green", "kind": "analog"},
+        {"id": "sminus", "from": ["cell", "wires", "S− white"], "to": ["adc", "terminals", "CH1−"], "color": "white", "kind": "analog"},
+        {"id": "ch2p", "from": ["adc", "terminals", "CH2+"], "to": ["mcu", "exp-left-G", "G"], "color": "black", "kind": "gnd"},
+        {"id": "ch2m", "from": ["adc", "terminals", "CH2−"], "to": ["mcu", "exp-left-G", "G"], "color": "black", "kind": "gnd"}
+      ],
+      "steps": [
+        {"show": ["mcu"], "wires": [], "title": {"en": "The brain: DevKit on the expansion board", "hu": "Az agy: DevKit a bővítőpanelen"}, "text": {"en": "The DevKit's 30 pins sit in the expansion board's female headers. Each GPIO comes out again as a **signal / V / GND** triple. Check the **5V/3.3V jumper is on 3.3 V**: the Click and the ADC are 3.3 V only. Explode to lift the DevKit and see its pins.", "hu": "A DevKit 30 lába a bővítő női tüskesoraiban ül. Minden GPIO újra kijön **jel / V / GND** hármasként. Nézd meg, hogy az **5V/3,3V jumper 3,3 V-on** van: a Click és az ADC csak 3,3 V-os. Szétszedéssel felemelheted a DevKitet, és látod a lábait."}},
+        {"show": ["adc"], "wires": [], "title": {"en": "The ADC 15 Click", "hu": "Az ADC 15 Click"}, "text": {"en": "Two analog channels in (screw terminals), SPI out (left header), plus CS2 and INT on the right header. No 5 V anywhere on this board.", "hu": "Két analóg bemenet (csavaros kapcsok), SPI ki (bal tüskesor), plusz CS2 és INT a jobb oldalon. Ezen a panelen sehol nincs 5 V."}},
+        {"show": [], "wires": ["p3v3", "pgnd"], "title": {"en": "Power first: 3V3 and GND", "hu": "Előbb a táp: 3V3 és GND"}, "text": {"en": "Always wire GND and power before signals. The ESP32's AMS1117 supplies 3.3 V to the Click. A shared **ground** is what makes every other voltage mean something.", "hu": "Mindig előbb a GND és a táp, utána a jelek. Az ESP32 AMS1117-e adja a Click 3,3 V-ját. A közös **föld** teszi értelmessé az összes többi feszültséget."}},
+        {"show": [], "wires": ["sck", "miso", "mosi"], "title": {"en": "The SPI bus: SCK, MISO, MOSI", "hu": "Az SPI busz: SCK, MISO, MOSI"}, "text": {"en": "GPIO 18 → SCK, GPIO 19 ← SDO (the ADC's data **out** goes to the ESP32's MISO), GPIO 23 → SDI. Both chips on the Click share these three wires.", "hu": "GPIO 18 → SCK, GPIO 19 ← SDO (az ADC adat**kimenete** az ESP32 MISO-jára megy), GPIO 23 → SDI. A Click mindkét chipje osztozik ezen a három vezetéken."}},
+        {"show": [], "wires": ["cs1", "cs2"], "title": {"en": "Two chip selects", "hu": "Két chip select"}, "text": {"en": "GPIO 17 → CS1 (the ADC, **SPI mode 1**) and GPIO 16 → CS2 (the LTC6903 clock chip, **SPI mode 0**). Only the chip whose CS is low listens. Our bring-up found that CS needs extra lead time (`cs_ena_pretrans = 2`), or every word shifts by one bit.", "hu": "GPIO 17 → CS1 (az ADC, **SPI mode 1**) és GPIO 16 → CS2 (az LTC6903 órajel chip, **SPI mode 0**). Csak az a chip figyel, amelyiknek alacsony a CS-e. A bring-up során kiderült, hogy a CS-nek több előidő kell (`cs_ena_pretrans = 2`), különben minden szó egy bittel elcsúszik."}},
+        {"show": [], "wires": ["drdy", "rst"], "title": {"en": "DRDY and RST", "hu": "DRDY és RST"}, "text": {"en": "INT (DRDY) → GPIO 4: it falls every time a new sample is ready, 2000 times a second, and the firmware's interrupt reads it. RST → GPIO 27 resets or syncs the ADC.", "hu": "INT (DRDY) → GPIO 4: minden új mintánál lefut, másodpercenként 2000-szer, és a firmware megszakítása kiolvassa. RST → GPIO 27 reseteli vagy szinkronizálja az ADC-t."}},
+        {"show": ["cell", "r690"], "wires": ["exc", "eplus", "eminus"], "title": {"en": "Excite the bridge through 690 Ω", "hu": "A híd gerjesztése 690 Ω-on át"}, "text": {"en": "3V3 → 470 Ω + 220 Ω (690 Ω) → red E+, black E− → GND. The resistor and the bridge (≈ 1100 Ω) form a **voltage divider**: ≈ 2.0 V on the bridge, so each sense line sits at ≈ 1.0 V, inside the ADC's input limit at gain 128. The first try used a resistor marked '680 Ω' that was really **680 kΩ**: ≈ 5 mV on the bridge, no signal.", "hu": "3V3 → 470 Ω + 220 Ω (690 Ω) → piros E+, fekete E− → GND. Az ellenállás és a híd (kb. 1100 Ω) **feszültségosztót** alkot: kb. 2,0 V a hídon, így mindkét jelvezeték kb. 1,0 V-on ül, az ADC bemeneti határán belül 128-as erősítésnél. Az első próbánál egy '680 Ω'-nak hitt ellenállás valójában **680 kΩ** volt: kb. 5 mV a hídon, nincs jel."}},
+        {"show": [], "wires": ["splus", "sminus"], "title": {"en": "Signal into CH1", "hu": "Jel a CH1-be"}, "text": {"en": "Green S+ → CH1+, white S− → CH1−. The ADC measures the **difference** between them: a few hundred µV when you press the cell. Screw CH1 = ADC channel 0 (press test).", "hu": "Zöld S+ → CH1+, fehér S− → CH1−. Az ADC a kettő **különbségét** méri: néhány száz µV, ha megnyomod a cellát. A CH1 kapocs = ADC 0. csatorna (nyomáspróba)."}},
+        {"show": [], "wires": ["ch2p", "ch2m"], "title": {"en": "CH2 shorted to GND: the noise floor", "hu": "CH2 GND-re zárva: a zajszint"}, "text": {"en": "Both CH2 inputs on GND give a channel that should read zero. Whatever it shows is the ADC's own noise and offset (≈ 250 µV offset seen). Now stream `adc_dec` in the Lab site and press the cell.", "hu": "A CH2 mindkét bemenete GND-n: ennek a csatornának nullát kellene mutatnia. Amit mégis mutat, az az ADC saját zaja és offszete (kb. 250 µV offszetet láttunk). Most indítsd az `adc_dec` adatfolyamot a Lab oldalon, és nyomd meg a cellát."}}
+      ]
+    },
+    {
+      "id": "node", "code": "B2", "proposal": true,
+      "title": {"en": "Year-1 node (S3 + geophone)", "hu": "Első évi node (S3 + geofon)"},
+      "blurb": {"en": "ESP32-S3 + ADC 15 Click + SM-24 with its shunt + microSD + ADXL355 on I²C. The S3 GPIO numbers are a PROPOSAL: the pin map isn't decided yet.", "hu": "ESP32-S3 + ADC 15 Click + SM-24 a söntjével + microSD + ADXL355 I²C-n. Az S3 GPIO számai JAVASLAT: a lábkiosztás még nincs eldöntve."},
+      "source": "hardware/README.md · firmware/README.md (pin map still to come)",
+      "instances": [
+        {"id": "mcu", "part": "esp32-s3", "pos": [0, 11, 0]},
+        {"id": "adc", "part": "adc15", "pos": [80, 11, 0]},
+        {"id": "geo", "part": "sm24", "pos": [150, 0, 30]},
+        {"id": "shunt", "part": "shunt", "pos": [118, 2, 42]},
+        {"id": "sd", "part": "sd-breakout", "pos": [-10, 0, -70]},
+        {"id": "acc", "part": "adxl355", "pos": [60, 0, -72]}
+      ],
+      "wires": [
+        {"id": "p3v3", "from": ["mcu", "J1", "3V3"], "to": ["adc", "left", "3V3"], "color": "red", "kind": "power"},
+        {"id": "pgnd", "from": ["mcu", "J3", "G"], "to": ["adc", "left", "GND"], "color": "black", "kind": "gnd"},
+        {"id": "sck", "from": ["mcu", "J1", "GPIO12"], "to": ["adc", "left", "SCK"], "color": "violet", "kind": "spi", "proposal": true},
+        {"id": "miso", "from": ["mcu", "J1", "GPIO13"], "to": ["adc", "left", "SDO"], "color": "green", "kind": "spi", "proposal": true},
+        {"id": "mosi", "from": ["mcu", "J1", "GPIO11"], "to": ["adc", "left", "SDI"], "color": "blue", "kind": "spi", "proposal": true},
+        {"id": "cs1", "from": ["mcu", "J1", "GPIO10"], "to": ["adc", "left", "CS1"], "color": "yellow", "kind": "spi", "proposal": true},
+        {"id": "cs2", "from": ["mcu", "J1", "GPIO6"], "to": ["adc", "right", "CS2"], "color": "orange", "kind": "spi", "proposal": true},
+        {"id": "drdy", "from": ["mcu", "J1", "GPIO4"], "to": ["adc", "right", "INT"], "color": "white", "kind": "ctrl", "proposal": true},
+        {"id": "rst", "from": ["mcu", "J1", "GPIO5"], "to": ["adc", "left", "RST"], "color": "grey", "kind": "ctrl", "proposal": true},
+        {"id": "gp", "from": ["geo", "terminals", "+"], "to": ["adc", "terminals", "CH1+"], "color": "orange", "kind": "analog"},
+        {"id": "gm", "from": ["geo", "terminals", "−"], "to": ["adc", "terminals", "CH1−"], "color": "white", "kind": "analog"},
+        {"id": "sha", "from": ["shunt", "ends", "A"], "to": ["adc", "terminals", "CH1+"], "color": "orange", "kind": "analog"},
+        {"id": "shb", "from": ["shunt", "ends", "B"], "to": ["adc", "terminals", "CH1−"], "color": "white", "kind": "analog"},
+        {"id": "sdv", "from": ["sd", "pins", "VCC"], "to": ["mcu", "J1", "5V"], "color": "red", "kind": "power"},
+        {"id": "sdg", "from": ["sd", "pins", "GND"], "to": ["mcu", "J1", "G"], "color": "black", "kind": "gnd"},
+        {"id": "sdsck", "from": ["sd", "pins", "SCK"], "to": ["mcu", "J1", "GPIO12"], "color": "violet", "kind": "spi", "proposal": true},
+        {"id": "sdmiso", "from": ["sd", "pins", "MISO"], "to": ["mcu", "J1", "GPIO13"], "color": "green", "kind": "spi", "proposal": true},
+        {"id": "sdmosi", "from": ["sd", "pins", "MOSI"], "to": ["mcu", "J1", "GPIO11"], "color": "blue", "kind": "spi", "proposal": true},
+        {"id": "sdcs", "from": ["sd", "pins", "CS"], "to": ["mcu", "J1", "GPIO14"], "color": "yellow", "kind": "spi", "proposal": true},
+        {"id": "av", "from": ["acc", "P1", "VDD"], "to": ["mcu", "J1", "3V3"], "color": "red", "kind": "power"},
+        {"id": "aio", "from": ["acc", "P1", "VDDIO"], "to": ["mcu", "J1", "3V3"], "color": "red", "kind": "power"},
+        {"id": "ag", "from": ["acc", "P1", "VSS"], "to": ["mcu", "J3", "G"], "color": "black", "kind": "gnd"},
+        {"id": "amode", "from": ["acc", "P2", "SCLK/VSSIO"], "to": ["mcu", "J3", "G"], "color": "black", "kind": "gnd"},
+        {"id": "aaddr", "from": ["acc", "P2", "MISO/ASEL"], "to": ["mcu", "J3", "G"], "color": "black", "kind": "gnd"},
+        {"id": "asda", "from": ["acc", "P2", "MOSI/SDA"], "to": ["mcu", "J1", "GPIO8"], "color": "blue", "kind": "i2c", "proposal": true},
+        {"id": "ascl", "from": ["acc", "P2", "CS/SCL"], "to": ["mcu", "J1", "GPIO9"], "color": "violet", "kind": "i2c", "proposal": true}
+      ],
+      "steps": [
+        {"show": ["mcu"], "wires": [], "title": {"en": "ESP32-S3 N16R8", "hu": "ESP32-S3 N16R8"}, "text": {"en": "The planned node brain. Hover J3: **GPIO 35–37 are red**, taken by the octal PSRAM (33 and 34 aren't even brought out). Every S3 wire in this build is a **proposal** using the S3's default FSPI pins (10–13), because the real pin map isn't decided yet.", "hu": "A tervezett node agy. Nézd a J3-at: a **GPIO 35–37 piros**, az oktális PSRAM foglalja (a 33 és 34 ki sincs vezetve). Ebben az összeállításban minden S3 vezeték **javaslat**, az S3 alapértelmezett FSPI lábaival (10–13), mert a valódi lábkiosztás még nincs eldöntve."}},
+        {"show": ["adc"], "wires": ["p3v3", "pgnd", "sck", "miso", "mosi", "cs1", "cs2", "drdy", "rst"], "title": {"en": "Same Click, same nine wires", "hu": "Ugyanaz a Click, ugyanaz a kilenc vezeték"}, "text": {"en": "Power, the SPI bus, two chip selects, DRDY and RST: the same job as on the bench, on different GPIO numbers.", "hu": "Táp, SPI busz, két chip select, DRDY és RST: ugyanaz a feladat, mint a pulton, más GPIO számokon."}},
+        {"show": ["geo", "shunt"], "wires": ["gp", "gm", "sha", "shb"], "title": {"en": "SM-24 with its damping shunt", "hu": "SM-24 a csillapító söntjével"}, "text": {"en": "The geophone is passive: its coil goes straight into CH1 (no excitation, unlike the load cell). A **1339 Ω shunt** across the coil damps the 10 Hz spring resonance to ζ ≈ 0.6 (secondary source). Gain 32–64 on this channel.", "hu": "A geofon passzív: a tekercse közvetlenül a CH1-be megy (nincs gerjesztés, ellentétben a mérlegcellával). A tekercsre kötött **1339 Ω-os sönt** a 10 Hz-es rugórezonanciát ζ ≈ 0,6-ra csillapítja (másodlagos forrás). 32–64-es erősítés ezen a csatornán."}},
+        {"show": ["sd"], "wires": ["sdv", "sdg", "sdsck", "sdmiso", "sdmosi", "sdcs"], "title": {"en": "microSD on the same SPI bus", "hu": "microSD ugyanazon az SPI buszon"}, "text": {"en": "SCK, MISO and MOSI are shared with the ADC; the card gets its **own CS** (proposal: GPIO 14). This 6-pin module wants 5 V (it has its own 3.3 V regulator and level buffer). A card write can stall for tens of ms, so the firmware buffers samples and counts every one.", "hu": "Az SCK, MISO és MOSI közös az ADC-vel; a kártyának **saját CS-e** van (javaslat: GPIO 14). Ez a 6 lábú modul 5 V-ot kér (saját 3,3 V-os stabilizátora és szintillesztője van). Egy kártyaírás tíz ms-okig is elakadhat, ezért a firmware puffereli és minden mintát megszámol."}},
+        {"show": ["acc"], "wires": ["av", "aio", "ag", "amode", "aaddr", "asda", "ascl"], "title": {"en": "ADXL355 on I²C", "hu": "ADXL355 I²C-n"}, "text": {"en": "SCLK/VSSIO → GND selects I²C; MISO/ASEL → GND sets address **0x1D**. SDA and SCL need **pull-up resistors** (2.2–4.7 kΩ) if the board has none. It's digital, so it never touches the ADC. (Header pin order on the model is estimated.)", "hu": "SCLK/VSSIO → GND választja az I²C-t; MISO/ASEL → GND a **0x1D** címet. Az SDA-nak és SCL-nek **felhúzó ellenállás** kell (2,2–4,7 kΩ), ha a panelen nincs. Digitális, így az ADC-hez nem nyúl. (A modellen a tüskesor sorrendje becsült.)"}}
+      ]
+    },
+    {
+      "id": "hx711", "code": "B3",
+      "title": {"en": "HX711 comparison rig", "hu": "HX711-es összehasonlító"},
+      "blurb": {"en": "The first way we read the load cell, kept to show why we moved to the Click: same cell, a slow weighing ADC.", "hu": "Az első mód, ahogy a mérlegcellát olvastuk; azért maradt meg, hogy lássuk, miért váltottunk a Clickre: ugyanaz a cella, egy lassú mérleg-ADC."},
+      "source": "firmware/bringup-esp32/main/bringup_main.c (PIN_HX_DT 34, PIN_HX_SCK 32) · HX711 part note",
+      "instances": [
+        {"id": "mcu", "part": "esp32-devkit", "pos": [0, 0, 0]},
+        {"id": "hx", "part": "hx711", "pos": [80, 0, 10]},
+        {"id": "cell", "part": "yzc133", "pos": [10, 0, 80]}
+      ],
+      "wires": [
+        {"id": "vcc", "from": ["hx", "JP2", "VCC"], "to": ["mcu", "exp-right", "3V3"], "color": "red", "kind": "power"},
+        {"id": "gnd", "from": ["hx", "JP2", "GND"], "to": ["mcu", "exp-left", "GND"], "color": "black", "kind": "gnd"},
+        {"id": "dt", "from": ["hx", "JP2", "DT"], "to": ["mcu", "exp-left", "D34"], "color": "yellow", "kind": "ctrl"},
+        {"id": "sck", "from": ["hx", "JP2", "SCK"], "to": ["mcu", "exp-left", "D32"], "color": "violet", "kind": "ctrl"},
+        {"id": "ep", "from": ["cell", "wires", "E+ red"], "to": ["hx", "J1", "E+"], "color": "red", "kind": "power"},
+        {"id": "em", "from": ["cell", "wires", "E− black"], "to": ["hx", "J1", "E−"], "color": "black", "kind": "gnd"},
+        {"id": "am", "from": ["cell", "wires", "S− white"], "to": ["hx", "J1", "A−"], "color": "white", "kind": "analog"},
+        {"id": "ap", "from": ["cell", "wires", "S+ green"], "to": ["hx", "J1", "A+"], "color": "green", "kind": "analog"}
+      ],
+      "steps": [
+        {"show": ["mcu", "hx"], "wires": ["vcc", "gnd"], "title": {"en": "HX711 on 3.3 V", "hu": "HX711 3,3 V-on"}, "text": {"en": "VCC 2.6–5.5 V: with the ESP32 use 3.3 V, so its data line never exceeds the ESP32's 3.3 V inputs.", "hu": "VCC 2,6–5,5 V: az ESP32-vel 3,3 V, így az adatvonala sosem lépi túl az ESP32 3,3 V-os bemeneteit."}},
+        {"show": [], "wires": ["dt", "sck"], "title": {"en": "Two wires, not SPI", "hu": "Két vezeték, nem SPI"}, "text": {"en": "DT → GPIO 34 (input-only is fine for data), SCK ← GPIO 32. The MCU clocks out 24 bits plus 1–3 extra pulses that pick the next channel and gain. Keep SCK high for > 60 µs and the chip powers down.", "hu": "DT → GPIO 34 (adatnak jó a csak-bemenet láb), SCK ← GPIO 32. Az MCU kiléptet 24 bitet plusz 1–3 extra impulzust, ami a következő csatornát és erősítést választja. Ha az SCK > 60 µs-ig magas, a chip kikapcsol."}},
+        {"show": ["cell"], "wires": ["ep", "em", "am", "ap"], "title": {"en": "Load cell straight in", "hu": "A mérlegcella közvetlenül"}, "text": {"en": "The HX711 makes its own excitation (E+/E−), so no series resistor. But it samples at **10 or 80 SPS**: a footstep's few-hundred-Hz content is invisible to it, which is why the bench now uses the Click at 2 kSPS.", "hu": "A HX711 maga állítja elő a gerjesztést (E+/E−), így nem kell soros ellenállás. De **10 vagy 80 SPS**-sel mintavételez: egy lépés néhány száz Hz-es tartalma láthatatlan neki, ezért használja most a pult a Clicket 2 kSPS-sel."}}
+      ]
+    }
+  ]
+}

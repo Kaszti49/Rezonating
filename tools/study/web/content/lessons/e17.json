@@ -1,0 +1,63 @@
+{
+  "id": "e17",
+  "minutes": 30,
+  "title": {"en": "Power: regulators and budgets", "hu": "Táp: stabilizátorok és teljesítménymérleg"},
+  "goal": {"en": "After this lesson you can tell how hot a linear regulator gets, add up a power budget, and say where decoupling capacitors go and why the ADC may need its own clean supply.", "hu": "A lecke után meg tudod mondani, mennyire melegszik egy lineáris stabilizátor, össze tudsz adni egy teljesítménymérleget, és el tudod mondani, hová kerülnek a hidegítő kondenzátorok, és miért kellhet az ADC-nek külön tiszta táp."},
+  "parts": ["esp32-devkit", "adc15", "passives"],
+  "predict": [
+    {
+      "q": {"en": "The DevKit makes 3.3 V from USB's 5 V with a linear regulator (AMS1117). The board draws 200 mA at 3.3 V. How much current does the regulator take from the 5 V side?", "hu": "A DevKit a USB 5 V-jából lineáris stabilizátorral (AMS1117) csinál 3,3 V-ot. A panel 3,3 V-on 200 mA-t vesz fel. Mennyi áramot vesz fel a stabilizátor az 5 V-os oldalról?"},
+      "options": [
+        {"en": "About 132 mA: power in equals power out, so the current drops", "hu": "Kb. 132 mA: a bemenő és kimenő teljesítmény egyenlő, ezért az áram csökken"},
+        {"en": "About 200 mA: a linear regulator passes the same current and burns the voltage difference", "hu": "Kb. 200 mA: a lineáris stabilizátor ugyanazt az áramot engedi át, és a feszültségkülönbséget eldisszipálja"},
+        {"en": "About 303 mA: the current rises to make up the voltage", "hu": "Kb. 303 mA: az áram megnő, hogy pótolja a feszültséget"},
+        {"en": "Zero: the regulator stores the energy", "hu": "Nulla: a stabilizátor tárolja az energiát"}
+      ],
+      "answer": 1,
+      "why": {"en": "A linear regulator is a variable resistor in series: the same current flows in and out (plus a little for itself). The 5 V − 3.3 V = 1.7 V difference times 200 mA is **340 mW** of heat. The first answer describes a switching regulator, where current really is lower on the higher-voltage side.", "hu": "A lineáris stabilizátor egy soros változtatható ellenállás: ugyanaz az áram folyik be és ki (plusz egy kevés a sajátja). Az 5 V − 3,3 V = 1,7 V különbség 200 mA-rel szorozva **340 mW** hő. Az első válasz a kapcsolóüzemű stabilizátort írja le, ahol az áram tényleg kisebb a magasabb feszültségű oldalon."}
+    },
+    {
+      "q": {"en": "You feed the same regulator 12 V instead of 5 V, for the same 200 mA load. What happens to the heat?", "hu": "Ugyanazt a stabilizátort 12 V-tal táplálod 5 V helyett, ugyanazzal a 200 mA-es terheléssel. Mi lesz a hővel?"},
+      "options": [
+        {"en": "Nothing: the load is the same", "hu": "Semmi: a terhelés ugyanaz"},
+        {"en": "It roughly doubles", "hu": "Nagyjából megduplázódik"},
+        {"en": "It rises about five times, to 1.74 W", "hu": "Kb. ötszörösére nő, 1,74 W-ra"},
+        {"en": "It falls, because the regulator works more efficiently", "hu": "Csökken, mert a stabilizátor hatékonyabban dolgozik"}
+      ],
+      "answer": 2,
+      "why": {"en": "(12 − 3.3) V × 0.2 A = 1.74 W, against 0.34 W at 5 V. That is 5.1 times more. The load still needs only 0.66 W; everything else is heat in a small package. Efficiency falls from 66 % to 27.5 %.", "hu": "(12 − 3,3) V × 0,2 A = 1,74 W, szemben a 0,34 W-tal 5 V-nál. Ez 5,1-szeres. A terhelésnek továbbra is csak 0,66 W kell; minden más hő egy kis tokban. A hatásfok 66 %-ról 27,5 %-ra esik."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "Bench estimate with Wi-Fi on, SD card writing, ADC 15 Click, load cell and ADXL355: 160 + 60 + 4 + 1.7 + 0.2 mA (rough site figures, not measured). The AMS1117 runs from 5 V. How much power does the regulator burn? Answer in **mW**.", "hu": "Pult-becslés bekapcsolt Wi-Fi-vel, író SD kártyával, ADC 15 Click-kel, mérlegcellával és ADXL355-tel: 160 + 60 + 4 + 1,7 + 0,2 mA (az oldal durva értékei, nem mértek). Az AMS1117 5 V-ról megy. Mennyi teljesítményt ég el a stabilizátor? Válasz **mW**-ban."},
+      "answer": 384, "unit": "mW", "tol": 0.03,
+      "hint": {"en": "Add the currents (mA), then multiply by (5 − 3.3) V.", "hu": "Add össze az áramokat (mA), majd szorozd (5 − 3,3) V-tal."},
+      "solution": {"en": "I = 225.9 mA. P = 1.7 V × 0.2259 A ≈ **384 mW**. The load itself uses 3.3 V × 0.2259 A ≈ 745 mW, so the regulator wastes about a third of the input power.", "hu": "I = 225,9 mA. P = 1,7 V × 0,2259 A ≈ **384 mW**. Maga a terhelés 3,3 V × 0,2259 A ≈ 745 mW-ot használ, tehát a stabilizátor a bemenő teljesítmény kb. egyharmadát elpazarolja."}
+    },
+    {
+      "q": {"en": "Same 100 mA load, but the input is 12 V. How much heat in the regulator? Answer in **mW**.", "hu": "Ugyanaz a 100 mA-es terhelés, de a bemenet 12 V. Mennyi hő keletkezik a stabilizátorban? Válasz **mW**-ban."},
+      "answer": 870, "unit": "mW", "tol": 0.02,
+      "solution": {"en": "(12 − 3.3) V × 0.1 A = **870 mW**. That is a lot for a SOT-223 package without a copper pad. Check the datasheet's thermal data before you rely on it.", "hu": "(12 − 3,3) V × 0,1 A = **870 mW**. Ez sok egy SOT-223 tokozatnak rézfelület nélkül. Mielőtt rá építesz, nézd meg az adatlap hőtani adatait."}
+    },
+    {
+      "q": {"en": "What is the efficiency of a linear regulator going from 5 V to 3.3 V (ignoring its own small current)? Answer in **%**.", "hu": "Mekkora a hatásfoka egy 5 V-ról 3,3 V-ra stabilizáló lineáris stabilizátornak (a saját kis áramát elhanyagolva)? Válasz **%**-ban."},
+      "answer": 66, "unit": "%", "tol": 0.02,
+      "solution": {"en": "Efficiency = Vout / Vin = 3.3 / 5 = **66 %**. The rest is heat.", "hu": "Hatásfok = Vki / Vbe = 3,3 / 5 = **66 %**. A többi hő."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What is dropout voltage?", "hu": "Mi a dropout feszültség?"}, "options": [{"en": "The smallest Vin − Vout at which the regulator still regulates", "hu": "A legkisebb Vbe − Vki, amelynél a stabilizátor még szabályoz"}, {"en": "The voltage lost in the cable", "hu": "A kábelen elvesző feszültség"}, {"en": "The ripple on the output", "hu": "A kimenet hullámossága"}, {"en": "The voltage at which the regulator switches off", "hu": "Az a feszültség, ahol a stabilizátor lekapcsol"}], "answer": 0, "why": {"en": "If Vin falls below Vout + dropout, the output follows the input down. With about 1.1 V dropout (check the datasheet), 5 V from a weak USB port can be marginal for 3.3 V.", "hu": "Ha a Vbe Vki + dropout alá esik, a kimenet követi a bemenetet lefelé. Kb. 1,1 V dropoutnál (nézd meg az adatlapot) egy gyenge USB port 5 V-ja is határeset lehet 3,3 V-hoz."}},
+    {"q": {"en": "Why put a 100 nF capacitor right at a chip's supply pin?", "hu": "Miért kell 100 nF-os kondenzátor közvetlenül a chip tápláb mellé?"}, "options": [{"en": "To raise the voltage", "hu": "A feszültség növeléséhez"}, {"en": "It is a local charge store for fast current spikes the regulator is too far away to supply", "hu": "Helyi töltéstároló a gyors áramtüskékhez, amiket a távoli stabilizátor nem tud adni"}, {"en": "To filter the sensor signal", "hu": "A szenzorjel szűréséhez"}, {"en": "To lower the current", "hu": "Az áram csökkentéséhez"}], "answer": 1, "why": {"en": "Traces have inductance, so a spike cannot be fed from afar in nanoseconds. The cap must be close, with a short path to ground.", "hu": "A vezetéknek induktivitása van, így egy tüskét nanoszekundumok alatt nem lehet messziről táplálni. A kondenzátornak közel kell lennie, rövid földúttal."}},
+    {"q": {"en": "A switching regulator wastes less heat than an LDO. What is the catch for our ADC?", "hu": "A kapcsolóüzemű stabilizátor kevesebb hőt veszít, mint egy LDO. Mi a buktató az ADC-nknél?"}, "options": [{"en": "It cannot make 3.3 V", "hu": "Nem tud 3,3 V-ot csinálni"}, {"en": "Its switching ripple can leak into the analog input and add noise", "hu": "A kapcsolási hullámosság bejuthat az analóg bemenetre, és zajt ad"}, {"en": "It costs more power", "hu": "Több teljesítményt fogyaszt"}, {"en": "It is illegal in Europe", "hu": "Európában tilos"}], "answer": 1, "why": {"en": "Switching noise sits at the switching frequency and its harmonics. Filter it or follow it with an LDO before the analog supply.", "hu": "A kapcsolási zaj a kapcsolási frekvencián és felharmonikusain ül. Szűrd, vagy kövesd egy LDO-val az analóg táp előtt."}},
+    {"q": {"en": "Which rail pins does the ADS131M04 have?", "hu": "Milyen tápláb-párja van az ADS131M04-nek?"}, "options": [{"en": "AVDD/AGND and DVDD/DGND", "hu": "AVDD/AGND és DVDD/DGND"}, {"en": "Only VCC and GND", "hu": "Csak VCC és GND"}, {"en": "VDD, VSS and VREF", "hu": "VDD, VSS és VREF"}, {"en": "5 V and 12 V", "hu": "5 V és 12 V"}], "answer": 0, "why": {"en": "Analog and digital supplies and grounds are separate pins, from the verified pin table. On the Click they both come from the one 3.3 V rail.", "hu": "Az analóg és digitális táp és föld külön láb, az ellenőrzött lábtábla szerint. A Clicken mindkettő az egyetlen 3,3 V-os ágról jön."}}
+  ],
+  "cards": [
+    {"id": "e17-c1", "front": {"en": "Heat in a linear regulator", "hu": "Hő egy lineáris stabilizátorban"}, "back": {"en": "P = (Vin − Vout) × I. Efficiency = Vout / Vin. 5 V → 3.3 V = 66 %.", "hu": "P = (Vbe − Vki) × I. Hatásfok = Vki / Vbe. 5 V → 3,3 V = 66 %."}},
+    {"id": "e17-c2", "front": {"en": "AMS1117 dropout", "hu": "AMS1117 dropout"}, "back": {"en": "About 1.1 V on this site, so ~4.4 V in for 3.3 V out. Check the datasheet for the exact figure.", "hu": "Ezen az oldalon kb. 1,1 V, vagyis kb. 4,4 V bemenet kell 3,3 V kimenethez. A pontos értéket az adatlapon nézd meg."}},
+    {"id": "e17-c3", "front": {"en": "Where does a decoupling capacitor go?", "hu": "Hová kerül a hidegítő kondenzátor?"}, "back": {"en": "Right at the supply pin, with the shortest path to that chip's ground. 100 nF per pin, bigger bulk cap near the regulator.", "hu": "Közvetlenül a tápláb mellé, a legrövidebb földúttal ahhoz a chiphez. 100 nF lábanként, nagyobb puffer a stabilizátor közelében."}},
+    {"id": "e17-c4", "front": {"en": "Linear vs switching", "hu": "Lineáris és kapcsolóüzemű"}, "back": {"en": "Linear: quiet, simple, heat = ΔV × I. Switching: efficient, but ripple at the switching frequency.", "hu": "Lineáris: csendes, egyszerű, hő = ΔV × I. Kapcsolóüzemű: hatékony, de hullámosság a kapcsolási frekvencián."}},
+    {"id": "e17-c5", "front": {"en": "Power budget method", "hu": "A teljesítménymérleg módszere"}, "back": {"en": "List every load on the rail with its worst-case current, sum them, compare with the regulator's rating, then compute heat.", "hu": "Sorold fel az ág minden terhelését a legrosszabb esetű áramával, add össze, vesd össze a stabilizátor határával, majd számold ki a hőt."}}
+  ],
+  "cases": []
+}

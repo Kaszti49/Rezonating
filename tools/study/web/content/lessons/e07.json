@@ -1,0 +1,65 @@
+{
+  "id": "e07", "minutes": 30,
+  "title": {"en": "Capacitors and RC time", "hu": "Kondenzátorok és az RC idő"},
+  "goal": {"en": "After this lesson you can say what a capacitor stores, work out how fast an RC circuit charges, explain why a 100 nF capacitor sits next to every chip, and put an electrolytic in the right way round.", "hu": "A lecke után meg tudod mondani, mit tárol egy kondenzátor, ki tudod számolni, milyen gyorsan töltődik egy RC kör, el tudod magyarázni, miért ül 100 nF minden chip mellett, és az elektrolitot jó irányba kötöd be."},
+  "parts": ["passives", "ads131m04"],
+  "predict": [
+    {
+      "q": {"en": "A 3.3 V step is applied to 1 kΩ in series with 100 nF (capacitor starts empty). After 100 µs, what is the voltage across the capacitor?", "hu": "3,3 V-os ugrást adsz egy 1 kΩ-os ellenállásra, sorban egy 100 nF-os kondenzátorral (a kondenzátor üres). 100 µs múlva mekkora a feszültség a kondenzátoron?"},
+      "options": [
+        {"en": "3.3 V: it charges instantly", "hu": "3,3 V: azonnal feltöltődik"},
+        {"en": "About 2.1 V", "hu": "Kb. 2,1 V"},
+        {"en": "1.65 V: half way, since 100 µs is half of 200 µs", "hu": "1,65 V: félúton, mert a 100 µs fele a 200 µs-nak"},
+        {"en": "0 V: nothing happens until the capacitor is full", "hu": "0 V: addig nem történik semmi, amíg tele nincs"}
+      ],
+      "answer": 1,
+      "why": {"en": "τ = R · C = 1000 Ω × 100 nF = 100 µs. After one τ the capacitor is at 63.2 % of the step: 3.3 V × 0.632 ≈ **2.09 V**. It is never instant (a resistor limits the current) and never linear: it charges fast at first, slowly at the end. The '200 µs' option has no meaning here.", "hu": "τ = R · C = 1000 Ω × 100 nF = 100 µs. Egy τ után a kondenzátor az ugrás 63,2 %-án van: 3,3 V × 0,632 ≈ **2,09 V**. Soha nem azonnali (az ellenállás korlátozza az áramot), és soha nem lineáris: az elején gyorsan, a végén lassan töltődik. A '200 µs' semmit sem jelent itt."}
+    },
+    {
+      "q": {"en": "You have one 100 nF ceramic capacitor for an ADC's supply pin. Where does it help most?", "hu": "Van egy 100 nF-os kerámia kondenzátorod egy ADC tápjához. Hol segít a legtöbbet?"},
+      "options": [
+        {"en": "Next to the USB connector, where the power comes in", "hu": "Az USB csatlakozó mellett, ahol a táp bejön"},
+        {"en": "Right at the chip's supply pin, with a short path to its ground pin", "hu": "Közvetlenül a chip táplába mellett, rövid úton a föld lábához"},
+        {"en": "Anywhere on the board: a wire is a wire", "hu": "A panel bárhol: vezeték az vezeték"},
+        {"en": "Between the supply pin and the signal input", "hu": "A táplába és a jelbemenet között"}
+      ],
+      "answer": 1,
+      "why": {"en": "The capacitor is a local charge store for fast current spikes. Every centimetre of trace between it and the chip adds inductance, which slows the supply of charge, so the store has to be right at the pin. A capacitor at the connector can't help a spike that the trace is too slow to deliver.", "hu": "A kondenzátor helyi töltéstároló a gyors áramlökésekhez. Minden centiméter vezeték közte és a chip között induktivitást ad, ami lassítja a töltés szállítását, ezért a tárolónak közvetlenül a lábnál kell lennie. A csatlakozónál lévő kondenzátor nem segít egy olyan lökésen, amit a vezeték túl lassan szállítana."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "A chip pulls a 10 mA spike for 200 ns, and only its 100 nF decoupling capacitor supplies it. By how much does the capacitor voltage drop? Answer in **mV**. (Illustrative numbers, not a measurement.)", "hu": "Egy chip 200 ns-ig 10 mA-es lökést vesz fel, és ezt csak a 100 nF-os hidegítő kondenzátora fedezi. Mennyit esik a kondenzátor feszültsége? Válasz **mV**-ban. (Szemléltető számok, nem mérés.)"},
+      "answer": 20, "unit": "mV", "tol": 0.03,
+      "hint": {"en": "Charge taken: Q = I · t. Voltage drop: ΔV = Q / C.", "hu": "A kivett töltés: Q = I · t. A feszültségesés: ΔV = Q / C."},
+      "solution": {"en": "Q = 0.010 A × 200 ns = 2 nC. ΔV = 2 nC / 100 nF = **20 mV**. Without the capacitor the long supply trace would have to deliver that charge in 200 ns, and its inductance would make the supply dip much more.", "hu": "Q = 0,010 A × 200 ns = 2 nC. ΔV = 2 nC / 100 nF = **20 mV**. Kondenzátor nélkül a hosszú tápvezetéknek kellene ezt a töltést 200 ns alatt leszállítania, és az induktivitása miatt a táp sokkal mélyebbre esne."}
+    },
+    {
+      "q": {"en": "What is the time constant τ of 1 kΩ with 220 nF (the CAP-pin value)? Answer in **µs**.", "hu": "Mekkora az 1 kΩ és 220 nF (a CAP láb értéke) időállandója, τ? Válasz **µs**-ban."},
+      "answer": 220, "unit": "µs", "tol": 0.03,
+      "hint": {"en": "τ = R · C in base units: ohms × farads = seconds.", "hu": "τ = R · C alapegységekben: ohm × farad = másodperc."},
+      "solution": {"en": "τ = 1000 Ω × 220·10⁻⁹ F = 2.2·10⁻⁴ s = **220 µs**. (This is only a number to practise with; the real CAP pin has no resistor in front of it.)", "hu": "τ = 1000 Ω × 220·10⁻⁹ F = 2,2·10⁻⁴ s = **220 µs**. (Ez csak gyakorló szám; az igazi CAP láb előtt nincs ellenállás.)"}
+    },
+    {
+      "q": {"en": "10 kΩ and 100 nF, 3.3 V step. What is the capacitor voltage after 2 ms? Answer in **V**.", "hu": "10 kΩ és 100 nF, 3,3 V-os ugrás. Mekkora a kondenzátor feszültsége 2 ms után? Válasz **V**-ban."},
+      "answer": 2.853, "unit": "V", "tol": 0.02,
+      "hint": {"en": "V(t) = 3.3 · (1 − e^(−t/τ)). First find τ.", "hu": "V(t) = 3,3 · (1 − e^(−t/τ)). Először keresd meg τ-t."},
+      "solution": {"en": "τ = 10 000 Ω × 100 nF = 1 ms, so t = 2τ. V = 3.3 × (1 − e⁻²) = 3.3 × 0.8647 ≈ **2.85 V** (86.5 %).", "hu": "τ = 10 000 Ω × 100 nF = 1 ms, tehát t = 2τ. V = 3,3 × (1 − e⁻²) = 3,3 × 0,8647 ≈ **2,85 V** (86,5 %)."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "A ceramic capacitor is marked '104'. What is it?", "hu": "Egy kerámia kondenzátoron '104' áll. Mekkora?"}, "options": [{"en": "104 pF", "hu": "104 pF"}, {"en": "100 nF", "hu": "100 nF"}, {"en": "10 µF", "hu": "10 µF"}, {"en": "1 µF", "hu": "1 µF"}], "answer": 1, "why": {"en": "Like the resistor code: 10 followed by 4 zeros, in picofarads: 100 000 pF = 100 nF. The bench assortment note says the same.", "hu": "Mint az ellenállás kódja: 10 és utána 4 nulla pikofaradban: 100 000 pF = 100 nF. A pult alkatrész-jegyzete is ezt írja."}},
+    {"q": {"en": "The stripe on a 10 µF electrolytic marks which leg?", "hu": "Egy 10 µF-os elektrolit kondenzátoron a csík melyik lábat jelöli?"}, "options": [{"en": "The + leg", "hu": "A + lábat"}, {"en": "The − leg", "hu": "A − lábat"}, {"en": "The leg that goes to 3.3 V", "hu": "A 3,3 V-ra menő lábat"}, {"en": "Nothing: it is only decoration", "hu": "Semmit: csak dísz"}], "answer": 1, "why": {"en": "The stripe marks −. Connect it towards GND. Reversed, the part heats up and can vent.", "hu": "A csík a −-t jelöli. Kösd a GND felé. Fordítva felmelegszik és kidurranhat."}},
+    {"q": {"en": "After how many time constants is an RC circuit within about 1 % of the final value?", "hu": "Hány időállandó után van egy RC kör a végértékhez képest kb. 1 %-on belül?"}, "options": [{"en": "1τ", "hu": "1τ"}, {"en": "2τ", "hu": "2τ"}, {"en": "About 5τ", "hu": "Kb. 5τ"}, {"en": "100τ", "hu": "100τ"}], "answer": 2, "why": {"en": "1 − e⁻⁵ = 99.3 %. After 1τ it is only at 63 %, after 2τ at 86 %.", "hu": "1 − e⁻⁵ = 99,3 %. 1τ után még csak 63 %, 2τ után 86 %."}},
+    {"q": {"en": "What does a capacitor do to a steady DC voltage, once it is charged?", "hu": "Mit csinál egy kondenzátor az állandó egyenfeszültséggel, ha már feltöltődött?"}, "options": [{"en": "Passes it like a wire", "hu": "Átengedi, mint egy vezeték"}, {"en": "Blocks it: no steady current flows through", "hu": "Blokkolja: nem folyik rajta tartós áram"}, {"en": "Turns it into AC", "hu": "Váltakozóvá alakítja"}, {"en": "Doubles it", "hu": "Megduplázza"}], "answer": 1, "why": {"en": "Current only flows while the voltage changes (I = C · dV/dt). At steady DC the current is zero. That is why capacitors 'pass AC, block DC'.", "hu": "Áram csak a feszültség változása közben folyik (I = C · dV/dt). Állandó egyenfeszültségnél az áram nulla. Ezért 'engedi az AC-t, blokkolja a DC-t'."}}
+  ],
+  "cards": [
+    {"id": "e07-c1", "front": {"en": "Charge and energy in a capacitor", "hu": "Töltés és energia a kondenzátorban"}, "back": {"en": "Q = C · V.  E = ½ · C · V².  (100 nF at 3.3 V: 330 nC.)", "hu": "Q = C · V.  E = ½ · C · V².  (100 nF 3,3 V-on: 330 nC.)"}},
+    {"id": "e07-c2", "front": {"en": "Time constant and the 63 % rule", "hu": "Időállandó és a 63 %-os szabály"}, "back": {"en": "τ = R · C. After 1τ: 63 %, 2τ: 86 %, 3τ: 95 %, 5τ: 99 %.", "hu": "τ = R · C. 1τ után 63 %, 2τ után 86 %, 3τ után 95 %, 5τ után 99 %."}},
+    {"id": "e07-c3", "front": {"en": "Why 100 nF next to every chip?", "hu": "Miért 100 nF minden chip mellé?"}, "back": {"en": "A local charge store for fast current spikes; the supply trace is too slow and too inductive to deliver them.", "hu": "Helyi töltéstároló a gyors áramlökésekhez; a tápvezeték ehhez túl lassú és túl induktív."}},
+    {"id": "e07-c4", "front": {"en": "ADS131M04 pin 18 (CAP)", "hu": "ADS131M04 18-as láb (CAP)"}, "back": {"en": "220 nF to DGND (pin table). Place it close to the pin.", "hu": "220 nF a DGND-re (a lábtáblázat szerint). Tedd közel a lábhoz."}},
+    {"id": "e07-c5", "front": {"en": "Electrolytic polarity", "hu": "Elektrolit polaritás"}, "back": {"en": "Stripe = − leg, towards GND. Reversed or over-voltage: heats, may vent.", "hu": "Csík = − láb, a GND felé. Fordítva vagy túlfeszültségen: melegszik, kidurranhat."}},
+    {"id": "e07-c6", "front": {"en": "Read '104' on a ceramic capacitor", "hu": "Olvasd le a '104'-et egy kerámia kondenzátoron"}, "back": {"en": "10 × 10⁴ pF = 100 nF.", "hu": "10 × 10⁴ pF = 100 nF."}}
+  ],
+  "cases": []
+}

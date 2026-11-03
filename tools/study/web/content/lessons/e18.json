@@ -1,0 +1,63 @@
+{
+  "id": "e18",
+  "minutes": 25,
+  "title": {"en": "Clocks, crystals and ppm", "hu": "Órajelek, kristályok és ppm"},
+  "goal": {"en": "After this lesson you can convert between % and ppm, work out how many samples a clock error costs per hour, and explain why we measure and record the real sample rate.", "hu": "A lecke után át tudsz váltani % és ppm között, ki tudod számolni, hány mintába kerül óránként egy órajelhiba, és el tudod magyarázni, miért mérjük meg és írjuk fel a valódi mintavételi rátát."},
+  "parts": ["adc15", "osc8m", "ads131m04"],
+  "predict": [
+    {
+      "q": {"en": "The Click's ADC runs 0.21 % slow. You record for one hour and the software assumes exactly 1000 samples per second. Compared with the wall clock, what do you have?", "hu": "A Click ADC-je 0,21 %-kal lassan jár. Egy órát vesz fel, és a szoftver pontosan 1000 minta/másodpercet feltételez. A falióra szerint mit kapsz?"},
+      "options": [
+        {"en": "Exactly 3 600 000 samples: the clock error cancels out", "hu": "Pontosan 3 600 000 mintát: az órajelhiba kiesik"},
+        {"en": "About 7 560 samples fewer than 3 600 000", "hu": "Kb. 7 560-nal kevesebb mintát, mint 3 600 000"},
+        {"en": "About 7 560 samples more than 3 600 000", "hu": "Kb. 7 560-nal több mintát, mint 3 600 000"},
+        {"en": "About 21 samples fewer", "hu": "Kb. 21-gyel kevesebb mintát"}
+      ],
+      "answer": 1,
+      "why": {"en": "A slow clock means slower sampling: 997.9 SPS instead of 1000. Over 3600 s that is 2.1 × 3600 ≈ 7 560 samples missing, or 7.56 s of recording time. The third option has the wrong sign. The fourth confuses 0.21 % with 0.021 %.", "hu": "Lassú órajel lassabb mintavételt jelent: 997,9 SPS 1000 helyett. 3600 s alatt ez 2,1 × 3600 ≈ 7 560 hiányzó minta, vagyis 7,56 s felvételidő. A harmadik válasz előjele rossz. A negyedik a 0,21 %-ot a 0,021 %-kal téveszti össze."}
+    },
+    {
+      "q": {"en": "On our own PCB the LTC6903 is replaced by the QTM325 oscillator (±25 ppm). Do we still need to measure the real sample rate?", "hu": "A saját NYÁK-on az LTC6903 helyett a QTM325 oszcillátor lesz (±25 ppm). Kell még mérnünk a valódi mintavételi rátát?"},
+      "options": [
+        {"en": "No: it will be exactly 2000.000 SPS", "hu": "Nem: pontosan 2000,000 SPS lesz"},
+        {"en": "Yes: ±25 ppm is still an error, about ±0.05 Hz at 2 kSPS, and it drifts with temperature", "hu": "Igen: a ±25 ppm is hiba, 2 kSPS-nél kb. ±0,05 Hz, és hőmérséklettel mozog"},
+        {"en": "No: the ADC corrects it itself", "hu": "Nem: az ADC magától korrigálja"},
+        {"en": "Only in winter", "hu": "Csak télen"}
+      ],
+      "answer": 1,
+      "why": {"en": "2000 × 25·10⁻⁶ = 0.05 Hz. Much better than the LTC6903, but not zero. The ADC has no internal oscillator and no way to know its clock is off. Measuring is cheap, and the recording sidecar keeps the number.", "hu": "2000 × 25·10⁻⁶ = 0,05 Hz. Sokkal jobb az LTC6903-nál, de nem nulla. Az ADC-nek nincs belső oszcillátora, és nem tudhatja, hogy az órajele eltér. A mérés olcsó, és a felvétel sidecar fájlja megőrzi a számot."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "We measured **1995.80 Hz** DRDY at OSR 2048. The data rate is fCLKIN / 2 / 2048. What is fCLKIN? Answer in **MHz**.", "hu": "A DRDY-t **1995,80 Hz**-nek mértük OSR 2048-nál. Az adatráta fCLKIN / 2 / 2048. Mekkora az fCLKIN? Válasz **MHz**-ben."},
+      "answer": 8.1748, "unit": "MHz", "tol": 0.001,
+      "hint": {"en": "fCLKIN = rate × 2 × 2048.", "hu": "fCLKIN = ráta × 2 × 2048."},
+      "solution": {"en": "1995.80 × 2 × 2048 = 8 174 797 Hz ≈ **8.1748 MHz**. Against 8.192 MHz that is −0.21 %.", "hu": "1995,80 × 2 × 2048 = 8 174 797 Hz ≈ **8,1748 MHz**. A 8,192 MHz-hez képest ez −0,21 %."}
+    },
+    {
+      "q": {"en": "A nominal 1000 SPS stream with −0.21 % clock error. How many samples are off after one hour? Answer as a positive number of **samples**.", "hu": "Névleges 1000 SPS adatfolyam −0,21 % órajelhibával. Hány minta az eltérés egy óra után? Válasz pozitív **minta**számban."},
+      "answer": 7560, "unit": "samples", "tol": 0.02,
+      "solution": {"en": "1000 × 0.0021 × 3600 = **7 560 samples**, or 7.56 s of time error per hour. In ppm: 0.21 % = 2100 ppm.", "hu": "1000 × 0,0021 × 3600 = **7 560 minta**, azaz óránként 7,56 s időhiba. ppm-ben: 0,21 % = 2100 ppm."}
+    },
+    {
+      "q": {"en": "The same stream with the QTM325 at its ±25 ppm limit. Samples off per hour? Answer in **samples**.", "hu": "Ugyanez az adatfolyam a QTM325-tel a ±25 ppm határán. Hány minta az eltérés óránként? Válasz **minta**számban."},
+      "answer": 90, "unit": "samples", "tol": 0.02,
+      "solution": {"en": "1000 × 25·10⁻⁶ × 3600 = **90 samples**. That is 84 times fewer than the measured LTC6903 error, and 440 times fewer than the LTC6903's 1.1 % maximum (39 600).", "hu": "1000 × 25·10⁻⁶ × 3600 = **90 minta**. Ez 84-szer kevesebb, mint az LTC6903 mért hibája, és 440-szer kevesebb, mint az LTC6903 1,1 %-os maximuma (39 600)."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Convert 0.5 % to ppm.", "hu": "Váltsd át a 0,5 %-ot ppm-re."}, "options": [{"en": "50 ppm", "hu": "50 ppm"}, {"en": "500 ppm", "hu": "500 ppm"}, {"en": "5000 ppm", "hu": "5000 ppm"}, {"en": "50 000 ppm", "hu": "50 000 ppm"}], "answer": 2, "why": {"en": "1 % = 10 000 ppm, so 0.5 % = 5000 ppm. The QTM325's ±25 ppm is 200 times tighter.", "hu": "1 % = 10 000 ppm, tehát 0,5 % = 5000 ppm. A QTM325 ±25 ppm-je 200-szor szűkebb."}},
+    {"q": {"en": "Which is true for the LTC6903 on the Click?", "hu": "Melyik igaz a Clicken lévő LTC6903-ra?"}, "options": [{"en": "0.5 % is the maximum error", "hu": "A 0,5 % a maximális hiba"}, {"en": "0.5 % is typical; 1.1 % max at 25 °C; up to 1.65 % over temperature", "hu": "A 0,5 % tipikus; 1,1 % maximum 25 °C-on; hőmérséklet-tartományban akár 1,65 %"}, {"en": "It is accurate to ±25 ppm", "hu": "±25 ppm pontos"}, {"en": "It needs no programming", "hu": "Nem kell programozni"}], "answer": 1, "why": {"en": "Typical is not a guarantee. The chip also powers up at 1.039 kHz until the firmware programs it, so the ADC has no valid clock before that.", "hu": "A tipikus nem garancia. A chip ráadásul 1,039 kHz-en indul, amíg a firmware nem programozza, tehát addig az ADC-nek nincs érvényes órajele."}},
+    {"q": {"en": "What is jitter?", "hu": "Mi a jitter?"}, "options": [{"en": "The average frequency being wrong", "hu": "Az átlagos frekvencia hibája"}, {"en": "Edge-to-edge timing wobble", "hu": "Az élek közötti időbeli ingadozás"}, {"en": "A drop in supply voltage", "hu": "A tápfeszültség esése"}, {"en": "The same thing as ppm", "hu": "Ugyanaz, mint a ppm"}], "answer": 1, "why": {"en": "ppm describes the average rate; jitter describes the wobble of single edges. A clock can be accurate on average and still jittery. Jitter on CLKIN can add noise to the ADC.", "hu": "A ppm az átlagos rátát írja le; a jitter az egyes élek ingadozását. Egy órajel átlagban lehet pontos, mégis jitteres. A CLKIN jittere zajt adhat az ADC-hez."}},
+    {"q": {"en": "Why record the measured rate in the sidecar instead of trusting 2000 SPS?", "hu": "Miért írjuk a mért rátát a sidecarba ahelyett, hogy a 2000 SPS-ben bíznánk?"}, "options": [{"en": "The files get smaller", "hu": "A fájlok kisebbek lesznek"}, {"en": "So later analysis can correct frequencies and durations", "hu": "Hogy a későbbi elemzés korrigálhassa a frekvenciákat és időtartamokat"}, {"en": "The ADC demands it", "hu": "Az ADC megköveteli"}, {"en": "It is required by Wi-Fi", "hu": "A Wi-Fi megköveteli"}], "answer": 1, "why": {"en": "A feature at 100 Hz in a stream that is really 0.21 % slow sits at 99.79 Hz. Step timing over a long recording drifts the same way. If the real rate is recorded, you can correct it.", "hu": "Egy 100 Hz-es jellemző egy valójában 0,21 %-kal lassú adatfolyamban 99,79 Hz-en van. A lépésidőzítés hosszú felvételen ugyanígy elcsúszik. Ha a valódi ráta fel van írva, korrigálható."}}
+  ],
+  "cards": [
+    {"id": "e18-c1", "front": {"en": "% to ppm", "hu": "% és ppm"}, "back": {"en": "1 % = 10 000 ppm. 0.21 % = 2100 ppm. 25 ppm = 0.0025 %.", "hu": "1 % = 10 000 ppm. 0,21 % = 2100 ppm. 25 ppm = 0,0025 %."}},
+    {"id": "e18-c2", "front": {"en": "LTC6903 accuracy", "hu": "LTC6903 pontosság"}, "back": {"en": "0.5 % typ, 1.1 % max at 25 °C, up to 1.65 % over temperature (C grade). Measured on our board: −0.21 %.", "hu": "0,5 % tipikus, 1,1 % maximum 25 °C-on, hőmérséklet-tartományban akár 1,65 % (C osztály). A mi panelünkön mérve: −0,21 %."}},
+    {"id": "e18-c3", "front": {"en": "Our measured clock", "hu": "A mért órajelünk"}, "back": {"en": "1995.80 Hz at OSR 2048 → CLKIN ≈ 8.1748 MHz (−0.21 %).", "hu": "1995,80 Hz OSR 2048-nál → CLKIN ≈ 8,1748 MHz (−0,21 %)."}},
+    {"id": "e18-c4", "front": {"en": "QTM325", "hu": "QTM325"}, "back": {"en": "8.192 MHz crystal oscillator, ±25 ppm, 3.3 V CMOS. About 90 samples per hour at 1 kSPS.", "hu": "8,192 MHz kristályoszcillátor, ±25 ppm, 3,3 V CMOS. 1 kSPS-nél óránként kb. 90 minta."}},
+    {"id": "e18-c5", "front": {"en": "Data rate of the ADS131M0x", "hu": "Az ADS131M0x adatrátája"}, "back": {"en": "fDATA = fCLKIN / 2 / OSR. 8.192 MHz / 2 / 2048 = 2000 SPS.", "hu": "fDATA = fCLKIN / 2 / OSR. 8,192 MHz / 2 / 2048 = 2000 SPS."}}
+  ],
+  "cases": []
+}

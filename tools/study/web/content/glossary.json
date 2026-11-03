@@ -1,0 +1,2653 @@
+{
+ "voltage": {
+  "term": {
+   "en": "voltage",
+   "hu": "feszültség"
+  },
+  "abbr": "V",
+  "short": {
+   "en": "The 'push' between two points, in volts. Always measured *between* two points.",
+   "hu": "A két pont közötti 'nyomás', voltban. Mindig két pont *között* mérjük."
+  },
+  "long": {
+   "en": "Energy per charge. When we say 'CH1 is at 1.0 V' we mean 1.0 V relative to GND. Our board runs on 3.3 V; the load-cell bridge gets ≈ 2.0 V; its output is a few hundred µV.",
+   "hu": "Töltésenkénti energia. Ha azt mondjuk 'CH1 1,0 V-on van', az a GND-hez képest értendő. A panelünk 3,3 V-ról megy; a mérlegcella hídja kb. 2,0 V-ot kap; a kimenete néhány száz µV."
+  },
+  "lessons": [
+   "e01",
+   "e02"
+  ]
+ },
+ "current": {
+  "term": {
+   "en": "current",
+   "hu": "áram"
+  },
+  "abbr": "I",
+  "short": {
+   "en": "How much charge flows per second, in amperes (A).",
+   "hu": "Másodpercenként átfolyó töltés, amperben (A)."
+  },
+  "long": {
+   "en": "1 A = 1 coulomb per second. Our load-cell path carries ≈ 1.84 mA; the ESP32 with Wi-Fi on draws over 100 mA.",
+   "hu": "1 A = 1 coulomb másodpercenként. A mérlegcella ágán kb. 1,84 mA folyik; az ESP32 bekapcsolt Wi-Fi-vel 100 mA felett fogyaszt."
+  },
+  "lessons": [
+   "e01",
+   "e02"
+  ]
+ },
+ "resistance": {
+  "term": {
+   "en": "resistance",
+   "hu": "ellenállás (érték)"
+  },
+  "abbr": "R",
+  "short": {
+   "en": "How strongly something opposes current, in ohms (Ω).",
+   "hu": "Mennyire akadályozza valami az áramot, ohmban (Ω)."
+  },
+  "lessons": [
+   "e02"
+  ]
+ },
+ "resistor": {
+  "term": {
+   "en": "resistor",
+   "hu": "ellenállás (alkatrész)"
+  },
+  "short": {
+   "en": "A part made to have one known resistance. Value read from its colour bands.",
+   "hu": "Egy ismert ellenállásúra készült alkatrész. Értéke a színsávokról olvasható."
+  },
+  "long": {
+   "en": "Ours: 470 Ω + 220 Ω in series feed the load cell. The one marked '680 Ω' was 680 kΩ.",
+   "hu": "Nálunk: 470 Ω + 220 Ω sorosan táplálja a mérlegcellát. A '680 Ω'-osnak hitt 680 kΩ volt."
+  },
+  "part": "passives",
+  "lessons": [
+   "e02"
+  ]
+ },
+ "ohms-law": {
+  "term": {
+   "en": "Ohm's law",
+   "hu": "Ohm-törvény"
+  },
+  "short": {
+   "en": "V = I · R: voltage equals current times resistance.",
+   "hu": "V = I · R: a feszültség az áram és az ellenállás szorzata."
+  },
+  "long": {
+   "en": "Rearranged: I = V / R and R = V / I. Holds for resistors; diodes and transistors don't follow it.",
+   "hu": "Átrendezve: I = V / R és R = V / I. Ellenállásokra érvényes; diódákra és tranzisztorokra nem."
+  },
+  "lessons": [
+   "e02"
+  ]
+ },
+ "power": {
+  "term": {
+   "en": "power",
+   "hu": "teljesítmény"
+  },
+  "abbr": "P",
+  "short": {
+   "en": "Energy per second, in watts: P = V · I = I² · R = V² / R.",
+   "hu": "Másodpercenkénti energia, wattban: P = V · I = I² · R = V² / R."
+  },
+  "lessons": [
+   "e02",
+   "e17"
+  ]
+ },
+ "watt": {
+  "term": {
+   "en": "watt",
+   "hu": "watt"
+  },
+  "abbr": "W",
+  "short": {
+   "en": "Unit of power: 1 W = 1 V × 1 A.",
+   "hu": "A teljesítmény egysége: 1 W = 1 V × 1 A."
+  },
+  "lessons": [
+   "e02"
+  ]
+ },
+ "ground": {
+  "term": {
+   "en": "ground (GND)",
+   "hu": "föld (GND)"
+  },
+  "abbr": "GND",
+  "short": {
+   "en": "The reference point every voltage is measured from: 0 V by definition.",
+   "hu": "A viszonyítási pont, amihez minden feszültséget mérünk: definíció szerint 0 V."
+  },
+  "long": {
+   "en": "All parts must share it: a sensor's 1 V means nothing to the ADC if their grounds differ.",
+   "hu": "Minden alkatrésznek közösnek kell lennie: egy szenzor 1 V-ja semmit sem jelent az ADC-nek, ha a földjük eltér."
+  },
+  "lessons": [
+   "e01",
+   "e14"
+  ]
+ },
+ "series": {
+  "term": {
+   "en": "series",
+   "hu": "soros kapcsolás"
+  },
+  "short": {
+   "en": "One after the other: the same current flows through each part; resistances add.",
+   "hu": "Egymás után: ugyanaz az áram folyik mindegyiken; az ellenállások összeadódnak."
+  },
+  "lessons": [
+   "e03"
+  ]
+ },
+ "parallel": {
+  "term": {
+   "en": "parallel",
+   "hu": "párhuzamos kapcsolás"
+  },
+  "short": {
+   "en": "Side by side: the same voltage across each part; currents add.",
+   "hu": "Egymás mellett: ugyanaz a feszültség mindegyiken; az áramok összeadódnak."
+  },
+  "long": {
+   "en": "Two resistors: R = R1·R2 / (R1 + R2). The boss's divider has 470 Ω in parallel with the ≈ 1100 Ω bridge ≈ 329 Ω.",
+   "hu": "Két ellenállás: R = R1·R2 / (R1 + R2). A főnök osztójában a 470 Ω párhuzamosan a kb. 1100 Ω-os híddal ≈ 329 Ω."
+  },
+  "lessons": [
+   "e03"
+  ]
+ },
+ "voltage-divider": {
+  "term": {
+   "en": "voltage divider",
+   "hu": "feszültségosztó"
+  },
+  "short": {
+   "en": "Two resistances in series split a voltage in proportion: Vout = Vin · R2 / (R1 + R2).",
+   "hu": "Két soros ellenállás arányosan osztja a feszültséget: Vki = Vbe · R2 / (R1 + R2)."
+  },
+  "lessons": [
+   "e03"
+  ]
+ },
+ "short-circuit": {
+  "term": {
+   "en": "short circuit",
+   "hu": "rövidzár"
+  },
+  "short": {
+   "en": "An unintended ≈ 0 Ω path: huge current, or a node stuck at the other node's voltage.",
+   "hu": "Nem szándékos, kb. 0 Ω-os út: hatalmas áram, vagy egy csomópont a másik feszültségén ragad."
+  },
+  "lessons": [
+   "e05"
+  ]
+ },
+ "open-circuit": {
+  "term": {
+   "en": "open circuit",
+   "hu": "szakadás"
+  },
+  "short": {
+   "en": "A break: no path, no current. Meters show 'OL' in Ω mode.",
+   "hu": "Megszakadt út: nincs áram. Ω módban a műszer 'OL'-t mutat."
+  },
+  "long": {
+   "en": "Careful: 'OL' only means 'more than this range'. A 680 kΩ resistor shows OL on the 2 kΩ range.",
+   "hu": "Vigyázat: az 'OL' csak azt jelenti, 'több, mint ez a méréshatár'. Egy 680 kΩ-os ellenállás a 2 kΩ-os határon OL-t mutat."
+  },
+  "lessons": [
+   "e05"
+  ]
+ },
+ "multimeter": {
+  "term": {
+   "en": "multimeter",
+   "hu": "multiméter"
+  },
+  "short": {
+   "en": "Measures V, Ω, continuity and A. Ω only with power off; never put the mA jack across a supply.",
+   "hu": "V-ot, Ω-ot, szakadást és A-t mér. Ω-ot csak kikapcsolt tápnál; a mA aljzattal soha ne mérj tápra."
+  },
+  "lessons": [
+   "e05"
+  ]
+ },
+ "color-code": {
+  "term": {
+   "en": "resistor colour code",
+   "hu": "ellenállás színkód"
+  },
+  "short": {
+   "en": "Bands: digit, digit, multiplier, tolerance. 0 black … 9 white.",
+   "hu": "Sávok: számjegy, számjegy, szorzó, tűrés. 0 fekete … 9 fehér."
+  },
+  "long": {
+   "en": "680 Ω = blue grey brown; 680 kΩ = blue grey yellow.",
+   "hu": "680 Ω = kék szürke barna; 680 kΩ = kék szürke sárga."
+  },
+  "part": "passives",
+  "lessons": [
+   "e02"
+  ]
+ },
+ "tolerance": {
+  "term": {
+   "en": "tolerance",
+   "hu": "tűrés"
+  },
+  "short": {
+   "en": "How far a part's real value may be from its marked value (gold band = ±5 %).",
+   "hu": "Mennyivel térhet el egy alkatrész valódi értéke a jelölttől (arany sáv = ±5 %)."
+  },
+  "lessons": [
+   "e02"
+  ]
+ },
+ "wheatstone-bridge": {
+  "term": {
+   "en": "Wheatstone bridge",
+   "hu": "Wheatstone-híd"
+  },
+  "short": {
+   "en": "Four resistances in a diamond: the output is the *difference* between two dividers, so tiny changes show up near zero.",
+   "hu": "Négy ellenállás rombuszban: a kimenet két osztó *különbsége*, így az apró változások nulla közelében látszanak."
+  },
+  "long": {
+   "en": "Our load cell is a full bridge: all four arms are strain gauges, output = Vex × ΔR/R, 1 mV/V at 5 kg.",
+   "hu": "A mérlegcellánk teljes híd: mind a négy ág nyúlásmérő, kimenet = Vgerj × ΔR/R, 1 mV/V 5 kg-nál."
+  },
+  "part": "yzc133",
+  "lessons": [
+   "e06"
+  ]
+ },
+ "strain-gauge": {
+  "term": {
+   "en": "strain gauge",
+   "hu": "nyúlásmérő bélyeg"
+  },
+  "short": {
+   "en": "A foil zig-zag whose resistance rises a few hundred ppm when stretched.",
+   "hu": "Fóliacikcakk, aminek az ellenállása nyújtáskor néhány száz ppm-mel nő."
+  },
+  "part": "yzc133",
+  "lessons": [
+   "e06"
+  ]
+ },
+ "excitation": {
+  "term": {
+   "en": "excitation",
+   "hu": "gerjesztés"
+  },
+  "short": {
+   "en": "The supply voltage across a bridge (E+ to E−). Output scales with it (mV/V).",
+   "hu": "A hídra adott tápfeszültség (E+ és E− között). A kimenet arányos vele (mV/V)."
+  },
+  "lessons": [
+   "e06",
+   "e03"
+  ]
+ },
+ "adc": {
+  "term": {
+   "en": "ADC (analog-to-digital converter)",
+   "hu": "ADC (analóg-digitális átalakító)"
+  },
+  "abbr": "ADC",
+  "short": {
+   "en": "Turns a voltage into a number, many times per second.",
+   "hu": "Egy feszültséget számmá alakít, másodpercenként sokszor."
+  },
+  "long": {
+   "en": "Ours: ADS131M02 on the ADC 15 Click, 24-bit, 2 kSPS, gain up to 128. Later the 4-channel ADS131M04.",
+   "hu": "Nálunk: ADS131M02 az ADC 15 Clicken, 24 bit, 2 kSPS, erősítés 128-ig. Később a 4 csatornás ADS131M04."
+  },
+  "part": "adc15",
+  "lessons": [
+   "s04",
+   "e15"
+  ]
+ },
+ "delta-sigma": {
+  "term": {
+   "en": "delta-sigma (ΔΣ) ADC",
+   "hu": "delta-szigma (ΔΣ) ADC"
+  },
+  "short": {
+   "en": "Samples very fast with a 1-bit-ish modulator, then filters and decimates to many bits at a lower rate.",
+   "hu": "Nagyon gyorsan mintavételez egy kb. 1 bites modulátorral, majd szűr és decimál, így alacsonyabb rátán sok bitet ad."
+  },
+  "long": {
+   "en": "The ADS131M0x modulator runs at CLKIN/2 = 4.096 MHz; OSR 2048 gives 2 kSPS.",
+   "hu": "Az ADS131M0x modulátora CLKIN/2 = 4,096 MHz-en jár; OSR 2048 2 kSPS-t ad."
+  },
+  "lessons": [
+   "e15",
+   "s04"
+  ]
+ },
+ "pga": {
+  "term": {
+   "en": "PGA (programmable gain amplifier)",
+   "hu": "PGA (programozható erősítésű erősítő)"
+  },
+  "abbr": "PGA",
+  "short": {
+   "en": "An amplifier in front of the ADC whose gain the firmware sets (1–128 on the ADS131M0x).",
+   "hu": "Az ADC előtti erősítő, aminek az erősítését a firmware állítja (1–128 az ADS131M0x-en)."
+  },
+  "long": {
+   "en": "Full scale = ±1.2 V / gain: ±9.375 mV at 128 (load cell), ±37.5 mV at 32 (geophone).",
+   "hu": "Teljes skála = ±1,2 V / erősítés: ±9,375 mV 128-nál (mérlegcella), ±37,5 mV 32-nél (geofon)."
+  },
+  "lessons": [
+   "s04",
+   "e15"
+  ]
+ },
+ "full-scale": {
+  "term": {
+   "en": "full scale",
+   "hu": "teljes skála (méréshatár)"
+  },
+  "short": {
+   "en": "The largest input the ADC can represent; beyond it the reading clips.",
+   "hu": "A legnagyobb bemenet, amit az ADC ábrázolni tud; felette telítődik."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "lsb": {
+  "term": {
+   "en": "LSB (least significant bit)",
+   "hu": "LSB (legkisebb helyiértékű bit)"
+  },
+  "abbr": "LSB",
+  "short": {
+   "en": "The voltage step of one ADC code: 2 × full scale / 2^bits.",
+   "hu": "Egy ADC kódnyi feszültséglépés: 2 × teljes skála / 2^bitek."
+  },
+  "long": {
+   "en": "ADS131M02 at gain 128: 18.75 mV / 16 777 216 ≈ 1.1 nV, far below its noise.",
+   "hu": "ADS131M02 128-as erősítésnél: 18,75 mV / 16 777 216 ≈ 1,1 nV, jóval a zaja alatt."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "sample-rate": {
+  "term": {
+   "en": "sample rate",
+   "hu": "mintavételi frekvencia"
+  },
+  "abbr": "SPS",
+  "short": {
+   "en": "How many samples per second (SPS). We record at 2 kSPS and give packs 1 kSPS.",
+   "hu": "Hány minta másodpercenként (SPS). 2 kSPS-sel rögzítünk, a packok 1 kSPS-t kapnak."
+  },
+  "lessons": [
+   "e15",
+   "s04"
+  ]
+ },
+ "nyquist": {
+  "term": {
+   "en": "Nyquist frequency",
+   "hu": "Nyquist-frekvencia"
+  },
+  "short": {
+   "en": "Half the sample rate: the highest frequency the samples can represent.",
+   "hu": "A mintavételi frekvencia fele: a legmagasabb frekvencia, amit a minták visszaadnak."
+  },
+  "long": {
+   "en": "1 kSPS → 500 Hz. HX711 at 80 SPS → 40 Hz, too low for footsteps.",
+   "hu": "1 kSPS → 500 Hz. A HX711 80 SPS-sel → 40 Hz, túl alacsony a lépésekhez."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "aliasing": {
+  "term": {
+   "en": "aliasing",
+   "hu": "aliasing (átlapolódás)"
+  },
+  "short": {
+   "en": "A frequency above Nyquist shows up as a false, lower one after sampling.",
+   "hu": "A Nyquist feletti frekvencia mintavétel után hamis, alacsonyabb frekvenciaként jelenik meg."
+  },
+  "lessons": [
+   "e15",
+   "e10"
+  ]
+ },
+ "decimation": {
+  "term": {
+   "en": "decimation",
+   "hu": "decimálás"
+  },
+  "short": {
+   "en": "Low-pass filter, then keep every Nth sample. Ours: FIR then ÷2, 2 kSPS → 1 kSPS (D-016).",
+   "hu": "Aluláteresztő szűrés, majd minden N-edik minta megtartása. Nálunk: FIR, majd ÷2, 2 kSPS → 1 kSPS (D-016)."
+  },
+  "lessons": [
+   "s07",
+   "e10"
+  ]
+ },
+ "fir": {
+  "term": {
+   "en": "FIR filter",
+   "hu": "FIR szűrő"
+  },
+  "abbr": "FIR",
+  "short": {
+   "en": "A digital filter: each output is a weighted sum of the last N inputs.",
+   "hu": "Digitális szűrő: minden kimenet az utolsó N bemenet súlyozott összege."
+  },
+  "lessons": [
+   "e10",
+   "s07"
+  ]
+ },
+ "drdy": {
+  "term": {
+   "en": "DRDY (data ready)",
+   "hu": "DRDY (adat kész)"
+  },
+  "abbr": "DRDY",
+  "short": {
+   "en": "ADC output pin that goes low when a new sample is ready (active low, falling edge).",
+   "hu": "ADC kimeneti láb, ami alacsonyra vált, ha új minta kész (aktív alacsony, lefutó él)."
+  },
+  "long": {
+   "en": "On the Click it's the INT pin → GPIO 4 on the bench. The firmware counts DRDY gaps as lost samples.",
+   "hu": "A Clicken ez az INT láb → GPIO 4 a pulton. A firmware a DRDY kimaradásokat elveszett mintaként számolja."
+  },
+  "part": "adc15",
+  "lessons": [
+   "s04",
+   "s07"
+  ]
+ },
+ "clkin": {
+  "term": {
+   "en": "CLKIN",
+   "hu": "CLKIN"
+  },
+  "short": {
+   "en": "The ADS131M0x clock input: needs a continuous 8.192 MHz; the chip has no oscillator of its own.",
+   "hu": "Az ADS131M0x órajel-bemenete: folyamatos 8,192 MHz kell; a chipnek nincs saját oszcillátora."
+  },
+  "long": {
+   "en": "On the Click the LTC6903 makes it (measured 8.1748 MHz, −0.21 %). On our PCB: the QTM325 crystal oscillator.",
+   "hu": "A Clicken az LTC6903 állítja elő (mérve 8,1748 MHz, −0,21 %). A saját NYÁK-on: a QTM325 kristályoszcillátor."
+  },
+  "lessons": [
+   "s04",
+   "e18"
+  ]
+ },
+ "spi": {
+  "term": {
+   "en": "SPI",
+   "hu": "SPI"
+  },
+  "abbr": "SPI",
+  "short": {
+   "en": "Fast 4-wire bus: SCK (clock), MOSI (out), MISO (in), CS (who listens).",
+   "hu": "Gyors, 4 vezetékes busz: SCK (órajel), MOSI (ki), MISO (be), CS (ki figyeljen)."
+  },
+  "long": {
+   "en": "On the Click two chips share it: LTC6903 in mode 0 (CS2), ADC in mode 1 (CS1).",
+   "hu": "A Clicken két chip osztozik rajta: LTC6903 mode 0-ban (CS2), ADC mode 1-ben (CS1)."
+  },
+  "lessons": [
+   "s05",
+   "e16"
+  ]
+ },
+ "spi-mode": {
+  "term": {
+   "en": "SPI mode",
+   "hu": "SPI mód"
+  },
+  "short": {
+   "en": "CPOL (clock idle level) + CPHA (sample on 1st or 2nd edge): modes 0–3.",
+   "hu": "CPOL (órajel nyugalmi szintje) + CPHA (1. vagy 2. élen mintavételez): 0–3 mód."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "chip-select": {
+  "term": {
+   "en": "chip select (CS)",
+   "hu": "chip select (CS)"
+  },
+  "abbr": "CS",
+  "short": {
+   "en": "Active-low line that tells one SPI device 'this transfer is for you'.",
+   "hu": "Aktív alacsony vonal, ami egy SPI eszköznek jelzi: 'ez az átvitel neked szól'."
+  },
+  "lessons": [
+   "e16",
+   "s05"
+  ]
+ },
+ "i2c": {
+  "term": {
+   "en": "I²C",
+   "hu": "I²C"
+  },
+  "abbr": "I²C",
+  "short": {
+   "en": "2-wire bus (SDA data, SCL clock) with addresses; open-drain, needs pull-ups.",
+   "hu": "Kétvezetékes busz (SDA adat, SCL órajel) címekkel; nyitott kollektoros, felhúzó kell."
+  },
+  "long": {
+   "en": "ADXL355 at 0x1D/0x53, AT24C02 EEPROMs at 0x50, TCA9548A mux at 0x70.",
+   "hu": "ADXL355: 0x1D/0x53, AT24C02 EEPROM-ok: 0x50, TCA9548A mux: 0x70."
+  },
+  "lessons": [
+   "s05",
+   "e16"
+  ]
+ },
+ "pull-up": {
+  "term": {
+   "en": "pull-up resistor",
+   "hu": "felhúzó ellenállás"
+  },
+  "short": {
+   "en": "A resistor to the supply that holds a line high when nothing pulls it low.",
+   "hu": "Tápra kötött ellenállás, ami magasan tartja a vonalat, ha semmi nem húzza le."
+  },
+  "lessons": [
+   "e12",
+   "e16"
+  ]
+ },
+ "open-drain": {
+  "term": {
+   "en": "open drain",
+   "hu": "nyitott kollektor (open drain)"
+  },
+  "short": {
+   "en": "An output that can only pull low; a pull-up makes the high. Lets many devices share a wire.",
+   "hu": "Kimenet, ami csak lehúzni tud; a magas szintet egy felhúzó adja. Így sok eszköz osztozhat egy vezetéken."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "uart": {
+  "term": {
+   "en": "UART",
+   "hu": "UART"
+  },
+  "abbr": "UART",
+  "short": {
+   "en": "Asynchronous serial: TX/RX, agreed baud rate, no clock wire. Our link to the PC.",
+   "hu": "Aszinkron soros: TX/RX, megegyezett baud, nincs órajelvezeték. A linkünk a PC felé."
+  },
+  "lessons": [
+   "s05",
+   "e16"
+  ]
+ },
+ "baud": {
+  "term": {
+   "en": "baud rate",
+   "hu": "baud (átviteli sebesség)"
+  },
+  "short": {
+   "en": "Symbols per second on a UART: 115200 on our link.",
+   "hu": "Szimbólum másodpercenként UART-on: a linkünkön 115200."
+  },
+  "lessons": [
+   "s05"
+  ]
+ },
+ "gpio": {
+  "term": {
+   "en": "GPIO",
+   "hu": "GPIO"
+  },
+  "abbr": "GPIO",
+  "short": {
+   "en": "General-purpose I/O pin: input or output, set by firmware.",
+   "hu": "Általános célú ki/bemenet: a firmware állítja be bemenetnek vagy kimenetnek."
+  },
+  "lessons": [
+   "s06"
+  ]
+ },
+ "strapping-pin": {
+  "term": {
+   "en": "strapping pin",
+   "hu": "strapping láb"
+  },
+  "short": {
+   "en": "A pin the chip reads at reset to choose boot settings. Classic ESP32: 0, 2, 5, 12, 15.",
+   "hu": "Láb, amit a chip reset után olvas ki a bootbeállításokhoz. Klasszikus ESP32: 0, 2, 5, 12, 15."
+  },
+  "long": {
+   "en": "GPIO 12 must be low at boot, or the flash gets the wrong voltage.",
+   "hu": "A GPIO 12-nek bootoláskor alacsonynak kell lennie, különben rossz feszültséget kap a flash."
+  },
+  "part": "esp32-devkit",
+  "lessons": [
+   "s06"
+  ]
+ },
+ "psram": {
+  "term": {
+   "en": "PSRAM",
+   "hu": "PSRAM"
+  },
+  "short": {
+   "en": "Extra external RAM. The S3 N16R8 has 8 MB of octal PSRAM; it takes GPIO 33–37.",
+   "hu": "Külső kiegészítő RAM. Az S3 N16R8-on 8 MB oktális PSRAM van; a GPIO 33–37-et foglalja."
+  },
+  "part": "esp32-s3",
+  "lessons": [
+   "s06"
+  ]
+ },
+ "ldo": {
+  "term": {
+   "en": "LDO regulator",
+   "hu": "LDO stabilizátor"
+  },
+  "abbr": "LDO",
+  "short": {
+   "en": "Linear regulator: makes a lower, steady voltage and burns the difference as heat.",
+   "hu": "Lineáris stabilizátor: alacsonyabb, stabil feszültséget ad, a különbséget hővé alakítja."
+  },
+  "long": {
+   "en": "AMS1117-3.3 on the DevKit: 5 V in, 3.3 V out, ≈ 1.1 V dropout.",
+   "hu": "AMS1117-3.3 a DevKiten: 5 V be, 3,3 V ki, kb. 1,1 V dropout."
+  },
+  "lessons": [
+   "e17"
+  ]
+ },
+ "decoupling": {
+  "term": {
+   "en": "decoupling capacitor",
+   "hu": "hidegítő kondenzátor"
+  },
+  "short": {
+   "en": "A 100 nF capacitor right at a chip's supply pin: a local charge store for fast current spikes.",
+   "hu": "100 nF-os kondenzátor közvetlenül a chip tápjánál: helyi töltéstároló a gyors áramtüskékhez."
+  },
+  "part": "passives",
+  "lessons": [
+   "e07",
+   "e17"
+  ]
+ },
+ "capacitor": {
+  "term": {
+   "en": "capacitor",
+   "hu": "kondenzátor"
+  },
+  "abbr": "C",
+  "short": {
+   "en": "Stores charge: Q = C · V, in farads. Blocks DC, passes AC.",
+   "hu": "Töltést tárol: Q = C · V, faradban. Az egyenáramot nem, a váltakozót átengedi."
+  },
+  "part": "passives",
+  "lessons": [
+   "e07"
+  ]
+ },
+ "time-constant": {
+  "term": {
+   "en": "time constant (τ)",
+   "hu": "időállandó (τ)"
+  },
+  "short": {
+   "en": "τ = R · C: time for an RC circuit to reach 63 % of a step.",
+   "hu": "τ = R · C: ennyi idő alatt ér el egy RC kör egy ugrás 63 %-át."
+  },
+  "lessons": [
+   "e07"
+  ]
+ },
+ "cutoff-frequency": {
+  "term": {
+   "en": "cut-off frequency",
+   "hu": "határfrekvencia"
+  },
+  "short": {
+   "en": "Where a filter is down 3 dB (≈ 71 %): fc = 1 / (2πRC) for RC.",
+   "hu": "Ahol a szűrő 3 dB-lel (kb. 71 %-ra) csillapít: RC-nél fc = 1 / (2πRC)."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "decibel": {
+  "term": {
+   "en": "decibel (dB)",
+   "hu": "decibel (dB)"
+  },
+  "abbr": "dB",
+  "short": {
+   "en": "Logarithmic ratio: 20·log10(V2/V1). −20 dB = ÷10, −6 dB ≈ ÷2.",
+   "hu": "Logaritmikus arány: 20·log10(V2/V1). −20 dB = ÷10, −6 dB ≈ ÷2."
+  },
+  "lessons": [
+   "e09"
+  ]
+ },
+ "frequency": {
+  "term": {
+   "en": "frequency",
+   "hu": "frekvencia"
+  },
+  "abbr": "f",
+  "short": {
+   "en": "Cycles per second, in hertz (Hz). Footsteps: roughly 10–300 Hz.",
+   "hu": "Ciklus másodpercenként, hertzben (Hz). Lépések: nagyjából 10–300 Hz."
+  },
+  "lessons": [
+   "e09",
+   "s02"
+  ]
+ },
+ "geophone": {
+  "term": {
+   "en": "geophone",
+   "hu": "geofon"
+  },
+  "short": {
+   "en": "Coil + magnet on springs: outputs a voltage proportional to ground velocity.",
+   "hu": "Rugókon lógó tekercs + mágnes: a talaj sebességével arányos feszültséget ad."
+  },
+  "part": "sm24",
+  "lessons": [
+   "e08",
+   "s03"
+  ]
+ },
+ "natural-frequency": {
+  "term": {
+   "en": "natural frequency",
+   "hu": "sajátfrekvencia"
+  },
+  "short": {
+   "en": "The frequency a mass on a spring rings at by itself. SM-24: 10 Hz.",
+   "hu": "A frekvencia, amin egy rugón lógó tömeg magától rezeg. SM-24: 10 Hz."
+  },
+  "lessons": [
+   "e08"
+  ]
+ },
+ "damping": {
+  "term": {
+   "en": "damping",
+   "hu": "csillapítás"
+  },
+  "short": {
+   "en": "How quickly ringing dies away (ζ). The geophone's shunt resistor sets it (≈ 0.6 with 1339 Ω).",
+   "hu": "Milyen gyorsan cseng le a rezgés (ζ). A geofon sönt ellenállása állítja (kb. 0,6 1339 Ω-mal)."
+  },
+  "lessons": [
+   "e08"
+  ]
+ },
+ "accelerometer": {
+  "term": {
+   "en": "accelerometer",
+   "hu": "gyorsulásmérő"
+  },
+  "short": {
+   "en": "Measures acceleration. Ours: ADXL355, 3-axis MEMS, digital over I²C.",
+   "hu": "Gyorsulást mér. Nálunk: ADXL355, 3 tengelyes MEMS, digitális, I²C-n."
+  },
+  "part": "adxl355",
+  "lessons": [
+   "s03"
+  ]
+ },
+ "mems": {
+  "term": {
+   "en": "MEMS",
+   "hu": "MEMS"
+  },
+  "short": {
+   "en": "Micro-electro-mechanical system: tiny silicon mechanics (springs, masses) on a chip.",
+   "hu": "Mikro-elektromechanikai rendszer: apró szilícium mechanika (rugók, tömegek) egy chipen."
+  },
+  "part": "adxl355",
+  "lessons": [
+   "s03"
+  ]
+ },
+ "load-cell": {
+  "term": {
+   "en": "load cell",
+   "hu": "mérlegcella"
+  },
+  "short": {
+   "en": "A metal beam with strain gauges in a bridge: force in, millivolts out.",
+   "hu": "Nyúlásmérős hídú fémgerenda: erő be, millivolt ki."
+  },
+  "part": "yzc133",
+  "lessons": [
+   "e06"
+  ]
+ },
+ "differential": {
+  "term": {
+   "en": "differential input",
+   "hu": "differenciális bemenet"
+  },
+  "short": {
+   "en": "Measures the difference between two wires (AINxP − AINxN): noise common to both cancels.",
+   "hu": "Két vezeték különbségét méri (AINxP − AINxN): a mindkettőn közös zaj kiesik."
+  },
+  "lessons": [
+   "e14",
+   "e13"
+  ]
+ },
+ "noise": {
+  "term": {
+   "en": "noise",
+   "hu": "zaj"
+  },
+  "short": {
+   "en": "Random or unwanted signal on top of what we measure. Sets the smallest thing we can see.",
+   "hu": "Véletlen vagy nem kívánt jel a mért jel tetején. Ez szabja meg a legkisebb látható változást."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "offset": {
+  "term": {
+   "en": "offset",
+   "hu": "offszet (nullponthiba)"
+  },
+  "short": {
+   "en": "A constant error: the reading when the input should be zero (≈ 250 µV on CH1 earlier).",
+   "hu": "Állandó hiba: amit nulla bemenetnél mutat (korábban kb. 250 µV a CH1-en)."
+  },
+  "lessons": [
+   "e06",
+   "e14"
+  ]
+ },
+ "clipping": {
+  "term": {
+   "en": "clipping (saturation)",
+   "hu": "telítés (levágás)"
+  },
+  "short": {
+   "en": "Input beyond full scale: the reading sticks at the max or min code.",
+   "hu": "A teljes skálán túli bemenet: az érték a maximum vagy minimum kódon ragad."
+  },
+  "long": {
+   "en": "HX711 stuck at 8388607 = 0x7FFFFF; ADS131M02 at −9375 µV at gain 128.",
+   "hu": "A HX711 8388607-en (0x7FFFFF) ragadt; az ADS131M02 −9375 µV-on 128-as erősítésnél."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "ppm": {
+  "term": {
+   "en": "ppm (parts per million)",
+   "hu": "ppm (milliomodrész)"
+  },
+  "abbr": "ppm",
+  "short": {
+   "en": "1 ppm = 0.0001 %. A ±25 ppm crystal is 200× more accurate than ±0.5 %.",
+   "hu": "1 ppm = 0,0001 %. Egy ±25 ppm-es kristály 200-szor pontosabb a ±0,5 %-nál."
+  },
+  "lessons": [
+   "e18"
+  ]
+ },
+ "oscillator": {
+  "term": {
+   "en": "oscillator",
+   "hu": "oszcillátor"
+  },
+  "short": {
+   "en": "A circuit that makes a repeating signal, usually a clock square wave.",
+   "hu": "Ismétlődő jelet, általában órajel négyszöget előállító áramkör."
+  },
+  "part": "osc8m",
+  "lessons": [
+   "e18"
+  ]
+ },
+ "diode": {
+  "term": {
+   "en": "diode",
+   "hu": "dióda"
+  },
+  "short": {
+   "en": "Lets current flow one way only, after about 0.3 V (Schottky) or 0.7 V (silicon).",
+   "hu": "Csak egy irányba enged áramot, kb. 0,3 V (Schottky) vagy 0,7 V (szilícium) felett."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "clamp": {
+  "term": {
+   "en": "clamp",
+   "hu": "határoló (clamp)"
+  },
+  "short": {
+   "en": "Series resistor + diodes to the rails that stop an input going beyond what the chip survives.",
+   "hu": "Soros ellenállás + diódák a tápokra: nem engedik a bemenetet a chip tűrésén túl."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "op-amp": {
+  "term": {
+   "en": "op-amp",
+   "hu": "műveleti erősítő"
+  },
+  "short": {
+   "en": "A high-gain amplifier that, with feedback, makes buffers, amplifiers and filters.",
+   "hu": "Nagy erősítésű erősítő, ami visszacsatolással követőt, erősítőt és szűrőt alkot."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "buffer": {
+  "term": {
+   "en": "buffer (voltage follower)",
+   "hu": "puffer (feszültségkövető)"
+  },
+  "short": {
+   "en": "Gain-1 op-amp stage: copies a voltage but can drive a load. Piezo heads need one.",
+   "hu": "1-es erősítésű műveleti erősítő fokozat: lemásolja a feszültséget, de terhelhető. A piezo fejeknek kell."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "mosfet": {
+  "term": {
+   "en": "MOSFET",
+   "hu": "MOSFET"
+  },
+  "short": {
+   "en": "Voltage-controlled transistor switch: gate voltage turns the drain–source path on or off.",
+   "hu": "Feszültségvezérelt tranzisztoros kapcsoló: a gate feszültsége nyitja vagy zárja a drain–source utat."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "logic-level": {
+  "term": {
+   "en": "logic level",
+   "hu": "logikai szint"
+  },
+  "short": {
+   "en": "The voltages that count as 0 and 1. 3.3 V CMOS: ≤ 0.3·VDD low, ≥ 0.7·VDD high.",
+   "hu": "A 0-nak és 1-nek számító feszültségek. 3,3 V CMOS: ≤ 0,3·VDD alacsony, ≥ 0,7·VDD magas."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "datasheet": {
+  "term": {
+   "en": "datasheet",
+   "hu": "adatlap"
+  },
+  "short": {
+   "en": "The manufacturer's spec: pins, absolute maximums, characteristics, typical circuits.",
+   "hu": "A gyártó specifikációja: lábak, abszolút maximumok, jellemzők, tipikus kapcsolások."
+  },
+  "lessons": [
+   "e19"
+  ]
+ },
+ "absolute-maximum": {
+  "term": {
+   "en": "absolute maximum ratings",
+   "hu": "abszolút határértékek"
+  },
+  "short": {
+   "en": "Limits that destroy the part if exceeded: not operating conditions.",
+   "hu": "Határok, amelyek túllépése tönkreteszi az alkatrészt: nem üzemi feltételek."
+  },
+  "long": {
+   "en": "ADS131M0x inputs: AGND − 1.6 V … AVDD + 0.3 V.",
+   "hu": "ADS131M0x bemenetek: AGND − 1,6 V … AVDD + 0,3 V."
+  },
+  "lessons": [
+   "e19",
+   "e11"
+  ]
+ },
+ "pcb": {
+  "term": {
+   "en": "PCB",
+   "hu": "NYÁK (nyomtatott áramkör)"
+  },
+  "abbr": "PCB",
+  "short": {
+   "en": "Printed circuit board: copper traces on fibreglass. Ours will carry the ADS131M04.",
+   "hu": "Nyomtatott áramköri lap: rézvezetékek üvegszálas lapon. A miénkre az ADS131M04 kerül."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "ground-plane": {
+  "term": {
+   "en": "ground plane",
+   "hu": "földsík"
+  },
+  "short": {
+   "en": "A whole PCB layer of copper at GND: low-impedance return path, less noise.",
+   "hu": "Egy egész NYÁK réteg réz a GND-n: kis impedanciájú visszatérő út, kevesebb zaj."
+  },
+  "lessons": [
+   "e20",
+   "e14"
+  ]
+ },
+ "footprint": {
+  "term": {
+   "en": "footprint",
+   "hu": "footprint (lenyomat)"
+  },
+  "short": {
+   "en": "The copper pad pattern on a PCB that a part is soldered to.",
+   "hu": "A rézpadok mintája a NYÁK-on, amire az alkatrészt forrasztjuk."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "pack": {
+  "term": {
+   "en": "pack",
+   "hu": "pack"
+  },
+  "short": {
+   "en": "A software module that decides what the node detects (footstep-id, fall, appliance).",
+   "hu": "Szoftvermodul, ami eldönti, mit ismer fel a node (footstep-id, fall, appliance)."
+  },
+  "lessons": [
+   "s01",
+   "s08"
+  ]
+ },
+ "sidecar": {
+  "term": {
+   "en": "sidecar",
+   "hu": "sidecar (kísérőfájl)"
+  },
+  "short": {
+   "en": "A JSON file next to each WAV: real sample rate, losses, head descriptor.",
+   "hu": "JSON fájl minden WAV mellett: valódi mintavételi ráta, veszteségek, fejleíró."
+  },
+  "lessons": [
+   "s08"
+  ]
+ },
+ "firmware": {
+  "term": {
+   "en": "firmware",
+   "hu": "firmware"
+  },
+  "short": {
+   "en": "The program on the ESP32 (C, ESP-IDF v6).",
+   "hu": "A program az ESP32-n (C, ESP-IDF v6)."
+  },
+  "lessons": [
+   "s07"
+  ]
+ },
+ "interrupt": {
+  "term": {
+   "en": "interrupt",
+   "hu": "megszakítás"
+  },
+  "short": {
+   "en": "A signal that makes the CPU drop what it's doing and run a short handler (e.g. on DRDY's falling edge).",
+   "hu": "Jel, amire a CPU félbehagyja, amit csinál, és egy rövid kezelőt futtat (pl. a DRDY lefutó élére)."
+  },
+  "lessons": [
+   "s07"
+  ]
+ },
+ "crc": {
+  "term": {
+   "en": "CRC",
+   "hu": "CRC"
+  },
+  "abbr": "CRC",
+  "short": {
+   "en": "A checksum on each data frame; a mismatch means the frame was corrupted and is counted as lost.",
+   "hu": "Ellenőrzőösszeg minden adatkereten; ha nem egyezik, a keret sérült, és elveszettként számoljuk."
+  },
+  "lessons": [
+   "s07"
+  ]
+ },
+ "charge": {
+  "term": {
+   "en": "charge",
+   "hu": "töltés"
+  },
+  "abbr": "Q",
+  "short": {
+   "en": "The 'stuff' that moves in a wire, in coulombs. Current is charge per second.",
+   "hu": "A vezetékben mozgó 'anyag', coulombban. Az áram a másodpercenként átfolyó töltés."
+  },
+  "long": {
+   "en": "1 A = 1 C per second. One electron carries 1.602 × 10⁻¹⁹ C, so even a few mA means more than 10¹⁵ electrons per second.",
+   "hu": "1 A = 1 C másodpercenként. Egy elektron töltése 1,602 × 10⁻¹⁹ C, így már néhány mA is több mint 10¹⁵ elektron másodpercenként."
+  }
+ },
+ "conductor": {
+  "term": {
+   "en": "conductor",
+   "hu": "vezető"
+  },
+  "short": {
+   "en": "A material with free charges that move easily, such as copper.",
+   "hu": "Szabadon mozgó töltésekkel rendelkező anyag, például a réz."
+  },
+  "long": {
+   "en": "Wires, PCB tracks and breadboard strips are conductors. Their resistance is small enough that we treat it as zero.",
+   "hu": "A vezetékek, a PCB-sávok és a próbapanel sávjai vezetők. Az ellenállásuk annyira kicsi, hogy nullának vesszük."
+  }
+ },
+ "node": {
+  "term": {
+   "en": "node",
+   "hu": "csomópont"
+  },
+  "short": {
+   "en": "All points joined by wire: one voltage, one place where currents meet.",
+   "hu": "Vezetékkel összekötött pontok összessége: egy feszültség, ahol az áramok találkoznak."
+  },
+  "long": {
+   "en": "On a breadboard the five holes of one short strip are one node. KCL says the currents into a node add to zero.",
+   "hu": "A próbapanelen egy rövid sáv öt lyuka egy csomópont. A KCL szerint a csomópontba befolyó áramok összege nulla."
+  }
+ },
+ "loop": {
+  "term": {
+   "en": "loop",
+   "hu": "hurok"
+  },
+  "short": {
+   "en": "A closed path through a circuit. Voltages around it add to zero (KVL).",
+   "hu": "Az áramkör egy zárt útja. A rajta lévő feszültségek összege nulla (KVL)."
+  },
+  "long": {
+   "en": "Our series rig is one loop: supply → 690 Ω → bridge → GND. Current needs a loop; break it anywhere and the flow stops.",
+   "hu": "A soros pultunk egy hurok: táp → 690 Ω → híd → GND. Az áramnak hurok kell; bárhol megszakítod, megáll az áramlás."
+  }
+ },
+ "kcl": {
+  "term": {
+   "en": "Kirchhoff's current law",
+   "hu": "Kirchhoff áramtörvénye"
+  },
+  "abbr": "KCL",
+  "short": {
+   "en": "Currents into a node add to zero: what comes in goes out.",
+   "hu": "A csomópontba befolyó áramok összege nulla: ami bemegy, kijön."
+  },
+  "long": {
+   "en": "Charge can't pile up in a node. At the boss's divider midpoint: 6.0 mA in = 4.2 mA (470 Ω) + 1.8 mA (cell), calculated.",
+   "hu": "A töltés nem halmozódhat fel egy csomópontban. A főnök osztójának középpontján: 6,0 mA be = 4,2 mA (470 Ω) + 1,8 mA (cella), számolt."
+  }
+ },
+ "kvl": {
+  "term": {
+   "en": "Kirchhoff's voltage law",
+   "hu": "Kirchhoff feszültségtörvénye"
+  },
+  "abbr": "KVL",
+  "short": {
+   "en": "Around any loop the voltage rises and drops add to zero.",
+   "hu": "Bármelyik hurok körül a feszültség-emelkedések és -esések összege nulla."
+  },
+  "long": {
+   "en": "The drops across the parts in a loop add up to the supply. In the 680 kΩ fault: 3.295 V + 5.3 mV = 3.3 V.",
+   "hu": "A hurok alkatrészein eső feszültségek kiadják a tápot. A 680 kΩ-os hibánál: 3,295 V + 5,3 mV = 3,3 V."
+  }
+ },
+ "loading": {
+  "term": {
+   "en": "loading",
+   "hu": "terhelés"
+  },
+  "short": {
+   "en": "A load pulls a source's voltage down because it draws current through the source's resistance.",
+   "hu": "A terhelés lehúzza a forrás feszültségét, mert áramot vesz fel a forrás ellenállásán keresztül."
+  },
+  "long": {
+   "en": "The boss's divider is 2.25 V unloaded and about 1.98 V with the cell on the midpoint (calculated). A load much larger than the divider resistors barely matters.",
+   "hu": "A főnök osztója terheletlenül 2,25 V, a cellával a középponton kb. 1,98 V (számolt). Az osztó ellenállásainál sokkal nagyobb terhelés alig számít."
+  }
+ },
+ "source-resistance": {
+  "term": {
+   "en": "source resistance",
+   "hu": "forrásellenállás"
+  },
+  "short": {
+   "en": "The resistance 'behind' a voltage source. Small means stiff: it holds its voltage under load.",
+   "hu": "A feszültségforrás 'mögötti' ellenállás. A kicsi merev: terhelés alatt is tartja a feszültségét."
+  },
+  "long": {
+   "en": "Our series feed: about 690 Ω. The boss's divider seen from its midpoint: 220 Ω ∥ 470 Ω ≈ 150 Ω (calculated).",
+   "hu": "A mi soros betáplálásunk: kb. 690 Ω. A főnök osztója a középpontból nézve: 220 Ω ∥ 470 Ω ≈ 150 Ω (számolt)."
+  }
+ },
+ "continuity": {
+  "term": {
+   "en": "continuity test",
+   "hu": "szakadásvizsgálat"
+  },
+  "short": {
+   "en": "Meter mode that beeps when there is a low-resistance path between the probes. Power off only.",
+   "hu": "Műszerállás, ami sípol, ha kis ellenállású út van a mérőzsinórok között. Csak kikapcsolt tápnál."
+  },
+  "long": {
+   "en": "The beep threshold is meter-specific (check the manual). Good for finding shorts and open joints before power-up.",
+   "hu": "A sípolási küszöb műszerfüggő (nézd a kézikönyvet). Jó zárlatok és szakadt kötések keresésére bekapcsolás előtt."
+  }
+ },
+ "shunt": {
+  "term": {
+   "en": "shunt",
+   "hu": "söntellenállás"
+  },
+  "short": {
+   "en": "A tiny resistor the ammeter puts in the current's way to measure it.",
+   "hu": "Apró ellenállás, amit az árammérő tesz az áram útjába a méréshez."
+  },
+  "long": {
+   "en": "That is why the mA jack is a near-short across a supply. Its real value is in the meter's manual.",
+   "hu": "Ezért olyan az mA aljzat, mint egy majdnem-zárlat a táp két pontja között. A valódi értéke a műszer kézikönyvében van."
+  }
+ },
+ "input-impedance": {
+  "term": {
+   "en": "input resistance (impedance)",
+   "hu": "bemeneti ellenállás (impedancia)"
+  },
+  "short": {
+   "en": "How much a meter or an ADC input loads what it measures. Bigger is gentler.",
+   "hu": "Mennyire terheli a műszer vagy az ADC bemenete azt, amit mér. Minél nagyobb, annál kíméletesebb."
+  },
+  "long": {
+   "en": "Many voltmeters have around 10 MΩ (check yours). That is negligible on 1 kΩ circuits and a 5 % error on a 1 MΩ/1 MΩ divider.",
+   "hu": "Sok voltmérő bemeneti ellenállása kb. 10 MΩ (nézd a tiédet). 1 kΩ-os áramkörön elhanyagolható, egy 1 MΩ/1 MΩ-os osztón 5 %-os hiba."
+  }
+ },
+ "strain": {
+  "term": {
+   "en": "strain",
+   "hu": "fajlagos nyúlás"
+  },
+  "abbr": "ε",
+  "short": {
+   "en": "How much a material stretches relative to its length (ΔL/L), often in microstrain.",
+   "hu": "Mennyit nyúlik egy anyag a hosszához képest (ΔL/L), gyakran mikrostrainben."
+  },
+  "long": {
+   "en": "A strain gauge turns strain into a resistance change: ΔR/R = GF · ε.",
+   "hu": "A nyúlásmérő bélyeg a fajlagos nyúlást ellenállásváltozássá alakítja: ΔR/R = GF · ε."
+  }
+ },
+ "gauge-factor": {
+  "term": {
+   "en": "gauge factor",
+   "hu": "bélyegtényező"
+  },
+  "abbr": "GF",
+  "short": {
+   "en": "Fractional resistance change per unit strain. About 2 for metal foil gauges (textbook).",
+   "hu": "Az egységnyi nyúlásra jutó relatív ellenállásváltozás. Fémfólia bélyegeknél kb. 2 (tankönyvi érték)."
+  },
+  "long": {
+   "en": "The YZC-133's value is not in our listing: check the datasheet before using the number.",
+   "hu": "A YZC-133 értéke nincs a leírásunkban: használat előtt nézd meg az adatlapon."
+  }
+ },
+ "ratiometric": {
+  "term": {
+   "en": "ratiometric",
+   "hu": "arányos (ratiometrikus)"
+  },
+  "short": {
+   "en": "The output scales with the supply, so the result is a ratio and supply drift cancels if the reference scales too.",
+   "hu": "A kimenet a tápfeszültséggel arányos, így az eredmény arány, és a táp sodródása kiesik, ha a referencia is vele együtt változik."
+  },
+  "long": {
+   "en": "The load cell is rated in mV per volt. The HX711 powers the bridge and measures ratiometrically; the Click uses a fixed 1.2 V reference, so supply drift shows up.",
+   "hu": "A mérlegcellát mV/V-ban adják meg. A HX711 maga táplálja a hidat és arányosan mér; a Click fix 1,2 V-os referenciát használ, így a táp sodródása megjelenik."
+  }
+ },
+ "zero-balance": {
+  "term": {
+   "en": "zero balance",
+   "hu": "nullpont-eltérés"
+  },
+  "short": {
+   "en": "The bridge output at zero load, in mV/V. The YZC-133 listing says ±0.1 mV/V.",
+   "hu": "A híd kimenete terheletlenül, mV/V-ban. A YZC-133 leírása szerint ±0,1 mV/V."
+  },
+  "long": {
+   "en": "At about 2 V excitation that is up to ±0.2 mV, about ±0.5 kg of apparent load. We tare in software.",
+   "hu": "Kb. 2 V gerjesztésnél ez legfeljebb ±0,2 mV, kb. ±0,5 kg látszólagos terhelés. Szoftveresen nullázunk."
+  }
+ },
+ "full-bridge": {
+  "term": {
+   "en": "full bridge",
+   "hu": "teljes híd"
+  },
+  "short": {
+   "en": "A bridge with four active gauges: Vout = Vex · ΔR/R.",
+   "hu": "Négy aktív bélyeges híd: Vki = Vgerj · ΔR/R."
+  },
+  "long": {
+   "en": "Two gauges stretch and two compress; temperature and common effects cancel, bending adds. A single active gauge (quarter bridge) gives about a quarter of the output.",
+   "hu": "Két bélyeg nyúlik, kettő zsugorodik; a hőmérséklet és a közös hatások kiesnek, a hajlítás összeadódik. Egyetlen aktív bélyeg (negyedhíd) kb. negyed kimenetet ad."
+  }
+ },
+ "farad": {
+  "term": {
+   "en": "farad",
+   "hu": "farad"
+  },
+  "abbr": "F",
+  "short": {
+   "en": "The unit of capacitance. 1 F stores 1 coulomb per volt. We use nF and µF.",
+   "hu": "A kapacitás mértékegysége. 1 F voltonként 1 coulombot tárol. Nálunk nF és µF a jellemző."
+  },
+  "long": {
+   "en": "1 F is huge. Our parts: 100 nF = 0.0000001 F, 220 nF, 10 µF.",
+   "hu": "Az 1 F óriási. A mi alkatrészeink: 100 nF = 0,0000001 F, 220 nF, 10 µF."
+  },
+  "lessons": [
+   "e07"
+  ]
+ },
+ "ceramic-cap": {
+  "term": {
+   "en": "ceramic capacitor",
+   "hu": "kerámia kondenzátor"
+  },
+  "short": {
+   "en": "Small, not polarised, fast. The 100 nF decoupling part (marked '104').",
+   "hu": "Kicsi, nem polarizált, gyors. A 100 nF-os hidegítő alkatrész ('104' jelölés)."
+  },
+  "long": {
+   "en": "Fits next to a chip's supply pin and reacts quickly. Its real capacitance can drop with a DC voltage on it (DC bias) and with temperature; check the dielectric (X7R, C0G …) and the voltage rating.",
+   "hu": "A chip táplába mellé fér, és gyorsan reagál. A tényleges kapacitása csökkenhet, ha egyenfeszültség van rajta (DC bias), és a hőmérséklettel is változik; nézd meg a dielektrikumot (X7R, C0G …) és a feszültségtűrést."
+  },
+  "lessons": [
+   "e07"
+  ]
+ },
+ "electrolytic": {
+  "term": {
+   "en": "electrolytic capacitor",
+   "hu": "elektrolit kondenzátor"
+  },
+  "short": {
+   "en": "Big capacitance in a can, but polarised: the stripe marks the − leg.",
+   "hu": "Nagy kapacitás egy hengerben, de polarizált: a csík a − lábat jelöli."
+  },
+  "long": {
+   "en": "Wrong way round or above its voltage rating, it heats up and can vent or burst. Our bench 10 µF is one. Use it as a bulk store; use ceramic next to the chip.",
+   "hu": "Fordítva bekötve vagy a névleges feszültsége fölött felmelegszik, és kidurranhat. A pult 10 µF-ja ilyen. Puffernek használd; a chip mellé kerámia kell."
+  },
+  "lessons": [
+   "e07"
+  ]
+ },
+ "faraday": {
+  "term": {
+   "en": "Faraday's law",
+   "hu": "Faraday törvénye"
+  },
+  "short": {
+   "en": "A changing magnetic flux through a coil induces a voltage: V = −dΦ/dt.",
+   "hu": "A tekercsen átmenő mágneses fluxus változása feszültséget indukál: V = −dΦ/dt."
+  },
+  "long": {
+   "en": "A magnet moving relative to a coil makes a voltage proportional to how fast it moves. That is how the geophone turns velocity into volts.",
+   "hu": "A tekercshez képest mozgó mágnes a mozgás sebességével arányos feszültséget kelt. Így alakítja a geofon a sebességet feszültséggé."
+  },
+  "lessons": [
+   "e08"
+  ]
+ },
+ "inductance": {
+  "term": {
+   "en": "inductance",
+   "hu": "induktivitás"
+  },
+  "abbr": "L",
+  "short": {
+   "en": "A coil's resistance to a change in current: V = L · dI/dt. Unit: henry (H).",
+   "hu": "A tekercs ellenállása az áram változásával szemben: V = L · dI/dt. Mértékegysége a henry (H)."
+  },
+  "long": {
+   "en": "Any coil has it, and a straight wire has a little. The SM-24's value is not in our notes: check the datasheet.",
+   "hu": "Minden tekercsnek van, és egy egyenes vezetéknek is van egy kevés. Az SM-24 értéke nincs a jegyzeteinkben: nézd meg az adatlapon."
+  },
+  "lessons": [
+   "e08"
+  ]
+ },
+ "sine-wave": {
+  "term": {
+   "en": "sine wave",
+   "hu": "szinuszjel"
+  },
+  "short": {
+   "en": "The pure oscillation x(t) = A · sin(2πf·t + φ). Every other signal is a sum of these.",
+   "hu": "A tiszta rezgés: x(t) = A · sin(2πf·t + φ). Minden más jel ilyenek összege."
+  },
+  "long": {
+   "en": "Three numbers describe it: amplitude A, frequency f, phase φ.",
+   "hu": "Három szám írja le: amplitúdó A, frekvencia f, fázis φ."
+  },
+  "lessons": [
+   "e09"
+  ]
+ },
+ "period": {
+  "term": {
+   "en": "period",
+   "hu": "periódusidő"
+  },
+  "abbr": "T",
+  "short": {
+   "en": "Time for one full cycle: T = 1 / f.",
+   "hu": "Egy teljes ciklus ideje: T = 1 / f."
+  },
+  "long": {
+   "en": "400 Hz → 2.5 ms. At 2 kSPS that is 5 samples per cycle.",
+   "hu": "400 Hz → 2,5 ms. 2 kSPS-nél ez ciklusonként 5 minta."
+  },
+  "lessons": [
+   "e09"
+  ]
+ },
+ "rms": {
+  "term": {
+   "en": "RMS",
+   "hu": "effektív érték"
+  },
+  "abbr": "RMS",
+  "short": {
+   "en": "The 'effective' size of a signal: the DC value that would heat a resistor equally. Sine: A / √2.",
+   "hu": "A jel 'hatásos' nagysága: az az egyenfeszültség, ami ugyanannyira melegítene egy ellenállást. Szinusznál: A / √2."
+  },
+  "long": {
+   "en": "A 10 mV peak sine is 7.07 mV RMS. Noise specs are usually quoted in RMS.",
+   "hu": "Egy 10 mV csúcsértékű szinusz 7,07 mV effektív. A zajt általában effektív értékben adják meg."
+  },
+  "lessons": [
+   "e09"
+  ]
+ },
+ "phase": {
+  "term": {
+   "en": "phase",
+   "hu": "fázis"
+  },
+  "abbr": "φ",
+  "short": {
+   "en": "How far along its cycle a sine is at t = 0, in degrees or radians. A delay shows up as phase.",
+   "hu": "Hol tart a szinusz a ciklusában t = 0-kor, fokban vagy radiánban. A késleltetés fázisként jelenik meg."
+  },
+  "long": {
+   "en": "Filters shift phase as well as amplitude. A linear-phase FIR delays all frequencies by the same time.",
+   "hu": "A szűrők az amplitúdón kívül a fázist is eltolják. A lineáris fázisú FIR minden frekvenciát ugyanannyi idővel késleltet."
+  },
+  "lessons": [
+   "e09",
+   "e10"
+  ]
+ },
+ "spectrum": {
+  "term": {
+   "en": "spectrum",
+   "hu": "spektrum"
+  },
+  "short": {
+   "en": "A signal drawn as 'how much of each frequency is in it' instead of voltage over time.",
+   "hu": "A jel úgy ábrázolva, hogy 'melyik frekvenciából mennyi van benne', nem feszültség az idő függvényében."
+  },
+  "long": {
+   "en": "Computed with a Fourier transform (FFT).",
+   "hu": "Fourier-transzformációval (FFT) számoljuk."
+  },
+  "lessons": [
+   "e09"
+  ]
+ },
+ "bode": {
+  "term": {
+   "en": "Bode plot",
+   "hu": "Bode-diagram"
+  },
+  "short": {
+   "en": "Gain in dB against frequency on a log axis. It shows what a filter does at every frequency.",
+   "hu": "Az erősítés dB-ben a frekvencia függvényében, logaritmikus tengelyen. Megmutatja, mit csinál a szűrő minden frekvencián."
+  },
+  "long": {
+   "en": "The RC diagram on the site is one: flat, a knee at fc, then a straight slope down.",
+   "hu": "Az oldal RC diagramja ilyen: lapos, fc-nél törés, aztán egyenes lejtő lefelé."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "roll-off": {
+  "term": {
+   "en": "roll-off",
+   "hu": "meredekség (roll-off)"
+  },
+  "short": {
+   "en": "How fast a filter cuts above its cut-off. One RC: −20 dB per decade (≈ −6 dB per octave).",
+   "hu": "Milyen gyorsan vág a szűrő a határfrekvencia fölött. Egy RC: −20 dB tízszerezésenként (≈ −6 dB oktávonként)."
+  },
+  "long": {
+   "en": "Higher order means steeper. Our 63-tap FIR is far steeper than any single RC.",
+   "hu": "Magasabb rend = meredekebb. A mi 63 együtthatós FIR-ünk sokkal meredekebb bármelyik egyetlen RC-nél."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "lowpass": {
+  "term": {
+   "en": "low-pass filter",
+   "hu": "aluláteresztő szűrő"
+  },
+  "short": {
+   "en": "Passes low frequencies, cuts high ones.",
+   "hu": "Átengedi az alacsony frekvenciákat, a magasakat vágja."
+  },
+  "long": {
+   "en": "RC low-pass in analog; FIR low-pass before decimation in firmware.",
+   "hu": "Analóg oldalon RC, a firmware-ben a decimálás előtti FIR."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "highpass": {
+  "term": {
+   "en": "high-pass filter",
+   "hu": "felüláteresztő szűrő"
+  },
+  "short": {
+   "en": "Passes high frequencies, cuts low ones (and DC). Swap R and C in an RC low-pass.",
+   "hu": "Átengedi a magas frekvenciákat, az alacsonyakat (és az egyenfeszültséget) vágja. Az RC aluláteresztőben R és C cseréjével kapod."
+  },
+  "long": {
+   "en": "Same fc = 1 / (2πRC).",
+   "hu": "Ugyanaz az fc = 1 / (2πRC)."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "anti-aliasing": {
+  "term": {
+   "en": "anti-aliasing filter",
+   "hu": "anti-aliasing szűrő"
+  },
+  "short": {
+   "en": "A low-pass before sampling or decimation so nothing above Nyquist can fold into the band.",
+   "hu": "Mintavétel vagy decimálás előtti aluláteresztő, hogy semmi ne tudjon a Nyquist fölül a sávba átlapolódni."
+  },
+  "long": {
+   "en": "In our chain: the ADC's own sinc filter, then the 63-tap FIR before ÷2.",
+   "hu": "A mi láncunkban: az ADC saját sinc szűrője, majd a 63 együtthatós FIR a ÷2 előtt."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "passband": {
+  "term": {
+   "en": "pass band / stop band",
+   "hu": "áteresztő sáv / záró sáv"
+  },
+  "short": {
+   "en": "Frequencies a filter keeps (pass band) and frequencies it must remove (stop band).",
+   "hu": "A szűrő által megtartott (áteresztő sáv) és eltávolítandó (záró sáv) frekvenciák."
+  },
+  "long": {
+   "en": "Our FIR: pass 0–400 Hz, stop 600–1000 Hz. The gap between is the transition band.",
+   "hu": "A mi FIR-ünk: áteresztő 0–400 Hz, záró 600–1000 Hz. A kettő közti rész az átmeneti sáv."
+  },
+  "lessons": [
+   "e10"
+  ]
+ },
+ "led": {
+  "term": {
+   "en": "LED",
+   "hu": "LED"
+  },
+  "short": {
+   "en": "A diode that glows. Needs a series resistor: R = (Vsupply − Vf) / I.",
+   "hu": "Egy dióda, ami világít. Soros ellenállás kell hozzá: R = (Vtáp − Vf) / I."
+  },
+  "long": {
+   "en": "Its forward voltage depends on the colour (red is lowest, blue and white highest: check the part). It has no built-in current limit.",
+   "hu": "A nyitófeszültsége a színtől függ (a piros a legkisebb, a kék és a fehér a legnagyobb: nézd meg az alkatrészt). Nincs beépített áramkorlátja."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "forward-voltage": {
+  "term": {
+   "en": "forward voltage",
+   "hu": "nyitófeszültség"
+  },
+  "abbr": "Vf",
+  "short": {
+   "en": "The voltage a diode drops while conducting: ≈ 0.3 V Schottky, ≈ 0.7 V silicon, higher for LEDs.",
+   "hu": "A vezető dióda feszültségesése: kb. 0,3 V Schottky, kb. 0,7 V szilícium, LED-nél több."
+  },
+  "long": {
+   "en": "It rises with current. A '0.3 V' Schottky measured at a small current can drop clearly more at tens of mA.",
+   "hu": "Az árammal nő. Egy kis áramnál '0,3 V-os' Schottky tíz-húsz mA-nél érezhetően többet esik."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "schottky": {
+  "term": {
+   "en": "Schottky diode",
+   "hu": "Schottky-dióda"
+  },
+  "short": {
+   "en": "A diode with a low forward voltage (≈ 0.3 V) and fast switching. Used for clamping.",
+   "hu": "Kis nyitófeszültségű (kb. 0,3 V), gyors dióda. Határolásra használjuk."
+  },
+  "long": {
+   "en": "Low Vf means the clamp starts earlier, which keeps a 3.3 V input under AVDD + 0.3 V. Its leakage is higher than silicon's: check the datasheet.",
+   "hu": "A kis Vf miatt a határolás korábban indul, ez tartja a 3,3 V-os bemenetet AVDD + 0,3 V alatt. A szivárgása nagyobb a szilíciuménál: nézd meg az adatlapon."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "anode-cathode": {
+  "term": {
+   "en": "anode / cathode",
+   "hu": "anód / katód"
+  },
+  "short": {
+   "en": "A diode's two legs. Current flows anode → cathode. The stripe marks the cathode.",
+   "hu": "A dióda két lába. Az áram anód → katód irányba folyik. A csík a katódot jelöli."
+  },
+  "long": {
+   "en": "On an LED the longer leg is usually the anode.",
+   "hu": "LED-nél a hosszabb láb általában az anód."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "piezo": {
+  "term": {
+   "en": "piezo element",
+   "hu": "piezo elem"
+  },
+  "short": {
+   "en": "A ceramic disc that makes a voltage when squeezed or bent. High impedance, big spikes.",
+   "hu": "Kerámia korong, ami nyomásra vagy hajlításra feszültséget ad. Nagy impedanciájú, nagy tüskéket ad."
+  },
+  "long": {
+   "en": "A planned sensor head. A hard hit can give far more voltage than the ADC survives, so it needs a clamp and a buffer.",
+   "hu": "Tervezett szenzorfej. Egy erős ütés az ADC által túlélhetőnél jóval nagyobb feszültséget adhat, ezért határoló és puffer kell hozzá."
+  },
+  "lessons": [
+   "e11"
+  ]
+ },
+ "bjt": {
+  "term": {
+   "en": "BJT (bipolar junction transistor)",
+   "hu": "BJT (bipoláris tranzisztor)"
+  },
+  "abbr": "BJT",
+  "short": {
+   "en": "Transistor where a small base current controls a big collector current. As a switch it needs a base resistor.",
+   "hu": "Tranzisztor, ahol a kis bázisáram vezérli a nagy kollektoráramot. Kapcsolóként bázisellenállás kell hozzá."
+  },
+  "long": {
+   "en": "20 mA load from a 3.3 V GPIO with forced gain 10: base resistor 1.3 kΩ.",
+   "hu": "20 mA-es terhelés 3,3 V-os GPIO-ról 10-es kényszerített erősítéssel: 1,3 kΩ bázisellenállás."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "push-pull": {
+  "term": {
+   "en": "push-pull output",
+   "hu": "push-pull kimenet"
+  },
+  "short": {
+   "en": "An output with a switch to the supply and one to ground: it drives both high and low firmly.",
+   "hu": "Kimenet egy kapcsolóval a táp és eggyel a föld felé: magasra és alacsonyra is határozottan hajt."
+  },
+  "long": {
+   "en": "Normal GPIO output. Two push-pull outputs on one wire fight each other.",
+   "hu": "A szokásos GPIO-kimenet. Két push-pull kimenet egy vezetéken egymás ellen dolgozik."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "vih-vil": {
+  "term": {
+   "en": "V_IH / V_IL (input thresholds)",
+   "hu": "V_IH / V_IL (bemeneti küszöbök)"
+  },
+  "abbr": "V_IH/V_IL",
+  "short": {
+   "en": "The lowest voltage read as high and the highest voltage read as low. Between them the reading is undefined.",
+   "hu": "A legkisebb feszültség, amit magasnak olvas, és a legnagyobb, amit alacsonynak. A kettő között az olvasat meghatározatlan."
+  },
+  "long": {
+   "en": "Rule of thumb for 3.3 V CMOS: 0.7·VDD ≈ 2.3 V and 0.3·VDD ≈ 1.0 V. Exact values: the chip's datasheet, DC characteristics.",
+   "hu": "Ökölszabály 3,3 V-os CMOS-hoz: 0,7·VDD ≈ 2,3 V és 0,3·VDD ≈ 1,0 V. Pontos értékek: a chip adatlapja, DC jellemzők."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "rds-on": {
+  "term": {
+   "en": "R_DS(on)",
+   "hu": "R_DS(on)"
+  },
+  "abbr": "R_DS(on)",
+  "short": {
+   "en": "A MOSFET's drain–source resistance when fully on. It depends on the gate voltage: read it at 3.3 V.",
+   "hu": "A MOSFET drain–source ellenállása teljes nyitáskor. A gate-feszültségtől függ: 3,3 V-os soron olvasd."
+  },
+  "long": {
+   "en": "Heat in the switch is P = I² · R_DS(on).",
+   "hu": "A kapcsolóban a hő P = I² · R_DS(on)."
+  },
+  "lessons": [
+   "e12"
+  ]
+ },
+ "virtual-short": {
+  "term": {
+   "en": "virtual short",
+   "hu": "virtuális rövidzár"
+  },
+  "short": {
+   "en": "With negative feedback the op-amp's two inputs sit at the same voltage, as if shorted, yet no current flows between them.",
+   "hu": "Negatív visszacsatolással a műveleti erősítő két bemenete azonos feszültségen van, mintha rövidre lennének zárva, de nem folyik köztük áram."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "non-inverting": {
+  "term": {
+   "en": "non-inverting amplifier",
+   "hu": "neminvertáló erősítő"
+  },
+  "short": {
+   "en": "Signal into the + input, gain 1 + Rf/Rg, same sign. Very high input resistance.",
+   "hu": "A jel a + bemenetre jön, erősítés 1 + Rf/Rg, azonos előjel. Nagyon nagy bemeneti ellenállás."
+  },
+  "long": {
+   "en": "Rf = 47 kΩ, Rg = 1 kΩ → gain 48.",
+   "hu": "Rf = 47 kΩ, Rg = 1 kΩ → 48-as erősítés."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "inverting": {
+  "term": {
+   "en": "inverting amplifier",
+   "hu": "invertáló erősítő"
+  },
+  "short": {
+   "en": "Signal through Rin into the − input, gain −Rf/Rin. The − input is a virtual ground.",
+   "hu": "A jel Rin-en át a − bemenetre jön, erősítés −Rf/Rin. A − bemenet virtuális föld."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "instrumentation-amp": {
+  "term": {
+   "en": "instrumentation amplifier",
+   "hu": "műszererősítő"
+  },
+  "short": {
+   "en": "Three op-amps: a buffer on each input plus a differential stage. High input resistance, good CMRR, gain set by one resistor.",
+   "hu": "Három műveleti erősítő: mindkét bemeneten puffer, utána egy differenciális fokozat. Nagy bemeneti ellenállás, jó CMRR, az erősítést egy ellenállás állítja."
+  },
+  "long": {
+   "en": "The ADS131M0x PGA does this job inside the chip for our bridge and geophone.",
+   "hu": "Az ADS131M0x PGA-ja a chipben elvégzi ezt a munkát a hidunknál és a geofonunknál."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "rail-to-rail": {
+  "term": {
+   "en": "rail-to-rail",
+   "hu": "rail-to-rail"
+  },
+  "short": {
+   "en": "An op-amp whose output (and sometimes input) can swing close to both supply voltages. Needed on a 3.3 V supply.",
+   "hu": "Műveleti erősítő, aminek a kimenete (néha a bemenete is) közel mehet mindkét tápfeszültséghez. 3,3 V-os tápnál kell."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "input-bias": {
+  "term": {
+   "en": "input bias current",
+   "hu": "bemeneti előfeszítő áram"
+  },
+  "short": {
+   "en": "The small current that flows into a real op-amp input. Across a high source resistance it makes an offset voltage.",
+   "hu": "A valódi műveleti erősítő bemenetén befolyó kis áram. Nagy forrásellenálláson eltolásfeszültséget okoz."
+  },
+  "long": {
+   "en": "Example: 1 nA × 1 MΩ = 1 mV. Piezo buffers need FET inputs.",
+   "hu": "Példa: 1 nA × 1 MΩ = 1 mV. A piezo pufferekhez FET-bemenet kell."
+  },
+  "lessons": [
+   "e13"
+  ]
+ },
+ "common-mode": {
+  "term": {
+   "en": "common-mode signal",
+   "hu": "közös módusú jel"
+  },
+  "short": {
+   "en": "The part that is the same on both wires of a pair. A differential input ignores it, up to its CMRR.",
+   "hu": "Az a rész, ami egy pár mindkét vezetékén azonos. A differenciális bemenet figyelmen kívül hagyja, a CMRR mértékéig."
+  },
+  "lessons": [
+   "e13",
+   "e14"
+  ]
+ },
+ "cmrr": {
+  "term": {
+   "en": "CMRR (common-mode rejection ratio)",
+   "hu": "CMRR (közös módusú elnyomási arány)"
+  },
+  "abbr": "CMRR",
+  "short": {
+   "en": "How many dB the common-mode part is suppressed relative to the differential signal. 80 dB = ×10 000.",
+   "hu": "Hány dB-lel nyomja el a közös módusú részt a differenciális jelhez képest. 80 dB = ×10 000."
+  },
+  "long": {
+   "en": "The ADS131M0x value is in its datasheet.",
+   "hu": "Az ADS131M0x értéke az adatlapjában van."
+  },
+  "lessons": [
+   "e13",
+   "e14"
+  ]
+ },
+ "thermal-noise": {
+  "term": {
+   "en": "thermal noise (Johnson noise)",
+   "hu": "termikus zaj (Johnson-zaj)"
+  },
+  "short": {
+   "en": "Random voltage across any resistance, from the motion of warm charge carriers: v = √(4kTRB).",
+   "hu": "Véletlen feszültség minden ellenálláson a meleg töltéshordozók mozgásából: v = √(4kTRB)."
+  },
+  "long": {
+   "en": "1000 Ω, 400 Hz, 300 K: about 81 nV rms (calculated).",
+   "hu": "1000 Ω, 400 Hz, 300 K: kb. 81 nV rms (számolt)."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "quantization-noise": {
+  "term": {
+   "en": "quantization noise",
+   "hu": "kvantálási zaj"
+  },
+  "short": {
+   "en": "The rounding error of an ADC: about LSB/√12 rms for an ideal one.",
+   "hu": "Az ADC kerekítési hibája: ideális esetben kb. LSB/√12 rms."
+  },
+  "long": {
+   "en": "At gain 128 on the ADS131M02: about 0.3 nV, far below the real noise.",
+   "hu": "Az ADS131M02-n 128-as erősítésnél: kb. 0,3 nV, jóval a valódi zaj alatt."
+  },
+  "lessons": [
+   "e14",
+   "e15"
+  ]
+ },
+ "flicker-noise": {
+  "term": {
+   "en": "1/f noise (flicker noise)",
+   "hu": "1/f zaj (flicker zaj)"
+  },
+  "short": {
+   "en": "Noise that grows toward low frequencies. Matters for slow DC drift more than for vibration above a few Hz.",
+   "hu": "Az alacsony frekvencia felé növekvő zaj. A lassú egyenfeszültségű sodródásnál számít többet, mint néhány Hz fölötti rezgésnél."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "interference": {
+  "term": {
+   "en": "interference",
+   "hu": "interferencia (zavar)"
+  },
+  "short": {
+   "en": "Unwanted signal coupled in from outside: mains hum, switching supplies, radio, knocks on a cable.",
+   "hu": "Kívülről becsatolódó nem kívánt jel: hálózati brumm, kapcsolóüzemű táp, rádiójel, kábelre ütés."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "ground-loop": {
+  "term": {
+   "en": "ground loop",
+   "hu": "földhurok"
+  },
+  "short": {
+   "en": "Two ground paths between the same points form a loop that picks up fields; current in the ground wire makes unwanted voltage.",
+   "hu": "Két földút ugyanazon pontok között hurkot alkot, ami teret fog be; a földvezetékben folyó áram nem kívánt feszültséget okoz."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "star-ground": {
+  "term": {
+   "en": "star ground",
+   "hu": "csillagpontos föld"
+  },
+  "short": {
+   "en": "All ground returns meet at a single point, so no loop forms.",
+   "hu": "Minden földvisszavezetés egyetlen pontban találkozik, így nem alakul ki hurok."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "agnd-dgnd": {
+  "term": {
+   "en": "AGND / DGND",
+   "hu": "AGND / DGND"
+  },
+  "abbr": "AGND/DGND",
+  "short": {
+   "en": "Analog and digital ground. Kept apart and joined at one point so digital switching currents stay out of the analog reference.",
+   "hu": "Analóg és digitális föld. Külön vezetik, és egy pontban kötik össze, hogy a digitális kapcsolási áramok ne kerüljenek az analóg referenciába."
+  },
+  "long": {
+   "en": "How to do it on our own PCB is not decided yet: follow the ADS131M04 datasheet's layout guidance.",
+   "hu": "A saját NYÁK-on még nem döntöttük el: kövesd az ADS131M04 adatlap kialakítási útmutatóját."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "twisted-pair": {
+  "term": {
+   "en": "twisted pair",
+   "hu": "csavart érpár"
+  },
+  "short": {
+   "en": "Two wires twisted together so both pick up the same interference, which a differential input cancels.",
+   "hu": "Két összecsavart vezeték, amelyek ugyanazt a zavart fogják fel, amit a differenciális bemenet kiejt."
+  },
+  "long": {
+   "en": "Cat5e has four pairs: pins 1–2, 3–6, 4–5, 7–8. Our head port: analog ± on 1–2.",
+   "hu": "A Cat5e-ben négy pár van: 1–2, 3–6, 4–5, 7–8. A fejportunkon az analóg ± az 1–2-n."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "shield": {
+  "term": {
+   "en": "shield",
+   "hu": "árnyékolás"
+  },
+  "short": {
+   "en": "A conductive layer around a cable that blocks electric fields, usually grounded at one end.",
+   "hu": "A kábel körüli vezető réteg, ami az elektromos teret kizárja, általában az egyik végén földelve."
+  },
+  "lessons": [
+   "e14"
+  ]
+ },
+ "anti-alias": {
+  "term": {
+   "en": "anti-alias filter",
+   "hu": "átlapolódás-gátló szűrő"
+  },
+  "short": {
+   "en": "A low-pass filter before sampling that removes frequencies above Nyquist, which would otherwise fold into the band.",
+   "hu": "Mintavétel előtti aluláteresztő szűrő, ami a Nyquist fölötti frekvenciákat eltávolítja, mert azok különben a sávba hajolnának."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "enob": {
+  "term": {
+   "en": "ENOB (effective number of bits)",
+   "hu": "ENOB (effektív bitszám)"
+  },
+  "abbr": "ENOB",
+  "short": {
+   "en": "How many of an ADC's bits are signal rather than noise: (SINAD − 1.76 dB) / 6.02 dB.",
+   "hu": "Az ADC bitjeiből hány hordoz jelet és nem zajt: (SINAD − 1,76 dB) / 6,02 dB."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "dynamic-range": {
+  "term": {
+   "en": "dynamic range",
+   "hu": "dinamikatartomány"
+  },
+  "short": {
+   "en": "Ratio of the largest signal to the smallest one the ADC can tell from noise, in dB.",
+   "hu": "A legnagyobb jel és a zajtól még megkülönböztethető legkisebb jel aránya dB-ben."
+  },
+  "long": {
+   "en": "An ideal N-bit converter: about 6.02·N + 1.76 dB; real ones are noise-limited.",
+   "hu": "Ideális N bites konverter: kb. 6,02·N + 1,76 dB; a valódiakat a zaj korlátozza."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "sar": {
+  "term": {
+   "en": "SAR ADC",
+   "hu": "SAR ADC"
+  },
+  "abbr": "SAR",
+  "short": {
+   "en": "Successive-approximation ADC: finds each sample by a binary search. Fast, low latency, moderate resolution.",
+   "hu": "Lépésenkénti közelítésű ADC: minden mintát bináris kereséssel talál meg. Gyors, kis késleltetésű, közepes felbontású."
+  },
+  "lessons": [
+   "e15"
+  ]
+ },
+ "cpol": {
+  "term": {
+   "en": "CPOL",
+   "hu": "CPOL"
+  },
+  "short": {
+   "en": "SPI clock polarity: 0 = SCLK idles low, 1 = idles high.",
+   "hu": "SPI órajel-polaritás: 0 = az SCLK nyugalomban alacsony, 1 = nyugalomban magas."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "cpha": {
+  "term": {
+   "en": "CPHA",
+   "hu": "CPHA"
+  },
+  "short": {
+   "en": "SPI clock phase: 0 = sample on the first clock edge, 1 = sample on the second.",
+   "hu": "SPI órajel-fázis: 0 = az első élen mintavételez, 1 = a másodikon."
+  },
+  "long": {
+   "en": "CPOL and CPHA together give modes 0–3. Mode 0 = CPOL 0, CPHA 0; mode 1 = CPOL 0, CPHA 1. The LTC6903 wants mode 0, the ADS131M0x mode 1.",
+   "hu": "A CPOL és a CPHA együtt adja a 0–3. módot. Mode 0 = CPOL 0, CPHA 0; mode 1 = CPOL 0, CPHA 1. Az LTC6903 mode 0-t, az ADS131M0x mode 1-et kér."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "setup-hold": {
+  "term": {
+   "en": "setup and hold time",
+   "hu": "előkészítési és tartási idő (setup/hold)"
+  },
+  "short": {
+   "en": "How long a signal must be stable before (setup) and after (hold) the edge that reads it.",
+   "hu": "Mennyi ideig kell stabilnak lennie egy jelnek a beolvasó él előtt (setup) és után (hold)."
+  },
+  "long": {
+   "en": "For SPI chip select: CS must be low for a minimum time before the first SCLK edge, and stay low a little after the last one. ESP-IDF calls these cs_ena_pretrans and cs_ena_posttrans.",
+   "hu": "Az SPI chip selectnél: a CS-nek az első SCLK él előtt legalább egy minimális ideig alacsonynak kell lennie, és az utolsó él után még kicsit az maradnia. Az ESP-IDF ezeket cs_ena_pretrans és cs_ena_posttrans néven hívja."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "start-stop": {
+  "term": {
+   "en": "I²C start and stop",
+   "hu": "I²C start és stop"
+  },
+  "short": {
+   "en": "Start: SDA falls while SCL is high. Stop: SDA rises while SCL is high. Data may change only while SCL is low.",
+   "hu": "Start: az SDA lemegy, miközben az SCL magas. Stop: az SDA felmegy, miközben az SCL magas. Az adat csak alacsony SCL mellett változhat."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "ack": {
+  "term": {
+   "en": "ACK / NACK",
+   "hu": "ACK / NACK"
+  },
+  "short": {
+   "en": "The ninth I²C clock: the receiver pulls SDA low to say it got the byte (ACK). SDA left high = NACK.",
+   "hu": "A kilencedik I²C órajel: a vevő lehúzza az SDA-t, jelezve, hogy megkapta a bájtot (ACK). Magasan hagyott SDA = NACK."
+  },
+  "long": {
+   "en": "An I²C scan sends each address and listens for the ACK. No ACK at any address means no device answered.",
+   "hu": "Az I²C keresés minden címet elküld, és az ACK-t figyeli. Ha egyetlen címen sincs ACK, nem válaszolt eszköz."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "logic-analyser": {
+  "term": {
+   "en": "logic analyser",
+   "hu": "logikai analizátor"
+  },
+  "short": {
+   "en": "A tool that records several digital lines at once and shows them as timing diagrams.",
+   "hu": "Eszköz, ami több digitális vonalat vesz fel egyszerre, és idődiagramként mutatja."
+  },
+  "long": {
+   "en": "It sees only high and low, not the voltage in between. Decoders turn SPI, I²C and UART traces into bytes.",
+   "hu": "Csak magasat és alacsonyat lát, a közbülső feszültséget nem. A dekóderek az SPI, I²C és UART jeleket bájtokká fordítják."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "framing-error": {
+  "term": {
+   "en": "framing error",
+   "hu": "keretezési hiba (framing error)"
+  },
+  "short": {
+   "en": "A UART receiver found a 0 where the stop bit (a 1) should be: wrong baud rate, noise or a cut byte.",
+   "hu": "Az UART vevő 0-t talált ott, ahol a stop bitnek (1) kellene lennie: rossz baud, zaj vagy elvágott bájt."
+  },
+  "lessons": [
+   "e16"
+  ]
+ },
+ "dropout": {
+  "term": {
+   "en": "dropout voltage",
+   "hu": "dropout feszültség"
+  },
+  "short": {
+   "en": "The smallest Vin − Vout at which a linear regulator still regulates.",
+   "hu": "A legkisebb Vbe − Vki, amelynél a lineáris stabilizátor még szabályoz."
+  },
+  "long": {
+   "en": "AMS1117-3.3: about 1.1 V on this site (check the datasheet for the exact figure and its conditions), so it needs roughly 4.4 V in.",
+   "hu": "AMS1117-3,3: ezen az oldalon kb. 1,1 V (a pontos értéket és feltételeit nézd meg az adatlapon), vagyis kb. 4,4 V kell a bemenetre."
+  },
+  "lessons": [
+   "e17"
+  ]
+ },
+ "switching-regulator": {
+  "term": {
+   "en": "switching regulator",
+   "hu": "kapcsolóüzemű stabilizátor"
+  },
+  "short": {
+   "en": "Chops the input on and off and smooths it with an inductor: little heat, but switching noise.",
+   "hu": "A bemenetet be-ki kapcsolgatja, és tekerccsel simítja: kevés hő, de kapcsolási zaj."
+  },
+  "lessons": [
+   "e17"
+  ]
+ },
+ "bulk-capacitor": {
+  "term": {
+   "en": "bulk capacitor",
+   "hu": "puffer kondenzátor (bulk)"
+  },
+  "short": {
+   "en": "A larger capacitor (microfarads) near a regulator or connector that covers slower current swings.",
+   "hu": "Nagyobb (mikrofarad nagyságú) kondenzátor a stabilizátor vagy csatlakozó mellett, ami a lassabb árammozgásokat fedezi."
+  },
+  "lessons": [
+   "e17"
+  ]
+ },
+ "power-budget": {
+  "term": {
+   "en": "power budget",
+   "hu": "teljesítménymérleg"
+  },
+  "short": {
+   "en": "A table of every load on a rail and its current, summed and compared with what the supply can give.",
+   "hu": "Táblázat egy ág minden terheléséről és áramáról, összegezve és összevetve azzal, amit a táp adni tud."
+  },
+  "lessons": [
+   "e17"
+  ]
+ },
+ "crystal": {
+  "term": {
+   "en": "quartz crystal",
+   "hu": "kvarckristály"
+  },
+  "short": {
+   "en": "A slice of quartz that rings at a very stable frequency when driven electrically.",
+   "hu": "Kvarclapka, ami elektromos gerjesztésre nagyon stabil frekvencián rezeg."
+  },
+  "long": {
+   "en": "The QTM325 is a crystal plus its amplifier in one 3.2 × 2.5 mm can: you get a ready clock output.",
+   "hu": "A QTM325 egy kristály és az erősítője egyetlen 3,2 × 2,5 mm-es tokban: kész órajelet kapsz."
+  },
+  "lessons": [
+   "e18"
+  ]
+ },
+ "jitter": {
+  "term": {
+   "en": "jitter",
+   "hu": "jitter"
+  },
+  "short": {
+   "en": "Edge-to-edge timing wobble of a clock. Different from ppm error, which is the average frequency being off.",
+   "hu": "Az órajel éleinek időbeli ingadozása. Más, mint a ppm hiba, ami az átlagos frekvencia eltérése."
+  },
+  "lessons": [
+   "e18"
+  ]
+ },
+ "net-label": {
+  "term": {
+   "en": "net label",
+   "hu": "hálózatnév (net label)"
+  },
+  "short": {
+   "en": "A name on a wire in a schematic. Wires with the same name are connected, even without a drawn line.",
+   "hu": "Név egy vezetéken a kapcsolási rajzon. Az azonos nevű vezetékek össze vannak kötve, rajzolt vonal nélkül is."
+  },
+  "lessons": [
+   "e19"
+  ]
+ },
+ "reference-designator": {
+  "term": {
+   "en": "reference designator",
+   "hu": "alkatrész-azonosító (reference designator)"
+  },
+  "short": {
+   "en": "The letter-and-number name of a part on a schematic: R12, C5, U1, J2.",
+   "hu": "Egy alkatrész betű-szám neve a rajzon: R12, C5, U1, J2."
+  },
+  "lessons": [
+   "e19"
+  ]
+ },
+ "schematic": {
+  "term": {
+   "en": "schematic",
+   "hu": "kapcsolási rajz"
+  },
+  "short": {
+   "en": "A drawing of which pins connect to which. It shows connections, not where things sit on the board.",
+   "hu": "Rajz arról, mely lábak vannak összekötve. A kapcsolatokat mutatja, nem azt, hogy az alkatrészek hol vannak a panelen."
+  },
+  "lessons": [
+   "e19",
+   "e20"
+  ]
+ },
+ "typ-max": {
+  "term": {
+   "en": "typical vs. min/max",
+   "hu": "tipikus kontra min/max"
+  },
+  "short": {
+   "en": "Typical is what a normal part does; min/max are the guaranteed limits. Design to the limits, not to typical.",
+   "hu": "A tipikus egy átlagos alkatrész viselkedése; a min/max a garantált határ. A határokra tervezz, ne a tipikusra."
+  },
+  "long": {
+   "en": "LTC6903: 0.5 % typical, 1.1 % max at 25 °C. A design that only works at 0.5 % will fail on some boards.",
+   "hu": "LTC6903: 0,5 % tipikus, 1,1 % maximum 25 °C-on. Az a terv, ami csak 0,5 %-nál működik, egyes paneleken el fog romlani."
+  },
+  "lessons": [
+   "e19"
+  ]
+ },
+ "kicad": {
+  "term": {
+   "en": "KiCad",
+   "hu": "KiCad"
+  },
+  "short": {
+   "en": "Free open-source tool for drawing schematics and laying out PCBs. The hardware README plans our node and heads as KiCad projects.",
+   "hu": "Ingyenes, nyílt forráskódú program kapcsolási rajzhoz és NYÁK tervezéshez. A hardware README szerint a node és a fejek KiCad projektek lesznek."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "drc": {
+  "term": {
+   "en": "DRC (design rule check)",
+   "hu": "DRC (tervezési szabály ellenőrzés)"
+  },
+  "short": {
+   "en": "Automatic check of the layout against the fab's limits: trace width, spacing, drill size, unconnected nets.",
+   "hu": "A tervezett lap automatikus ellenőrzése a gyártó határaival szemben: vezetékvastagság, távolság, furatméret, bekötetlen hálózatok."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "gerber": {
+  "term": {
+   "en": "Gerber files",
+   "hu": "Gerber fájlok"
+  },
+  "short": {
+   "en": "The files a fab reads: one per copper, mask and silkscreen layer, plus a drill file.",
+   "hu": "A gyártó által beolvasott fájlok: egy-egy réz-, maszk- és szitanyomat-rétegenként, plusz egy fúrófájl."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "mux": {
+  "term": {
+   "en": "I²C multiplexer",
+   "hu": "I²C multiplexer"
+  },
+  "short": {
+   "en": "An I²C switch: the MCU writes one byte to choose which downstream branch is connected.",
+   "hu": "I²C kapcsoló: az MCU egy bájtot ír, ezzel választja ki, melyik lefelé menő ág legyen bekötve."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "eeprom": {
+  "term": {
+   "en": "EEPROM",
+   "hu": "EEPROM"
+  },
+  "short": {
+   "en": "Memory that keeps its content without power. The AT24C02 holds 256 bytes: our head descriptor.",
+   "hu": "Memória, ami táp nélkül is megtartja a tartalmát. Az AT24C02 256 bájtos: ez tárolja a fejleírónkat."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "via": {
+  "term": {
+   "en": "via",
+   "hu": "via (átvezetés)"
+  },
+  "short": {
+   "en": "A plated hole that connects a trace from one PCB layer to another.",
+   "hu": "Fémezett furat, ami egy vezetéket köt át a NYÁK egyik rétegéről a másikra."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "return-path": {
+  "term": {
+   "en": "return path",
+   "hu": "visszatérő út"
+  },
+  "short": {
+   "en": "Every signal current has to flow back to its source. A solid ground plane gives it the shortest way home.",
+   "hu": "Minden jelárámnak vissza kell folynia a forrásához. Egy összefüggő földsík a legrövidebb utat adja neki."
+  },
+  "lessons": [
+   "e20"
+  ]
+ },
+ "fifo": {
+  "term": {
+   "en": "FIFO",
+   "hu": "FIFO"
+  },
+  "abbr": "FIFO",
+  "short": {
+   "en": "First in, first out: a small queue. The ADS131M02 keeps two samples per channel in one, so a late reader can still collect both.",
+   "hu": "First in, first out: egy kis sor. Az ADS131M02 csatornánként két mintát tart egyben, így egy késő olvasó még mindkettőt át tudja venni."
+  },
+  "lessons": [
+   "s07"
+  ]
+ },
+ "cobs": {
+  "term": {
+   "en": "COBS",
+   "hu": "COBS"
+  },
+  "abbr": "COBS",
+  "short": {
+   "en": "Consistent Overhead Byte Stuffing: rewrites a frame so it contains no 0x00 byte, so 0x00 can mark the frame end.",
+   "hu": "Consistent Overhead Byte Stuffing: úgy írja át a keretet, hogy ne legyen benne 0x00 bájt, így a 0x00 jelölheti a keret végét."
+  },
+  "lessons": [
+   "s07"
+  ]
+ },
+ "loss-span": {
+  "term": {
+   "en": "loss span",
+   "hu": "veszteség-szakasz (loss span)"
+  },
+  "short": {
+   "en": "A pair [start frame, length] in the sidecar's loss_spans: one run of lost samples (D-022).",
+   "hu": "Egy [kezdő keret, hossz] pár a sidecar loss_spans mezőjében: elveszett minták egy összefüggő sorozata (D-022)."
+  },
+  "lessons": [
+   "s08"
+  ]
+ },
+ "sta-lta": {
+  "term": {
+   "en": "STA/LTA trigger",
+   "hu": "STA/LTA trigger"
+  },
+  "abbr": "STA/LTA",
+  "short": {
+   "en": "Short-term average over long-term average of the signal energy. A high ratio means something just happened. Ours: 50 ms, 2000 ms, ratio 3.5.",
+   "hu": "A jelenergia rövid idejű átlaga a hosszú idejű átlaghoz képest. Magas arány azt jelenti, hogy most történt valami. A miénk: 50 ms, 2000 ms, arány 3,5."
+  },
+  "lessons": [
+   "s08"
+  ]
+ },
+ "test-vector": {
+  "term": {
+   "en": "test vector",
+   "hu": "tesztvektor"
+  },
+  "short": {
+   "en": "A fixed input with the expected output. Python and firmware must both reproduce it, so shared code stays identical.",
+   "hu": "Rögzített bemenet a várt kimenettel. A Pythonnak és a firmware-nek is reprodukálnia kell, így a közös kód azonos marad."
+  },
+  "lessons": [
+   "s08"
+  ]
+ },
+ "tflite-micro": {
+  "term": {
+   "en": "TFLite Micro",
+   "hu": "TFLite Micro"
+  },
+  "short": {
+   "en": "TensorFlow Lite for microcontrollers: runs a small int8 model on the ESP32. The export for our packs is not written yet.",
+   "hu": "TensorFlow Lite mikrovezérlőkre: kis int8 modellt futtat az ESP32-n. A packjaink exportja még nincs megírva."
+  },
+  "lessons": [
+   "s08"
+  ]
+ },
+ "head": {
+  "term": {
+   "en": "sensor head",
+   "hu": "szenzorfej"
+  },
+  "short": {
+   "en": "The part that turns vibration into a signal: geophone, load cell, accelerometer, later piezo. Swappable on the node.",
+   "hu": "Az alkatrész, ami a rezgést jellé alakítja: geofon, mérlegcella, gyorsulásmérő, később piezo. A node-on cserélhető."
+  },
+  "lessons": [
+   "s01",
+   "s03"
+  ]
+ },
+ "link": {
+  "term": {
+   "en": "link",
+   "hu": "link"
+  },
+  "short": {
+   "en": "The connection from node to PC: one binary protocol over USB and Wi-Fi (D-018).",
+   "hu": "A node és a PC közti kapcsolat: egy bináris protokoll USB-n és Wi-Fi-n (D-018)."
+  },
+  "lessons": [
+   "s01",
+   "s04"
+  ]
+ },
+ "displacement": {
+  "term": {
+   "en": "displacement",
+   "hu": "elmozdulás"
+  },
+  "short": {
+   "en": "How far something has moved from rest. For a floor: micrometres.",
+   "hu": "Mennyire tért el valami a nyugalmi helyzetétől. Padlónál: mikrométerek."
+  },
+  "long": {
+   "en": "For a sine motion: x = v / (2π f). 1 mm/s at 50 Hz is 3.18 µm.",
+   "hu": "Szinuszos mozgásnál: x = v / (2π f). 1 mm/s 50 Hz-en 3,18 µm."
+  },
+  "lessons": [
+   "s02"
+  ]
+ },
+ "velocity": {
+  "term": {
+   "en": "velocity",
+   "hu": "sebesség"
+  },
+  "short": {
+   "en": "How fast something moves right now. The geophone's voltage is proportional to it.",
+   "hu": "Milyen gyorsan mozog valami éppen most. A geofon feszültsége arányos vele."
+  },
+  "long": {
+   "en": "SM-24: 28.8 V/(m/s), so 1 mm/s gives 28.8 mV.",
+   "hu": "SM-24: 28,8 V/(m/s), tehát 1 mm/s 28,8 mV-ot ad."
+  },
+  "lessons": [
+   "s02",
+   "s03"
+  ]
+ },
+ "acceleration": {
+  "term": {
+   "en": "acceleration",
+   "hu": "gyorsulás"
+  },
+  "short": {
+   "en": "How fast the velocity changes. The ADXL355 measures it (1 g = 9.81 m/s²).",
+   "hu": "Milyen gyorsan változik a sebesség. Az ADXL355 ezt méri (1 g = 9,81 m/s²)."
+  },
+  "long": {
+   "en": "For a sine motion: a = 2π f · v. It grows with frequency for a given velocity.",
+   "hu": "Szinuszos mozgásnál: a = 2π f · v. Adott sebességnél a frekvenciával nő."
+  },
+  "lessons": [
+   "s02",
+   "s03"
+  ]
+ },
+ "burst": {
+  "term": {
+   "en": "burst (transient)",
+   "hu": "csomag (tranziens)"
+  },
+  "short": {
+   "en": "A short event: sudden start, ring-down, then quiet. A footstep is one.",
+   "hu": "Rövid esemény: hirtelen kezdet, kicsengés, aztán csend. A lépés ilyen."
+  },
+  "lessons": [
+   "s02"
+  ]
+ }
+}

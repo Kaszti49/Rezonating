@@ -1,0 +1,733 @@
+{
+ "_doc": "Fault-finding cases. real: happened on our bench (with date); otherwise a likely fault in the next steps. Each action reveals a result; one diagnosis is correct.",
+ "cases": [
+  {
+   "id": "case-680k",
+   "level": 1,
+   "real": true,
+   "parts": [
+    "yzc133",
+    "adc15",
+    "passives"
+   ],
+   "lessons": [
+    "e02",
+    "e03",
+    "e05"
+   ],
+   "title": {
+    "en": "The load cell that said nothing",
+    "hu": "A mérlegcella, ami hallgatott"
+   },
+   "teaser": {
+    "en": "Streaming works, the ADC is fine, but pressing the cell changes nothing.",
+    "hu": "Az adatfolyam megy, az ADC rendben, de a cella megnyomására semmi nem változik."
+   },
+   "story": {
+    "en": "2026-11-02/03. The bench streams `adc_dec` at ~997 Hz with 0 losses. The load cell is wired: 3V3 → a resistor marked as **680 Ω** → red (E+), black → GND, green/white → Click CH1. Pressing the cell changes nothing. CH1 sits at about the ADC's offset, and it jumps when the wires are touched. *(Some meter readings below are reconstructed from the calculated values, not logged on the day.)*",
+    "hu": "2026-11-02/03. A pult `adc_dec`-et küld kb. 997 Hz-cel, 0 veszteséggel. A mérlegcella bekötve: 3V3 → egy **680 Ω-osnak** jelölt ellenállás → piros (E+), fekete → GND, zöld/fehér → Click CH1. A cella megnyomására semmi nem változik. A CH1 nagyjából az ADC offszetjén ül, és ugrál, ha hozzáérnek a vezetékekhez. *(Az alábbi mért értékek egy része a számolt értékekből rekonstruált, nem aznap rögzített.)*"
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Measure V: ESP32 end of the resistor to GND (USB on)",
+      "hu": "V mérés: az ellenállás ESP32 felőli vége és GND (USB be)"
+     },
+     "result": {
+      "en": "**3.30 V.** The supply reaches the resistor.",
+      "hu": "**3,30 V.** A táp eljut az ellenállásig."
+     }
+    },
+    {
+     "label": {
+      "en": "Measure V: cell end of the resistor (red) to GND (USB on)",
+      "hu": "V mérés: az ellenállás cella felőli vége (piros) és GND (USB be)"
+     },
+     "result": {
+      "en": "**0.00 V** on the 20 V range. Switching to the 200 mV range shows **5.3 mV**.",
+      "hu": "**0,00 V** a 20 V-os méréshatáron. 200 mV-os határra váltva **5,3 mV**."
+     }
+    },
+    {
+     "label": {
+      "en": "Measure Ω: red to black at the cell (USB off)",
+      "hu": "Ω mérés: piros és fekete a cellán (USB ki)"
+     },
+     "result": {
+      "en": "**1.09 kΩ.** The bridge is intact (expected 1070–1120 Ω).",
+      "hu": "**1,09 kΩ.** A híd ép (várt: 1070–1120 Ω)."
+     }
+    },
+    {
+     "label": {
+      "en": "Measure Ω: across the resistor (USB off)",
+      "hu": "Ω mérés: az ellenálláson keresztül (USB ki)"
+     },
+     "result": {
+      "en": "On the 2 kΩ range the meter shows **OL** (over-range). On the 2 MΩ range: **0.680 MΩ**.",
+      "hu": "A 2 kΩ-os határon a műszer **OL**-t mutat (túlcsordulás). 2 MΩ-os határon: **0,680 MΩ**."
+     }
+    },
+    {
+     "label": {
+      "en": "Continuity: red to GND (USB off)",
+      "hu": "Szakadásvizsgálat: piros és GND (USB ki)"
+     },
+     "result": {
+      "en": "No beep. Reads ≈ 1.09 kΩ, the bridge path. No short.",
+      "hu": "Nincs sípolás. Kb. 1,09 kΩ-ot mér, ez a híd útja. Nincs zárlat."
+     }
+    },
+    {
+     "label": {
+      "en": "Read the resistor's colour bands",
+      "hu": "Az ellenállás színsávjainak leolvasása"
+     },
+     "result": {
+      "en": "Blue, grey, **yellow**, gold.",
+      "hu": "Kék, szürke, **sárga**, arany."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "Open solder joint at the resistor",
+      "hu": "Szakadt forrasztás az ellenállásnál"
+     },
+     "why": {
+      "en": "An open joint would read OL on *every* Ω range and give exactly 0 V, not 5.3 mV.",
+      "hu": "Egy szakadt kötés *minden* Ω határon OL-t mutatna, és pontosan 0 V-ot adna, nem 5,3 mV-ot."
+     }
+    },
+    {
+     "label": {
+      "en": "Red wire shorted to GND",
+      "hu": "A piros vezeték zárlatos a GND-vel"
+     },
+     "why": {
+      "en": "Continuity says no short: red to GND is the bridge's ≈ 1.09 kΩ.",
+      "hu": "A szakadásvizsgálat szerint nincs zárlat: piros és GND között a híd kb. 1,09 kΩ-ja van."
+     }
+    },
+    {
+     "label": {
+      "en": "The resistor is 680 kΩ, not 680 Ω",
+      "hu": "Az ellenállás 680 kΩ, nem 680 Ω"
+     },
+     "correct": true,
+     "why": {
+      "en": "Blue-grey-yellow = 680 kΩ, confirmed on the 2 MΩ range. As a divider with the 1.09 kΩ bridge it leaves 3.3 V × 1090 / 681 090 ≈ 5.3 mV on the cell, and the cell's output is then a few µV.",
+      "hu": "Kék-szürke-sárga = 680 kΩ, a 2 MΩ-os határ igazolja. Az 1,09 kΩ-os híddal osztót alkotva 3,3 V × 1090 / 681 090 ≈ 5,3 mV marad a cellán, így a cella kimenete néhány µV."
+     }
+    },
+    {
+     "label": {
+      "en": "The ADC channel is broken",
+      "hu": "Az ADC csatorna hibás"
+     },
+     "why": {
+      "en": "The ADC streams normally and shows its usual offset: the problem is upstream, in the excitation.",
+      "hu": "Az ADC normálisan küld és a szokásos offszetet mutatja: a hiba előrébb van, a gerjesztésben."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "**Fix (2026-11-03):** no 680 Ω in stock, so 470 Ω + 220 Ω in series = 690 Ω. Press test passed: +400…+900 µV. **Lesson:** an Ω check of each part before soldering takes seconds. And 'OL on the low range' means 'bigger than this range', not 'open'.",
+    "hu": "**Javítás (2026-11-03):** nem volt 680 Ω-os, ezért 470 Ω + 220 Ω sorosan = 690 Ω. A nyomáspróba sikerült: +400…+900 µV. **Tanulság:** egy Ω mérés minden alkatrészen forrasztás előtt másodpercek kérdése. Az 'OL a kis méréshatáron' pedig azt jelenti, hogy 'nagyobb ennél a határnál', nem azt, hogy 'szakadt'."
+   }
+  },
+  {
+   "id": "case-cs-shift",
+   "level": 3,
+   "real": true,
+   "parts": [
+    "adc15",
+    "esp32-devkit"
+   ],
+   "lessons": [
+    "s05",
+    "e16"
+   ],
+   "title": {
+    "en": "Every word shifted by one bit",
+    "hu": "Minden szó egy bittel elcsúszik"
+   },
+   "teaser": {
+    "en": "The ADC ignores commands and the ID reads wrong, but only by a factor of two.",
+    "hu": "Az ADC nem fogadja a parancsokat, és rossz az ID, de csak kettes szorzóval."
+   },
+   "story": {
+    "en": "2026-11-01, first bring-up on the classic ESP32. The firmware programs the LTC6903 (mode 0, CS2), then reads the ADS131M02 ID register on CS1 (mode 1). Expected ID: **0x2205**. The register writes don't seem to take effect.",
+    "hu": "2026-11-01, első bring-up a klasszikus ESP32-n. A firmware beprogramozza az LTC6903-at (mode 0, CS2), majd kiolvassa az ADS131M02 ID regiszterét a CS1-en (mode 1). Várt ID: **0x2205**. A regiszterírások mintha nem hatnának."
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Print the raw ID word",
+      "hu": "A nyers ID szó kiírása"
+     },
+     "result": {
+      "en": "Reads **0x1102**: exactly 0x2205 shifted right by one bit.",
+      "hu": "**0x1102**-t olvas: pontosan a 0x2205 egy bittel jobbra tolva."
+     }
+    },
+    {
+     "label": {
+      "en": "Count DRDY pulses for 10 s",
+      "hu": "DRDY impulzusok számolása 10 s-ig"
+     },
+     "result": {
+      "en": "≈ 19 958 pulses: the clock works, and the ADC is converting at ≈ 1996 Hz.",
+      "hu": "Kb. 19 958 impulzus: az órajel működik, az ADC kb. 1996 Hz-cel konvertál."
+     }
+    },
+    {
+     "label": {
+      "en": "Try SPI mode 0 for the ADC",
+      "hu": "SPI mode 0 kipróbálása az ADC-nél"
+     },
+     "result": {
+      "en": "No better: still shifted or garbage.",
+      "hu": "Nem jobb: továbbra is csúszott vagy szemét."
+     }
+    },
+    {
+     "label": {
+      "en": "Add a MISO input delay",
+      "hu": "MISO bemeneti késleltetés hozzáadása"
+     },
+     "result": {
+      "en": "No change.",
+      "hu": "Nincs változás."
+     }
+    },
+    {
+     "label": {
+      "en": "Set cs_ena_pretrans = 2 and cs_ena_posttrans = 2",
+      "hu": "cs_ena_pretrans = 2 és cs_ena_posttrans = 2 beállítása"
+     },
+     "result": {
+      "en": "ID reads **0x2205**. All register writes are acknowledged.",
+      "hu": "Az ID **0x2205**. Minden regiszterírás nyugtázva."
+     }
+    },
+    {
+     "label": {
+      "en": "Drive CS1 from a plain GPIO instead of the SPI peripheral",
+      "hu": "CS1 meghajtása sima GPIO-ról az SPI periféria helyett"
+     },
+     "result": {
+      "en": "Also works.",
+      "hu": "Így is működik."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "Wrong SPI mode",
+      "hu": "Rossz SPI mód"
+     },
+     "why": {
+      "en": "Mode 0 didn't help, and a mode error gives garbage or a shift in the *other* direction, not a clean ÷2.",
+      "hu": "A mode 0 nem segített, és egy módhiba szemetet vagy a *másik* irányú csúszást ad, nem tiszta ÷2-t."
+     }
+    },
+    {
+     "label": {
+      "en": "Chip select asserted too close to the first clock edge: the ADC misses bit 1",
+      "hu": "A chip select túl közel lép az első órajelélhez: az ADC lekési az 1. bitet"
+     },
+     "correct": true,
+     "why": {
+      "en": "The ADC needs CS low for a minimum time before the first SCLK edge. With ESP-IDF's default timing it wasn't ready, so it started one bit late: everything it sends comes out one bit right, and the commands it receives are misaligned too. Extra CS lead time fixes both. *Open point:* a comment in `bringup_main.c` says `cs_ena_pretrans` has no effect in full-duplex mode, while the part note records that the setting (or driving CS1 from a GPIO) fixed it. Driving CS from a GPIO certainly adds setup time; why the setting helped isn't settled in the repo.",
+      "hu": "Az ADC-nek az első SCLK él előtt egy minimális ideig alacsony CS kell. Az ESP-IDF alap időzítésével nem volt kész, ezért egy bittel később kezdett: minden, amit küld, egy bittel jobbra csúszik, és a kapott parancsok is elcsúsznak. A hosszabb CS előidő mindkettőt megoldja. *Nyitott kérdés:* a `bringup_main.c` egyik megjegyzése szerint a `cs_ena_pretrans` full-duplex módban hatástalan, a part jegyzet viszont rögzíti, hogy ez a beállítás (vagy a CS1 GPIO-ról hajtása) megoldotta. A GPIO-s CS biztosan ad előidőt; hogy a beállítás miért segített, a repóban nincs eldöntve."
+     }
+    },
+    {
+     "label": {
+      "en": "The LTC6903 clock is wrong",
+      "hu": "Rossz az LTC6903 órajele"
+     },
+     "why": {
+      "en": "DRDY runs at ≈ 1996 Hz, which is the expected rate at OSR 2048.",
+      "hu": "A DRDY kb. 1996 Hz-en jár, ami OSR 2048-nál a várt ráta."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "Open the SPI live diagram (E16) and tick 'CS goes low too late' to see the shift. Datasheet keyword: **t_d(CSSC)**, the CS-to-SCLK setup time.",
+    "hu": "Nyisd meg az SPI élő ábrát (E16), és pipáld be: 'A CS túl későn megy le', így látod a csúszást. Adatlap kulcsszó: **t_d(CSSC)**, a CS–SCLK előkészítési idő."
+   }
+  },
+  {
+   "id": "case-id-ffff",
+   "level": 2,
+   "real": true,
+   "parts": [
+    "adc15",
+    "breadboard"
+   ],
+   "lessons": [
+    "s05",
+    "e16"
+   ],
+   "title": {
+    "en": "ID 0xFFFF after a reconnect",
+    "hu": "0xFFFF ID újracsatlakozás után"
+   },
+   "teaser": {
+    "en": "Worked yesterday. Today the ADC answers with all ones, or all zeros.",
+    "hu": "Tegnap ment. Ma az ADC csupa egyessel vagy csupa nullával válaszol."
+   },
+   "story": {
+    "en": "2026-11-02, EP-LAPTOP. The board was unplugged and moved. After reconnecting, the firmware reads the ADC ID as **0xFFFF**, sometimes **0x0000**. Nothing in the code changed. *(Some meter readings below are reconstructed from the calculated values, not logged on the day.)*",
+    "hu": "2026-11-02, EP-LAPTOP. A panelt kihúzták és áttették. Újracsatlakozás után a firmware az ADC ID-t **0xFFFF**-nek, néha **0x0000**-nak olvassa. A kódban semmi nem változott. *(Az alábbi mért értékek egy része a számolt értékekből rekonstruált, nem aznap rögzített.)*"
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Check the Click's PWR LED",
+      "hu": "A Click PWR LED-jének ellenőrzése"
+     },
+     "result": {
+      "en": "On.",
+      "hu": "Világít."
+     }
+    },
+    {
+     "label": {
+      "en": "Measure 3V3 to GND on the Click header",
+      "hu": "3V3–GND mérés a Click tüskesorán"
+     },
+     "result": {
+      "en": "3.29 V.",
+      "hu": "3,29 V."
+     }
+    },
+    {
+     "label": {
+      "en": "Wiggle the SDO (MISO) jumper while reading in a loop",
+      "hu": "Az SDO (MISO) vezeték mozgatása ciklikus olvasás közben"
+     },
+     "result": {
+      "en": "The value flips between 0xFFFF, 0x0000 and sometimes 0x2205.",
+      "hu": "Az érték 0xFFFF, 0x0000 és néha 0x2205 között ugrál."
+     }
+    },
+    {
+     "label": {
+      "en": "Re-seat every jumper on the mikroBUS header",
+      "hu": "Minden vezeték újradugása a mikroBUS tüskesoron"
+     },
+     "result": {
+      "en": "ID 0x2205, stable.",
+      "hu": "ID 0x2205, stabil."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "The ADC is damaged",
+      "hu": "Az ADC megsérült"
+     },
+     "why": {
+      "en": "It recovers fully after re-seating, so it's a connection, not the chip.",
+      "hu": "Újradugás után teljesen helyrejön, tehát a kapcsolat volt a hiba, nem a chip."
+     }
+    },
+    {
+     "label": {
+      "en": "A loose jumper on MISO: a floating line reads all 1s or all 0s",
+      "hu": "Laza vezeték a MISO-n: a lebegő vonal csupa 1-et vagy csupa 0-t olvas"
+     },
+     "correct": true,
+     "why": {
+      "en": "If MISO isn't connected, the ESP32 reads whatever the floating pin settles to, usually all ones (with a pull-up) or all zeros. 0xFFFF / 0x0000 is the classic signature of 'nothing is driving the data line'.",
+      "hu": "Ha a MISO nincs bekötve, az ESP32 azt olvassa, amire a lebegő láb beáll, általában csupa egyest (felhúzással) vagy csupa nullát. A 0xFFFF / 0x0000 a klasszikus jele annak, hogy 'senki nem hajtja az adatvonalat'."
+     }
+    },
+    {
+     "label": {
+      "en": "Firmware bug",
+      "hu": "Firmware hiba"
+     },
+     "why": {
+      "en": "The code didn't change and the value depends on touching a wire.",
+      "hu": "A kód nem változott, és az érték attól függ, hogy hozzáérsz-e egy vezetékhez."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "The mikroBUS jumpers are fragile (Handoff). A soldered harness or the own PCB ends this class of fault.",
+    "hu": "A mikroBUS vezetékek érzékenyek (Handoff). Egy forrasztott kábelköteg vagy a saját NYÁK megszünteti ezt a hibafajtát."
+   }
+  },
+  {
+   "id": "case-hx-max",
+   "level": 2,
+   "real": true,
+   "parts": [
+    "hx711",
+    "yzc133"
+   ],
+   "lessons": [
+    "e15",
+    "e06"
+   ],
+   "title": {
+    "en": "HX711 stuck at 8388607",
+    "hu": "A HX711 8388607-en ragadt"
+   },
+   "teaser": {
+    "en": "Every reading is the same number, the biggest one there is.",
+    "hu": "Minden mérés ugyanaz a szám, a lehető legnagyobb."
+   },
+   "story": {
+    "en": "2026-11-03, pc-10. Before the switch to the Click, the HX711 rig returns **8388607** on every read. *(Some meter readings below are reconstructed from the calculated values, not logged on the day.)*",
+    "hu": "2026-11-03, pc-10. A Clickre váltás előtt a HX711-es összeállítás minden olvasásra **8388607**-et ad. *(Az alábbi mért értékek egy része a számolt értékekből rekonstruált, nem aznap rögzített.)*"
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Convert 8388607 to hex",
+      "hu": "8388607 átváltása hexába"
+     },
+     "result": {
+      "en": "0x7FFFFF: the largest positive 24-bit two's complement value.",
+      "hu": "0x7FFFFF: a legnagyobb pozitív 24 bites kettes komplemens érték."
+     }
+    },
+    {
+     "label": {
+      "en": "Measure E+ to E− on the HX711",
+      "hu": "E+–E− mérés a HX711-en"
+     },
+     "result": {
+      "en": "This is the same rig as the 680 kΩ fault: the load cell excitation path is suspect.",
+      "hu": "Ez ugyanaz a pult, mint a 680 kΩ-os hibánál: a gerjesztés útja gyanús."
+     }
+    },
+    {
+     "label": {
+      "en": "Short A+ to A− with a wire",
+      "hu": "A+ és A− rövidre zárása egy vezetékkel"
+     },
+     "result": {
+      "en": "Readings drop to a small, noisy number near zero.",
+      "hu": "Az értékek egy kicsi, zajos, nullához közeli számra esnek."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "Positive full scale: the input is outside the range (open or unbalanced input at gain 128)",
+      "hu": "Pozitív telítés: a bemenet a tartományon kívül van (szakadt vagy kiegyenlítetlen bemenet 128-as erősítésnél)"
+     },
+     "correct": true,
+     "why": {
+      "en": "0x7FFFFF is clipping. With gain 128 the HX711's range is only about ±20 mV at 5 V excitation (less at 3.3 V). A floating or unexcited bridge input drifts out of it. Shorting the inputs brings it back, which proves the ADC itself works.",
+      "hu": "A 0x7FFFFF telítés. 128-as erősítésnél a HX711 tartománya 5 V-os gerjesztésnél csak kb. ±20 mV (3,3 V-nál kevesebb). Egy lebegő vagy gerjesztetlen hídbemenet kiúszik belőle. A bemenetek rövidre zárása visszahozza: ez bizonyítja, hogy maga az ADC működik."
+     }
+    },
+    {
+     "label": {
+      "en": "The HX711 is broken",
+      "hu": "A HX711 elromlott"
+     },
+     "why": {
+      "en": "With shorted inputs it reads near zero, so the converter works.",
+      "hu": "Rövidre zárt bemenettel nulla körül mér, tehát a konverter működik."
+     }
+    },
+    {
+     "label": {
+      "en": "Wrong number of SCK pulses",
+      "hu": "Rossz számú SCK impulzus"
+     },
+     "why": {
+      "en": "That would change the channel or gain for the *next* reading, not pin every reading to the maximum.",
+      "hu": "Az a *következő* mérés csatornáját vagy erősítését változtatná meg, nem rögzítene minden mérést a maximumra."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "Any ADC: **a reading stuck at max or min = clipping**, not data. On the ADS131M02 that's ±8388607 codes = ±9.375 mV at gain 128. We saw one hit of −9375 µV during handling: that was clipping too.",
+    "hu": "Bármely ADC-nél: **a maximumon vagy minimumon ragadt érték = telítés**, nem adat. Az ADS131M02-n ez ±8388607 kód = ±9,375 mV 128-as erősítésnél. Kezelés közben egyszer láttunk −9375 µV-ot: az is telítés volt."
+   }
+  },
+  {
+   "id": "case-spikes",
+   "level": 2,
+   "real": true,
+   "parts": [
+    "yzc133",
+    "adc15"
+   ],
+   "lessons": [
+    "e14",
+    "e05"
+   ],
+   "title": {
+    "en": "Negative spikes during handling (open)",
+    "hu": "Negatív tüskék kezelés közben (nyitott)"
+   },
+   "teaser": {
+    "en": "Presses look right, but short −3 to −4.5 mV spikes appear when you touch the rig. Still unsolved: what would you check?",
+    "hu": "A nyomások jól néznek ki, de rövid −3…−4,5 mV-os tüskék jönnek, ha hozzáérsz az összeállításhoz. Még megoldatlan: te mit ellenőriznél?"
+   },
+   "story": {
+    "en": "2026-11-03, after the 690 Ω fix. ch0 rests at about −20 µV and presses step to +400…+900 µV. But during handling there are short **negative spikes of −3 to −4.5 mV**, and once a hit of −9375 µV (negative full scale). The cell's ends are not bolted down.",
+    "hu": "2026-11-03, a 690 Ω-os javítás után. A ch0 nyugalomban kb. −20 µV, a nyomások +400…+900 µV-ra ugranak. Kezelés közben viszont rövid **−3…−4,5 mV-os negatív tüskék** jönnek, és egyszer −9375 µV (negatív telítés). A cella végei nincsenek lecsavarozva."
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Wiggle the green and white wires only, cell untouched",
+      "hu": "Csak a zöld és fehér vezeték mozgatása, a cellához nem érsz"
+     },
+     "result": {
+      "en": "(Not done yet: this is the Handoff's next step. Predict what each outcome would mean.)",
+      "hu": "(Még nincs elvégezve: ez a Handoff következő lépése. Jósold meg, mit jelentene az egyes eredmény.)"
+     }
+    },
+    {
+     "label": {
+      "en": "Tap the table next to the cell, without touching it",
+      "hu": "Kopogás az asztalon a cella mellett, hozzáérés nélkül"
+     },
+     "result": {
+      "en": "(Not done yet.) A knock reaching an un-bolted cell would show as a short, two-sided wiggle, not a one-sided spike.",
+      "hu": "(Még nincs elvégezve.) Egy le nem csavarozott cellához eljutó kopogás rövid, kétoldalú rezgésként látszana, nem egyoldalú tüskeként."
+     }
+    },
+    {
+     "label": {
+      "en": "Look at the CH2 (GND) channel at the same moments",
+      "hu": "A CH2 (GND) csatorna megnézése ugyanezekben a pillanatokban"
+     },
+     "result": {
+      "en": "From the Handoff: earlier, CH1 and CH2 moved together when the rig was handled. Common to both channels = something shared (ground, supply), not the cell.",
+      "hu": "A Handoffból: korábban a CH1 és a CH2 együtt mozdult, amikor az összeállítást kezelték. Ami mindkét csatornán közös = valami közös (föld, táp), nem a cella."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "Intermittent contact on a sense wire (green/white) or its terminal",
+      "hu": "Kontakthiba egy jelvezetéken (zöld/fehér) vagy a kapcsán"
+     },
+     "correct": true,
+     "why": {
+      "en": "The leading suspect in the build note: thin stripped wires under a screw terminal make and break contact, so one input briefly jumps toward the other's potential. It's not yet *confirmed*: do the wiggle test, tin the ends and bolt the cell, then see if the spikes stop.",
+      "hu": "A build jegyzet fő gyanúsítottja: a vékony, lecsupaszított vezetékek a csavaros kapocs alatt hol érintkeznek, hol nem, így az egyik bemenet egy pillanatra a másik potenciálja felé ugrik. Még nincs *igazolva*: végezd el a mozgatásos próbát, ónozd a végeket, csavarozd le a cellát, és nézd meg, megszűnnek-e a tüskék."
+     }
+    },
+    {
+     "label": {
+      "en": "Real force on the cell (a knock)",
+      "hu": "Valódi erő a cellán (kopogás)"
+     },
+     "why": {
+      "en": "Possible for some spikes, but a knock gives a two-sided oscillation, and −9375 µV (full scale) is far beyond any handling force on a 5 kg cell at 0.4 mV/kg.",
+      "hu": "Egyes tüskéknél lehetséges, de egy kopogás kétoldalú rezgést ad, és a −9375 µV (telítés) messze meghaladja bármilyen kézi erő hatását egy 5 kg-os cellán 0,4 mV/kg mellett."
+     }
+    },
+    {
+     "label": {
+      "en": "ADC firmware bug",
+      "hu": "ADC firmware hiba"
+     },
+     "why": {
+      "en": "The spikes line up with handling, and 0 losses are reported.",
+      "hu": "A tüskék a kezeléssel esnek egybe, és 0 veszteséget jelez."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "This case is still open in the vault. When you solve it on the bench, write the result in the build note.",
+    "hu": "Ez az eset a vaultban még nyitott. Ha a pulton megoldod, írd be az eredményt a build jegyzetbe."
+   }
+  },
+  {
+   "id": "case-gpio12",
+   "level": 1,
+   "real": false,
+   "parts": [
+    "esp32-devkit",
+    "sd-breakout"
+   ],
+   "lessons": [
+    "s06"
+   ],
+   "title": {
+    "en": "The board won't boot with the SD card attached",
+    "hu": "A panel nem indul el, ha rajta az SD modul"
+   },
+   "teaser": {
+    "en": "Unplug one wire and it boots. Plug it back and it's stuck.",
+    "hu": "Egy vezetéket kihúzol, és elindul. Visszadugod, és megáll."
+   },
+   "story": {
+    "en": "A likely next step: you add the microSD breakout to the classic ESP32 and put its CS on **GPIO 12**. Now the board resets endlessly or prints a flash error at power-up. Without the SD module it boots fine.",
+    "hu": "Egy valószínű következő lépés: a microSD modult a klasszikus ESP32-höz kötöd, a CS-t a **GPIO 12**-re. A panel bekapcsoláskor végtelenül újraindul, vagy flash hibát ír. SD modul nélkül rendben indul."
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Read the boot log on the serial port",
+      "hu": "A boot log olvasása a soros porton"
+     },
+     "result": {
+      "en": "Flash read errors / 'invalid header' right after reset.",
+      "hu": "Flash olvasási hiba / 'invalid header' közvetlenül a reset után."
+     }
+    },
+    {
+     "label": {
+      "en": "Measure GPIO 12 at power-up",
+      "hu": "GPIO 12 mérése bekapcsoláskor"
+     },
+     "result": {
+      "en": "≈ 3.3 V: the SD module has a pull-up on CS.",
+      "hu": "Kb. 3,3 V: az SD modulon felhúzó van a CS-en."
+     }
+    },
+    {
+     "label": {
+      "en": "Move CS to GPIO 13",
+      "hu": "A CS áttétele a GPIO 13-ra"
+     },
+     "result": {
+      "en": "Boots normally.",
+      "hu": "Rendben indul."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "GPIO 12 is a strapping pin: high at boot selects 1.8 V flash",
+      "hu": "A GPIO 12 strapping láb: bootoláskor magas szint 1,8 V-os flasht választ"
+     },
+     "correct": true,
+     "why": {
+      "en": "On the classic ESP32, GPIO 12 (MTDI) is read at reset to set the flash voltage. Pulled high, the module powers its 3.3 V flash at 1.8 V and can't read it. Our part note says it: never put a pull-up on GPIO 12.",
+      "hu": "A klasszikus ESP32-n a GPIO 12-t (MTDI) reset után kiolvassa, ez állítja a flash feszültségét. Felhúzva a modul 1,8 V-tal táplálja a 3,3 V-os flasht, és nem tudja olvasni. A part jegyzetünk is írja: soha ne legyen felhúzás a GPIO 12-n."
+     }
+    },
+    {
+     "label": {
+      "en": "The SD card draws too much current",
+      "hu": "Az SD kártya túl sok áramot vesz fel"
+     },
+     "why": {
+      "en": "Moving one signal wire wouldn't fix a current problem.",
+      "hu": "Egy jelvezeték áttétele nem oldana meg egy áramproblémát."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "Strapping pins on the classic ESP32: 0, 2, 5, 12, 15. On the S3 the set is different (0, 3, 45, 46), which is one more reason to fix the S3 pin map in a decision note.",
+    "hu": "Strapping lábak a klasszikus ESP32-n: 0, 2, 5, 12, 15. Az S3-on más a készlet (0, 3, 45, 46): ez is egy ok, hogy az S3 lábkiosztást egy döntési jegyzetben rögzítsük."
+   }
+  },
+  {
+   "id": "case-i2c-nack",
+   "level": 2,
+   "real": false,
+   "parts": [
+    "adxl355"
+   ],
+   "lessons": [
+    "e16",
+    "e12"
+   ],
+   "title": {
+    "en": "ADXL355: no ACK on I²C",
+    "hu": "ADXL355: nincs ACK az I²C-n"
+   },
+   "teaser": {
+    "en": "The I²C scan finds nothing at 0x1D or 0x53.",
+    "hu": "Az I²C keresés semmit nem talál a 0x1D-n vagy a 0x53-on."
+   },
+   "story": {
+    "en": "A likely next step: the ADXL355 board is wired to the ESP32's SDA/SCL with 3.3 V and GND. An I²C scan finds **no device** at any address.",
+    "hu": "Egy valószínű következő lépés: az ADXL355 panel az ESP32 SDA/SCL lábaira van kötve, 3,3 V-tal és GND-vel. Az I²C keresés **semmilyen eszközt** nem talál."
+   },
+   "actions": [
+    {
+     "label": {
+      "en": "Measure SDA and SCL at idle",
+      "hu": "SDA és SCL mérése nyugalomban"
+     },
+     "result": {
+      "en": "Both ≈ 3.3 V: pull-ups are present.",
+      "hu": "Mindkettő kb. 3,3 V: van felhúzás."
+     }
+    },
+    {
+     "label": {
+      "en": "Check the SCLK/VSSIO pin",
+      "hu": "Az SCLK/VSSIO láb ellenőrzése"
+     },
+     "result": {
+      "en": "Not connected (floating).",
+      "hu": "Nincs bekötve (lebeg)."
+     }
+    },
+    {
+     "label": {
+      "en": "Tie SCLK/VSSIO to GND and rescan",
+      "hu": "SCLK/VSSIO GND-re kötése és újrakeresés"
+     },
+     "result": {
+      "en": "Device found at **0x1D**.",
+      "hu": "Eszköz a **0x1D** címen."
+     }
+    }
+   ],
+   "diagnoses": [
+    {
+     "label": {
+      "en": "The chip wasn't in I²C mode: SCLK/VSSIO must be tied to GND",
+      "hu": "A chip nem I²C módban volt: az SCLK/VSSIO-t GND-re kell kötni"
+     },
+     "correct": true,
+     "why": {
+      "en": "The ADXL355 picks SPI or I²C from that pin (datasheet pin 2: 'Connect to VSSIO for I²C'). Floating, it may sit in SPI mode and ignore I²C traffic.",
+      "hu": "Az ADXL355 erről a lábról dönti el, hogy SPI vagy I²C (adatlap 2. láb: 'I²C-hez kösd VSSIO-ra'). Lebegve SPI módban maradhat, és figyelmen kívül hagyja az I²C forgalmat."
+     }
+    },
+    {
+     "label": {
+      "en": "Missing pull-ups",
+      "hu": "Hiányzó felhúzók"
+     },
+     "why": {
+      "en": "Both lines idle at 3.3 V, so the pull-ups are there.",
+      "hu": "Mindkét vonal 3,3 V-on van nyugalomban, tehát van felhúzás."
+     }
+    },
+    {
+     "label": {
+      "en": "Wrong address",
+      "hu": "Rossz cím"
+     },
+     "why": {
+      "en": "A scan tries every address; it found nothing at all.",
+      "hu": "A keresés minden címet kipróbál; egyáltalán semmit nem talált."
+     }
+    }
+   ],
+   "debrief": {
+    "en": "PDF tip from the part note: Analog Devices writes I²C with a superscript 2, so search the datasheet for 'SCL', 'ASEL' or 'VSSIO', not 'I2C'.",
+    "hu": "PDF tipp a part jegyzetből: az Analog Devices az I²C-t felső indexes 2-vel írja, ezért az adatlapban 'SCL', 'ASEL' vagy 'VSSIO' szóra keress, ne 'I2C'-re."
+   }
+  }
+ ]
+}

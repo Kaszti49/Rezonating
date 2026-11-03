@@ -1,0 +1,66 @@
+{
+  "id": "e16",
+  "minutes": 35,
+  "title": {"en": "Digital buses at the wire level", "hu": "Digitális buszok vezetékszinten"},
+  "goal": {"en": "After this lesson you can read an SPI, I²C or UART trace, say which line is wrong from the bits you see, and size an I²C pull-up.", "hu": "A lecke után el tudsz olvasni egy SPI, I²C vagy UART jelalakot, a látott bitekből megmondod, melyik vonal a hibás, és méretezni tudsz egy I²C felhúzót."},
+  "parts": ["adc15", "esp32-devkit", "at24c02", "tca9548a"],
+  "predict": [
+    {
+      "q": {"en": "The firmware reads the ADS131M02 ID and gets **0x1102**. The datasheet says **0x2205**. The clock works (DRDY pulses at ≈ 1996 Hz). What is the most likely cause?", "hu": "A firmware kiolvassa az ADS131M02 ID-t, és **0x1102**-t kap. Az adatlap szerint **0x2205** kellene. Az órajel működik (a DRDY ≈ 1996 Hz-cel pulzál). Mi a legvalószínűbb ok?"},
+      "options": [
+        {"en": "Wrong SPI mode: the ESP32 samples on the wrong edge", "hu": "Rossz SPI mód: az ESP32 rossz élen mintavételez"},
+        {"en": "The ADC clock is 0.21 % slow, so the bits arrive slow", "hu": "Az ADC órajele 0,21 %-kal lassú, ezért lassan jönnek a bitek"},
+        {"en": "The ADC started one bit late, because CS came too close to the first clock edge", "hu": "Az ADC egy bittel később kezdett, mert a CS túl közel jött az első órajelélhez"},
+        {"en": "MISO and MOSI are swapped", "hu": "A MISO és a MOSI fel van cserélve"}
+      ],
+      "answer": 2,
+      "why": {"en": "0x2205 shifted right by one bit is exactly 0x1102. A clean ÷2 means every bit is right, just one place late. A wrong mode gives garbage or a shift the other way (and mode 0 did not help on the bench). A slow clock changes the rate, not the bits, and the SPI clock comes from the ESP32 anyway. Swapped MISO/MOSI would read as all ones or all zeros, not a shifted ID.", "hu": "A 0x2205 egy bittel jobbra tolva pontosan 0x1102. A tiszta ÷2 azt jelenti, hogy minden bit jó, csak egy hellyel később. Rossz mód szemetet vagy ellenkező irányú csúszást ad (és a mode 0 nem segített a pulton). A lassú órajel a rátát változtatja, nem a biteket, és az SPI órajelét amúgy is az ESP32 adja. Felcserélt MISO/MOSI csupa egyest vagy nullát olvasna, nem eltolt ID-t."}
+    },
+    {
+      "q": {"en": "Two AT24C02 EEPROMs, both with A2, A1, A0 tied to GND, sit on one I²C bus. Both are at 0x50. The MCU reads byte 0. What happens?", "hu": "Két AT24C02 EEPROM van egy I²C buszon, mindkettő A2, A1, A0 lába GND-n. Mindkettő a 0x50 címen van. Az MCU kiolvassa a 0. bájtot. Mi történik?"},
+      "options": [
+        {"en": "The first one answers, the second stays silent", "hu": "Az első válaszol, a második hallgat"},
+        {"en": "Both answer at once; SDA is open drain, so you read the bitwise AND of the two bytes and nothing burns out", "hu": "Mindkettő egyszerre válaszol; az SDA nyitott kollektoros, így a két bájt bitenkénti ÉS-ét olvasod, és semmi nem ég le"},
+        {"en": "Both answer at once and the short circuit destroys one chip", "hu": "Mindkettő egyszerre válaszol, és a zárlat tönkreteszi az egyiket"},
+        {"en": "The I²C driver refuses to talk and returns an error", "hu": "Az I²C driver nem hajlandó beszélni, és hibát ad"}
+      ],
+      "answer": 1,
+      "why": {"en": "Every device only pulls SDA low or lets go; the pull-up does the high. If one wants a 0 and the other a 1, the line is 0. So the bus becomes a wired AND of the two answers: wrong data, no damage. This is why our heads need the TCA9548A mux, or different address pins.", "hu": "Minden eszköz csak lehúzza az SDA-t, vagy elengedi; a magas szintet a felhúzó adja. Ha az egyik 0-t, a másik 1-et akar, a vonal 0 lesz. A busz tehát a két válasz huzalozott ÉS-e lesz: hibás adat, de nincs kár. Ezért kell a fejeinknek a TCA9548A mux, vagy más címlábak."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "An I²C bus has a 4.7 kΩ pull-up and 100 pF of capacitance. The 30 %→70 % rise time is about 0.8473 · R · C. Answer in **ns**.", "hu": "Egy I²C buszon 4,7 kΩ-os felhúzó és 100 pF kapacitás van. A 30 %→70 %-os felfutási idő kb. 0,8473 · R · C. Válasz **ns**-ban."},
+      "answer": 398.2, "unit": "ns", "tol": 0.03,
+      "hint": {"en": "R = 4700 Ω, C = 100·10⁻¹² F. 1 ns = 10⁻⁹ s.", "hu": "R = 4700 Ω, C = 100·10⁻¹² F. 1 ns = 10⁻⁹ s."},
+      "solution": {"en": "0.8473 × 4700 × 100·10⁻¹² = 3.98·10⁻⁷ s = **≈ 398 ns**. Standard mode (100 kHz) allows up to 1000 ns, so it passes. Fast mode (400 kHz) allows 300 ns, so it fails. Check the I²C specification for the exact limits.", "hu": "0,8473 × 4700 × 100·10⁻¹² = 3,98·10⁻⁷ s = **kb. 398 ns**. A standard mód (100 kHz) legfeljebb 1000 ns-ot enged, tehát megfelel. A gyors mód (400 kHz) 300 ns-ot enged, tehát nem. A pontos határokat az I²C specifikációban nézd meg."}
+    },
+    {
+      "q": {"en": "A UART at 115200 baud, 8N1 (1 start + 8 data + 1 stop bit). How long does one byte take on the wire? Answer in **µs**.", "hu": "Egy UART 115200 baudon, 8N1 (1 start + 8 adat + 1 stop bit). Mennyi ideig tart egy bájt a vezetéken? Válasz **µs**-ban."},
+      "answer": 86.8, "unit": "µs", "tol": 0.02,
+      "hint": {"en": "Ten bits per byte. One bit lasts 1 / 115200 s.", "hu": "Tíz bit bájtonként. Egy bit 1 / 115200 s."},
+      "solution": {"en": "One bit = 8.68 µs. Ten bits = **86.8 µs**, so at most 11 520 bytes per second. The receiver samples near the middle of each bit; if its baud rate is off by a few percent, the stop bit lands in the wrong place and you get a framing error.", "hu": "Egy bit = 8,68 µs. Tíz bit = **86,8 µs**, vagyis legfeljebb 11 520 bájt/s. A vevő az egyes bitek közepe táján mintavételez; ha a baudja néhány százalékkal eltér, a stop bit rossz helyre esik, és keretezési hibát kapsz."}
+    },
+    {
+      "q": {"en": "An I²C device can sink about 3 mA. With 3.3 V and a logic-low of 0.4 V, what is the smallest pull-up that is still safe? Answer in **Ω**.", "hu": "Egy I²C eszköz kb. 3 mA-t tud nyelni. 3,3 V-nál és 0,4 V-os alacsony szintnél mekkora a legkisebb még biztonságos felhúzó? Válasz **Ω**-ban."},
+      "answer": 967, "unit": "Ω", "tol": 0.03,
+      "hint": {"en": "The resistor drops 3.3 V − 0.4 V at 3 mA.", "hu": "Az ellenálláson 3,3 V − 0,4 V esik 3 mA-nél."},
+      "solution": {"en": "R_min = (3.3 − 0.4) V / 0.003 A = 2.9 / 0.003 ≈ **967 Ω**. Go lower and the device cannot pull the line down to a clean low. The 3 mA figure is the usual standard-mode sink current; check your device's datasheet.", "hu": "R_min = (3,3 − 0,4) V / 0,003 A = 2,9 / 0,003 ≈ **967 Ω**. Ennél kisebbel az eszköz nem tudja tisztán lehúzni a vonalat. A 3 mA a szokásos standard módú nyelt áram; nézd meg az eszközöd adatlapját."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What do CPOL and CPHA set?", "hu": "Mit állít be a CPOL és a CPHA?"}, "options": [{"en": "Where the clock idles, and on which edge the data is read", "hu": "Hol nyugszik az órajel, és melyik élen olvassák az adatot"}, {"en": "The baud rate and the number of bits", "hu": "A baudot és a bitek számát"}, {"en": "Which device is the master", "hu": "Melyik eszköz a master"}, {"en": "The chip select polarity", "hu": "A chip select polaritását"}], "answer": 0, "why": {"en": "CPOL = idle level of SCLK, CPHA = first or second edge samples. Together they give modes 0–3. Chip select is always its own line.", "hu": "A CPOL az SCLK nyugalmi szintje, a CPHA azt adja meg, hogy az első vagy a második él mintavételez. Együtt adják a 0–3. módot. A chip select mindig külön vonal."}},
+    {"q": {"en": "Our Click has an LTC6903 (mode 0, CS2) and an ADS131M02 (mode 1, CS1) on the same SCK/SDI lines. How does the ADC avoid listening to the LTC6903's traffic?", "hu": "A Clickünkön egy LTC6903 (mode 0, CS2) és egy ADS131M02 (mode 1, CS1) van ugyanazon az SCK/SDI vonalon. Hogyan kerüli el az ADC, hogy az LTC6903 forgalmát hallgassa?"}, "options": [{"en": "Its mode is different, so it ignores the other clock", "hu": "A módja más, ezért nem veszi figyelembe a másik órajelét"}, {"en": "Its CS1 stays high, so it ignores everything", "hu": "A CS1-e magas marad, ezért mindent figyelmen kívül hagy"}, {"en": "It has a different address", "hu": "Más a címe"}, {"en": "The firmware turns it off", "hu": "A firmware kikapcsolja"}], "answer": 1, "why": {"en": "SPI has no addresses. A device listens only while its own CS is low. The mode is set per device in the driver and applies to each transfer.", "hu": "Az SPI-nak nincs címe. Egy eszköz csak akkor figyel, ha a saját CS-e alacsony. A módot az eszközönként állítja be a driver, és minden átvitelre érvényes."}},
+    {"q": {"en": "An I²C scan finds nothing, but both lines idle at 3.3 V. Which is the first thing to check on the ADXL355?", "hu": "Egy I²C keresés semmit nem talál, de mindkét vonal 3,3 V-on nyugszik. Mit nézz meg először az ADXL355-nél?"}, "options": [{"en": "The pull-up values", "hu": "A felhúzók értékét"}, {"en": "The SCLK/VSSIO pin: it must go to GND for I²C", "hu": "Az SCLK/VSSIO lábat: I²C-hez GND-re kell kötni"}, {"en": "The firmware baud rate", "hu": "A firmware baudját"}, {"en": "The SPI mode", "hu": "Az SPI módot"}], "answer": 1, "why": {"en": "The idle level shows pull-ups exist. A floating mode pin can leave the chip in SPI mode, so it never ACKs.", "hu": "A nyugalmi szint mutatja, hogy vannak felhúzók. Egy lebegő módválasztó láb SPI módban hagyhatja a chipet, ami így sosem ACK-zik."}},
+    {"q": {"en": "What does 0xFFFF or 0x0000 as an ID tell you?", "hu": "Mit mond el egy 0xFFFF vagy 0x0000 ID?"}, "options": [{"en": "The ID register is empty", "hu": "Üres az ID regiszter"}, {"en": "Nothing is driving MISO (loose wire, no power, wrong CS)", "hu": "Senki nem hajtja a MISO-t (laza vezeték, nincs táp, rossz CS)"}, {"en": "The SPI clock is too fast", "hu": "Túl gyors az SPI órajel"}, {"en": "The ADC is in sleep mode", "hu": "Az ADC alvó módban van"}], "answer": 1, "why": {"en": "A floating input reads all ones (pull-up) or all zeros. The real ID, 0x2205, is neither. On 2026-11-02 it was a loose mikroBUS jumper.", "hu": "Egy lebegő bemenet csupa egyest (felhúzás) vagy csupa nullát olvas. A valódi ID, a 0x2205, egyik sem. 2026-11-02-án egy laza mikroBUS vezeték volt az ok."}},
+    {"q": {"en": "A logic analyser shows the same SPI frame, but you cannot tell if the signal is clean. Why?", "hu": "A logikai analizátor ugyanazt az SPI keretet mutatja, de nem látod, tiszta-e a jel. Miért?"}, "options": [{"en": "It only records high or low, not the voltage between them", "hu": "Csak magasat vagy alacsonyat rögzít, a köztes feszültséget nem"}, {"en": "It is too slow for 2 MHz", "hu": "Túl lassú 2 MHz-hez"}, {"en": "It changes the mode", "hu": "Megváltoztatja a módot"}, {"en": "It cannot see CS", "hu": "Nem látja a CS-t"}], "answer": 0, "why": {"en": "A logic analyser compares each line to a threshold. Ringing, slow edges and levels that sit in between need an oscilloscope.", "hu": "A logikai analizátor minden vonalat egy küszöbhöz hasonlít. A túllövést, a lassú éleket és a köztes szinteket oszcilloszkóppal látod."}}
+  ],
+  "cards": [
+    {"id": "e16-c1", "front": {"en": "SPI mode 0 vs mode 1", "hu": "SPI mode 0 és mode 1"}, "back": {"en": "Both idle low (CPOL 0). Mode 0 samples on the first edge, mode 1 on the second. LTC6903 = mode 0, ADS131M0x = mode 1.", "hu": "Mindkettő alacsonyan nyugszik (CPOL 0). A mode 0 az első, a mode 1 a második élen mintavételez. LTC6903 = mode 0, ADS131M0x = mode 1."}},
+    {"id": "e16-c2", "front": {"en": "Our one-bit-shift fix", "hu": "Az egybites csúszás javítása"}, "back": {"en": "cs_ena_pretrans = 2 and cs_ena_posttrans = 2 on the ADC device. ID went from 0x1102 to 0x2205.", "hu": "cs_ena_pretrans = 2 és cs_ena_posttrans = 2 az ADC eszközön. Az ID 0x1102-ről 0x2205-re változott."}},
+    {"id": "e16-c3", "front": {"en": "I²C start, stop, ACK", "hu": "I²C start, stop, ACK"}, "back": {"en": "Start: SDA falls while SCL high. Stop: SDA rises while SCL high. ACK: receiver pulls SDA low on the 9th clock.", "hu": "Start: SDA lemegy magas SCL mellett. Stop: SDA felmegy magas SCL mellett. ACK: a vevő a 9. órajelen lehúzza az SDA-t."}},
+    {"id": "e16-c4", "front": {"en": "Pull-up trade-off", "hu": "A felhúzó kompromisszuma"}, "back": {"en": "Too big: slow rise (R·C). Too small: the device cannot pull low (R_min ≈ (Vdd − 0.4 V) / 3 mA ≈ 967 Ω at 3.3 V).", "hu": "Túl nagy: lassú felfutás (R·C). Túl kicsi: az eszköz nem tudja lehúzni (R_min ≈ (Vdd − 0,4 V) / 3 mA ≈ 967 Ω 3,3 V-nál)."}},
+    {"id": "e16-c5", "front": {"en": "UART byte at 115200 8N1", "hu": "UART bájt 115200 8N1-nél"}, "back": {"en": "10 bits = 86.8 µs, max 11 520 bytes/s. A 0 where the stop bit should be = framing error.", "hu": "10 bit = 86,8 µs, legfeljebb 11 520 bájt/s. 0 a stop bit helyén = keretezési hiba."}}
+  ],
+  "cases": ["case-cs-shift", "case-id-ffff", "case-i2c-nack"]
+}

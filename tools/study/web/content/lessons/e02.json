@@ -1,0 +1,64 @@
+{
+  "id": "e02",
+  "minutes": 30,
+  "title": {"en": "Resistance, Ohm's law and power", "hu": "Ellenállás, Ohm törvénye és teljesítmény"},
+  "goal": {"en": "After this lesson you can predict the current through any resistor on our bench, spot a wrong resistor by its numbers, and check that a part won't overheat.", "hu": "A lecke után meg tudod mondani bármelyik pultunkon lévő ellenálláson átfolyó áramot, a számokból kiszúrod a rossz ellenállást, és ellenőrzöd, hogy egy alkatrész nem melegszik-e túl."},
+  "parts": ["yzc133", "passives", "esp32-devkit"],
+  "predict": [
+    {
+      "q": {"en": "The excitation resistor between 3V3 and the load cell's red wire is really **680 kΩ**, not 680 Ω. The bridge between red and black is about 1100 Ω. Roughly what voltage do you expect across the bridge?", "hu": "A 3V3 és a mérlegcella piros vezetéke közti gerjesztő ellenállás valójában **680 kΩ**, nem 680 Ω. A híd a piros és a fekete között kb. 1100 Ω. Nagyjából mekkora feszültséget vársz a hídon?"},
+      "options": [
+        {"en": "About 2 V: the resistor drops a bit, the bridge gets the rest", "hu": "Kb. 2 V: az ellenálláson esik egy kevés, a híd kapja a többit"},
+        {"en": "About 3.3 V: resistors don't change the voltage, only the current", "hu": "Kb. 3,3 V: az ellenállás nem változtat a feszültségen, csak az áramon"},
+        {"en": "A few millivolts: almost all of the 3.3 V drops across the huge resistor", "hu": "Néhány millivolt: majdnem az egész 3,3 V a hatalmas ellenálláson esik"},
+        {"en": "Zero: 680 kΩ is an open circuit", "hu": "Nulla: a 680 kΩ szakadás"}
+      ],
+      "answer": 2,
+      "why": {"en": "The same current flows through both (they're in series), so each gets voltage in proportion to its resistance: 3.3 V × 1100 / (680 000 + 1100) ≈ **5.3 mV**. That's what the bench saw: 3.3 V on one end of the resistor and 'nothing' on the cell end. It isn't quite zero, so it's not a true open circuit, but the meter on its V range shows it as 0.00.", "hu": "Mindkettőn ugyanaz az áram folyik (sorba vannak kötve), így mindegyik az ellenállásával arányos feszültséget kap: 3,3 V × 1100 / (680 000 + 1100) ≈ **5,3 mV**. Pontosan ezt látta a pult: 3,3 V az ellenállás egyik végén és 'semmi' a cella felőli végén. Nem pontosan nulla, tehát nem igazi szakadás, de a műszer V állásban 0,00-t mutat."}
+    },
+    {
+      "q": {"en": "You double the resistance in a circuit and keep the voltage the same. What happens to the power turned into heat?", "hu": "Megduplázod az ellenállást egy áramkörben, a feszültség marad. Mi történik a hővé alakuló teljesítménnyel?"},
+      "options": [
+        {"en": "It doubles", "hu": "Megduplázódik"},
+        {"en": "It halves", "hu": "A felére csökken"},
+        {"en": "It stays the same", "hu": "Ugyanannyi marad"},
+        {"en": "It drops to a quarter", "hu": "A negyedére csökken"}
+      ],
+      "answer": 1,
+      "why": {"en": "P = V² / R. Same V, twice the R → half the power. (With the same *current* instead, P = I² · R would double. Always ask which one is held constant.)", "hu": "P = V² / R. Ugyanaz a V, kétszeres R → fele akkora teljesítmény. (Ha az *áram* lenne ugyanaz, P = I² · R megduplázódna. Mindig kérdezd meg, melyik marad állandó.)"}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "Our fix: 470 Ω + 220 Ω in series = 690 Ω, then the bridge (take 1100 Ω), from 3.3 V. What current flows? Answer in **mA**.", "hu": "A javításunk: 470 Ω + 220 Ω sorosan = 690 Ω, utána a híd (vegyük 1100 Ω-nak), 3,3 V-ról. Mekkora áram folyik? Válasz **mA**-ben."},
+      "answer": 1.844, "unit": "mA", "tol": 0.03,
+      "hint": {"en": "Series resistances add. I = V / R_total.", "hu": "Soros ellenállások összeadódnak. I = V / R_összes."},
+      "solution": {"en": "R_total = 690 + 1100 = 1790 Ω. I = 3.3 V / 1790 Ω = **1.84 mA**. The bridge then gets 1.84 mA × 1100 Ω ≈ 2.03 V, matching the build note's 2.01–2.04 V.", "hu": "R_összes = 690 + 1100 = 1790 Ω. I = 3,3 V / 1790 Ω = **1,84 mA**. A híd így 1,84 mA × 1100 Ω ≈ 2,03 V-ot kap, egyezik a build jegyzet 2,01–2,04 V-jával."}
+    },
+    {
+      "q": {"en": "How much power does the 470 Ω resistor dissipate at that current? Answer in **mW**. (A standard through-hole resistor is rated ¼ W = 250 mW.)", "hu": "Mekkora teljesítményt disszipál a 470 Ω-os ellenállás ezen az áramon? Válasz **mW**-ban. (Egy szokásos furatszerelt ellenállás ¼ W = 250 mW terhelhetőségű.)"},
+      "answer": 1.598, "unit": "mW", "tol": 0.04,
+      "hint": {"en": "P = I² · R. Keep the current in amperes: 1.844 mA = 0.001844 A.", "hu": "P = I² · R. Az áramot amperben írd: 1,844 mA = 0,001844 A."},
+      "solution": {"en": "P = (0.001844 A)² × 470 Ω ≈ 0.0016 W = **1.6 mW**: over 150× below the ¼ W rating. It stays cold.", "hu": "P = (0,001844 A)² × 470 Ω ≈ 0,0016 W = **1,6 mW**: több mint 150-szer kevesebb a ¼ W-os határnál. Hideg marad."}
+    },
+    {
+      "q": {"en": "With the wrong 680 kΩ resistor instead of 690 Ω, what current flowed? Answer in **µA**.", "hu": "A hibás 680 kΩ-os ellenállással (690 Ω helyett) mekkora áram folyt? Válasz **µA**-ben."},
+      "answer": 4.845, "unit": "µA", "tol": 0.03,
+      "solution": {"en": "I = 3.3 V / (680 000 + 1100) Ω ≈ 4.85 µA, about **380× less** than intended. The bridge output (1 mV/V) would have been about 5 µV at full load: below the ADC's noise.", "hu": "I = 3,3 V / (680 000 + 1100) Ω ≈ 4,85 µA, kb. **380-szor kevesebb** a tervezettnél. A híd kimenete (1 mV/V) teljes terhelésnél is csak kb. 5 µV lett volna: az ADC zaja alatt."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "A resistor's bands read blue, grey, yellow, gold. What is it?", "hu": "Egy ellenállás sávjai: kék, szürke, sárga, arany. Mekkora?"}, "options": [{"en": "680 Ω", "hu": "680 Ω"}, {"en": "6.8 kΩ", "hu": "6,8 kΩ"}, {"en": "680 kΩ", "hu": "680 kΩ"}, {"en": "68 kΩ", "hu": "68 kΩ"}], "answer": 2, "why": {"en": "Blue 6, grey 8, yellow = × 10 000 → 680 000 Ω. 680 Ω would be blue grey **brown**.", "hu": "Kék 6, szürke 8, sárga = × 10 000 → 680 000 Ω. A 680 Ω kék szürke **barna** lenne."}},
+    {"q": {"en": "Which formula gives power from current and resistance?", "hu": "Melyik képlet adja a teljesítményt áramból és ellenállásból?"}, "options": [{"en": "P = I / R", "hu": "P = I / R"}, {"en": "P = I² · R", "hu": "P = I² · R"}, {"en": "P = R / I²", "hu": "P = R / I²"}, {"en": "P = I · R", "hu": "P = I · R"}], "answer": 1, "why": {"en": "P = V · I and V = I · R, so P = I · R · I = I² · R. (I · R alone is a voltage.)", "hu": "P = V · I és V = I · R, tehát P = I · R · I = I² · R. (Az I · R önmagában feszültség.)"}},
+    {"q": {"en": "You measure 3.3 V on one end of a resistor and 0 V on the other, with current supposedly flowing. Which is NOT a possible cause?", "hu": "Egy ellenállás egyik végén 3,3 V-ot, a másikon 0 V-ot mérsz, pedig áramnak kellene folynia. Melyik NEM lehet az ok?"}, "options": [{"en": "The resistor (or its joint) is open", "hu": "Az ellenállás (vagy a forrasztása) szakadt"}, {"en": "The far end is shorted to GND", "hu": "A túlsó vége GND-re van zárva"}, {"en": "The resistor is far larger than the load after it", "hu": "Az ellenállás sokkal nagyobb, mint az utána lévő terhelés"}, {"en": "The resistor is exactly 0 Ω", "hu": "Az ellenállás pontosan 0 Ω"}], "answer": 3, "why": {"en": "A 0 Ω part would put 3.3 V on both ends. The other three all match the bench: the Handoff listed open joint and short to GND as suspects, and the real cause was the third (680 kΩ against ≈ 1.1 kΩ).", "hu": "Egy 0 Ω-os alkatrész mindkét végén 3,3 V lenne. A másik három mind illik a pulthoz: a Handoff a szakadt kötést és a GND-zárlatot gyanította, a valódi ok a harmadik volt (680 kΩ kb. 1,1 kΩ-mal szemben)."}},
+    {"q": {"en": "Why must resistance (Ω) be measured with the USB unplugged?", "hu": "Miért kell az ellenállást (Ω) kihúzott USB-vel mérni?"}, "options": [{"en": "The meter's battery would be drained", "hu": "Lemerülne a műszer eleme"}, {"en": "The meter measures Ω by pushing its own small current; any other voltage in the circuit falsifies the reading", "hu": "A műszer saját kis áramot hajt át, úgy méri az Ω-ot; az áramkör bármilyen más feszültsége meghamisítja"}, {"en": "Ω mode only works below 1 V", "hu": "Az Ω mód csak 1 V alatt működik"}, {"en": "It doesn't matter", "hu": "Nem számít"}], "answer": 1, "why": {"en": "In Ω mode the meter applies a known current and reads the voltage it causes. A powered circuit adds its own voltages, so the reading is meaningless and can even damage the meter.", "hu": "Ω módban a műszer ismert áramot ad, és az általa okozott feszültséget méri. Egy táplált áramkör hozzáadja a saját feszültségeit, így az eredmény értelmetlen, sőt a műszer is károsodhat."}}
+  ],
+  "cards": [
+    {"id": "e02-c1", "front": {"en": "Ohm's law, all three forms", "hu": "Ohm törvénye mindhárom alakban"}, "back": {"en": "V = I·R  |  I = V/R  |  R = V/I", "hu": "V = I·R  |  I = V/R  |  R = V/I"}},
+    {"id": "e02-c2", "front": {"en": "Three formulas for power", "hu": "A teljesítmény három képlete"}, "back": {"en": "P = V · I = I² · R = V² / R", "hu": "P = V · I = I² · R = V² / R"}},
+    {"id": "e02-c3", "front": {"en": "Colour code: which colour is the multiplier × 10 000?", "hu": "Színkód: melyik szín a × 10 000 szorzó?"}, "back": {"en": "Yellow (4 zeros). Brown = × 10, red = × 100, orange = × 1000.", "hu": "Sárga (4 nulla). Barna = × 10, piros = × 100, narancs = × 1000."}},
+    {"id": "e02-c4", "front": {"en": "Current through 690 Ω + the load cell bridge from 3.3 V?", "hu": "Áram a 690 Ω + mérlegcella hídon 3,3 V-ról?"}, "back": {"en": "≈ 1.84 mA (3.3 V / 1790 Ω); the bridge gets ≈ 2.0 V.", "hu": "Kb. 1,84 mA (3,3 V / 1790 Ω); a híd kb. 2,0 V-ot kap."}},
+    {"id": "e02-c5", "front": {"en": "Series resistors: total?", "hu": "Soros ellenállások eredője?"}, "back": {"en": "They add: R = R1 + R2 + … (470 + 220 = 690 Ω).", "hu": "Összeadódnak: R = R1 + R2 + … (470 + 220 = 690 Ω)."}}
+  ],
+  "cases": ["case-680k"]
+}

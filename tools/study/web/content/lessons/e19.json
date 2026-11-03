@@ -1,0 +1,63 @@
+{
+  "id": "e19",
+  "minutes": 35,
+  "title": {"en": "Reading datasheets and schematics", "hu": "Adatlapok és kapcsolási rajzok olvasása"},
+  "goal": {"en": "After this lesson you can find the number you need in a datasheet in a minute, tell typical from guaranteed, read a pin table, and trace a signal through the ADC 15 Click's mikroBUS pins.", "hu": "A lecke után egy perc alatt megtalálod az adatlapban a keresett számot, megkülönbözteted a tipikust a garantálttól, el tudsz olvasni egy lábtáblát, és követni tudsz egy jelet az ADC 15 Click mikroBUS lábain."},
+  "parts": ["ads131m04", "adc15", "adxl355"],
+  "predict": [
+    {
+      "q": {"en": "You want to know whether a piezo spike of −2 V on an ADS131M0x input will damage it. Which datasheet section answers that?", "hu": "Tudni szeretnéd, hogy egy −2 V-os piezo tüske tönkreteszi-e az ADS131M0x bemenetét. Melyik adatlap-szakasz válaszol erre?"},
+      "options": [
+        {"en": "Electrical Characteristics: it lists the input range", "hu": "Electrical Characteristics: ott van a bemeneti tartomány"},
+        {"en": "Absolute Maximum Ratings: it lists what the part survives", "hu": "Absolute Maximum Ratings: ott van, amit az alkatrész túlél"},
+        {"en": "Typical Application: it shows an example input", "hu": "Typical Application: példa bemenetet mutat"},
+        {"en": "The pin table: it names the input", "hu": "A lábtábla: megnevezi a bemenetet"}
+      ],
+      "answer": 1,
+      "why": {"en": "'Absolute Maximum Ratings' is the damage limit: AGND − 1.6 V to AVDD + 0.3 V for these inputs, so −2 V is outside. 'Electrical Characteristics' describes normal operation, not what survives. Typical Application is a suggestion, and the pin table only gives names.", "hu": "Az „Absolute Maximum Ratings” a károsodási határ: ezeknél a bemeneteknél AGND − 1,6 V és AVDD + 0,3 V, tehát a −2 V kívül esik. Az „Electrical Characteristics” a normál működést írja le, nem azt, mi éli túl. A Typical Application javaslat, a lábtábla csak neveket ad."}
+    },
+    {
+      "q": {"en": "A datasheet says an oscillator is accurate to '0.5 % typ, 1.1 % max'. You design for the clock being within 0.5 %. What is the risk?", "hu": "Egy adatlap szerint az oszcillátor „0,5 % tipikus, 1,1 % max” pontos. Arra tervezel, hogy az órajel 0,5 %-on belül van. Mi a kockázat?"},
+      "options": [
+        {"en": "None: typical is what you get", "hu": "Nincs: a tipikus az, amit kapsz"},
+        {"en": "Some boards will be worse than 0.5 %, up to the max, and your design breaks on them", "hu": "Egyes panelek rosszabbak lesznek 0,5 %-nál, akár a maximumig, és a terved elromlik rajtuk"},
+        {"en": "The chip will overheat", "hu": "A chip túlmelegszik"},
+        {"en": "The datasheet is wrong", "hu": "Az adatlap téved"}
+      ],
+      "answer": 1,
+      "why": {"en": "Typical describes a normal part; the max is what the maker guarantees. Our board measured −0.21 %, which is better than typical, but the next board can be anywhere up to the max. Design to the limit.", "hu": "A tipikus egy átlagos alkatrészt ír le; a maximum az, amit a gyártó garantál. A mi panelünk −0,21 %-ot mutatott, ami jobb a tipikusnál, de a következő panel bárhol lehet a maximumig. A határra tervezz."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "ADS131M0x full scale is ±1.2 V / gain. What is the full scale at gain 64? Answer in **mV**.", "hu": "Az ADS131M0x végkitérése ±1,2 V / erősítés. Mekkora a végkitérés 64-es erősítésnél? Válasz **mV**-ban."},
+      "answer": 18.75, "unit": "mV", "tol": 0.01,
+      "solution": {"en": "1200 mV / 64 = **18.75 mV**. For comparison: gain 32 gives 37.5 mV, gain 128 gives 9.375 mV.", "hu": "1200 mV / 64 = **18,75 mV**. Összehasonlításul: 32-es erősítés 37,5 mV-ot, 128-as 9,375 mV-ot ad."}
+    },
+    {
+      "q": {"en": "At gain ≥ 8 the inputs must stay between AGND − 1.3 V and AVDD − 1.8 V. With AVDD = 3.3 V, how wide is that window? Answer in **V**.", "hu": "8-as vagy nagyobb erősítésnél a bemeneteknek AGND − 1,3 V és AVDD − 1,8 V között kell maradniuk. AVDD = 3,3 V-nál milyen széles ez az ablak? Válasz **V**-ban."},
+      "answer": 2.8, "unit": "V", "tol": 0.01,
+      "hint": {"en": "Upper limit = 3.3 − 1.8. Lower limit = −1.3 (with AGND = 0).", "hu": "Felső határ = 3,3 − 1,8. Alsó határ = −1,3 (AGND = 0 mellett)."},
+      "solution": {"en": "Upper = 3.3 − 1.8 = 1.5 V. Lower = −1.3 V. Window = 1.5 − (−1.3) = **2.8 V**.", "hu": "Felső = 3,3 − 1,8 = 1,5 V. Alsó = −1,3 V. Ablak = 1,5 − (−1,3) = **2,8 V**."}
+    },
+    {
+      "q": {"en": "The LTC6903 is 1.1 % off at its guaranteed worst case at 25 °C. What CLKIN frequency error is that in absolute terms, on 8.192 MHz? Answer in **kHz**.", "hu": "Az LTC6903 a garantált legrosszabb esetben 25 °C-on 1,1 %-kal tér el. Ez abszolút értékben mekkora CLKIN-frekvenciahiba 8,192 MHz-en? Válasz **kHz**-ben."},
+      "answer": 90.1, "unit": "kHz", "tol": 0.02,
+      "solution": {"en": "8 192 000 Hz × 0.011 = 90 112 Hz ≈ **90.1 kHz**. The ADC's allowed CLKIN range is 0.3–8.4 MHz in high-resolution mode (SBAS853A), so even +1.1 % stays inside it. The error is a problem for the sample rate, not for the chip.", "hu": "8 192 000 Hz × 0,011 = 90 112 Hz ≈ **90,1 kHz**. Az ADC megengedett CLKIN tartománya nagy felbontású módban 0,3–8,4 MHz (SBAS853A), tehát még a +1,1 % is belül marad. A hiba a mintavételi rátának gond, nem a chipnek."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Which section tells you the safe range for normal operation?", "hu": "Melyik szakasz mondja meg a normál működés biztonságos tartományát?"}, "options": [{"en": "Absolute Maximum Ratings", "hu": "Absolute Maximum Ratings"}, {"en": "Recommended Operating Conditions", "hu": "Recommended Operating Conditions"}, {"en": "Revision History", "hu": "Revision History"}, {"en": "Ordering Information", "hu": "Ordering Information"}], "answer": 1, "why": {"en": "Absolute maximum is the damage limit, not the working range. Operating conditions is the range in which the electrical specs hold.", "hu": "Az abszolút maximum a károsodási határ, nem a munkatartomány. Az üzemi feltételek az a tartomány, amelyben az elektromos adatok érvényesek."}},
+    {"q": {"en": "In a schematic, two wires carry the label 'CLKIN' but no line joins them. What does that mean?", "hu": "Egy kapcsolási rajzon két vezetéken ott a „CLKIN” felirat, de nem köti össze őket vonal. Mit jelent ez?"}, "options": [{"en": "They are the same net: connected", "hu": "Ugyanaz a hálózat: össze vannak kötve"}, {"en": "A drawing mistake", "hu": "Rajzolási hiba"}, {"en": "Two different signals with similar names", "hu": "Két különböző jel hasonló névvel"}, {"en": "One is an input and one an output", "hu": "Az egyik bemenet, a másik kimenet"}], "answer": 0, "why": {"en": "Net labels connect by name. This is how large schematics avoid a spaghetti of lines.", "hu": "A hálózatnevek név szerint kötnek. Így kerülik el a nagy kapcsolási rajzok a vonalspagettit."}},
+    {"q": {"en": "What does the reference designator U1 usually mean?", "hu": "Mit jelent általában az U1 alkatrész-azonosító?"}, "options": [{"en": "A resistor", "hu": "Ellenállást"}, {"en": "An integrated circuit", "hu": "Integrált áramkört"}, {"en": "A connector", "hu": "Csatlakozót"}, {"en": "A capacitor", "hu": "Kondenzátort"}], "answer": 1, "why": {"en": "R resistor, C capacitor, L inductor, D diode, Q transistor, J connector, U integrated circuit.", "hu": "R ellenállás, C kondenzátor, L tekercs, D dióda, Q tranzisztor, J csatlakozó, U integrált áramkör."}},
+    {"q": {"en": "On the ADC 15 Click, which mikroBUS pin carries DRDY?", "hu": "Az ADC 15 Clicken melyik mikroBUS láb viszi a DRDY-t?"}, "options": [{"en": "INT", "hu": "INT"}, {"en": "RST", "hu": "RST"}, {"en": "PWM", "hu": "PWM"}, {"en": "AN", "hu": "AN"}], "answer": 0, "why": {"en": "INT = ADC DRDY (active low). RST goes to the ADC's SYNC/RESET, and PWM is CS2 for the LTC6903. AN is not used.", "hu": "Az INT = az ADC DRDY-ja (aktív alacsony). Az RST az ADC SYNC/RESET lábára megy, a PWM a CS2 az LTC6903-hoz. Az AN nincs használva."}}
+  ],
+  "cards": [
+    {"id": "e19-c1", "front": {"en": "Datasheet reading order", "hu": "Az adatlap olvasási sorrendje"}, "back": {"en": "Features/first page → pin table → Absolute Maximum Ratings → Recommended Operating Conditions → Electrical Characteristics → Timing → Typical Application → Layout.", "hu": "Features/első oldal → lábtábla → Absolute Maximum Ratings → Recommended Operating Conditions → Electrical Characteristics → időzítés → Typical Application → Layout."}},
+    {"id": "e19-c2", "front": {"en": "Typical vs max", "hu": "Tipikus és maximum"}, "back": {"en": "Design to min/max. Typical is what an average part does.", "hu": "A min/max-ra tervezz. A tipikus egy átlagos alkatrész viselkedése."}},
+    {"id": "e19-c3", "front": {"en": "Our Click's mikroBUS signals", "hu": "A Clickünk mikroBUS jelei"}, "back": {"en": "CS1 = ADC CS, CS2 (PWM) = LTC6903 CS, SCK, SDO = MISO, SDI = MOSI, INT = DRDY, RST = SYNC/RESET, 3V3, GND.", "hu": "CS1 = ADC CS, CS2 (PWM) = LTC6903 CS, SCK, SDO = MISO, SDI = MOSI, INT = DRDY, RST = SYNC/RESET, 3V3, GND."}},
+    {"id": "e19-c4", "front": {"en": "Reference designators", "hu": "Alkatrész-azonosítók"}, "back": {"en": "R, C, L, D, Q, J, U (IC), Y (crystal/oscillator).", "hu": "R, C, L, D, Q, J, U (IC), Y (kristály/oszcillátor)."}},
+    {"id": "e19-c5", "front": {"en": "ADI datasheet search tip", "hu": "ADI adatlap keresési tipp"}, "back": {"en": "ADI writes I²C with a superscript 2: search 'SCL', 'ASEL' or 'VSSIO', not 'I2C'.", "hu": "Az ADI az I²C-t felső indexes 2-vel írja: „SCL”, „ASEL” vagy „VSSIO” szóra keress, ne „I2C”-re."}}
+  ],
+  "cases": []
+}

@@ -1,0 +1,63 @@
+{
+  "id": "e08", "minutes": 30,
+  "title": {"en": "Magnets, coils and the geophone", "hu": "Mágnesek, tekercsek és a geofon"},
+  "goal": {"en": "After this lesson you can explain why a moving magnet makes a voltage, read the SM-24's response curve, say what the shunt resistor does, and estimate what the ADC sees for a given floor velocity.", "hu": "A lecke után el tudod magyarázni, miért kelt feszültséget egy mozgó mágnes, le tudod olvasni az SM-24 átviteli görbéjét, meg tudod mondani, mit csinál a sönt ellenállás, és meg tudod becsülni, mit lát az ADC adott padlósebességnél."},
+  "parts": ["sm24", "adc15"],
+  "predict": [
+    {
+      "q": {"en": "The floor moves at the same velocity at 2 Hz as at 40 Hz. With the SM-24 damped at ζ = 0.6, how does the output at 2 Hz compare with 40 Hz? (Use the live diagram after you answer.)", "hu": "A padló ugyanakkora sebességgel mozog 2 Hz-en, mint 40 Hz-en. ζ = 0,6 csillapítású SM-24 esetén hogy viszonyul a kimenet 2 Hz-en a 40 Hz-esehez? (A válasz után próbáld ki az élő diagramon.)"},
+      "options": [
+        {"en": "The same: output follows velocity, frequency doesn't matter", "hu": "Ugyanakkora: a kimenet a sebességet követi, a frekvencia nem számít"},
+        {"en": "Larger: slow movements make bigger voltages", "hu": "Nagyobb: a lassú mozgás nagyobb feszültséget ad"},
+        {"en": "About 25 times smaller", "hu": "Kb. 25-ször kisebb"},
+        {"en": "Zero: a geophone only works above 100 Hz", "hu": "Nulla: a geofon csak 100 Hz felett működik"}
+      ],
+      "answer": 2,
+      "why": {"en": "Below the 10 Hz natural frequency, the magnet no longer hangs back: it moves with the case, so there is little relative motion. In the model (calculated, ζ = 0.6) the relative sensitivity at 2 Hz is about 0.04, at 40 Hz about 1.02. 'Same' is true only well above 10 Hz. It isn't zero, and it doesn't need 100 Hz.", "hu": "A 10 Hz-es sajátfrekvencia alatt a mágnes már nem marad le: a házzal együtt mozog, így alig van relatív elmozdulás. A modellben (számolt, ζ = 0,6) a relatív érzékenység 2 Hz-en kb. 0,04, 40 Hz-en kb. 1,02. 'Ugyanakkora' csak 10 Hz-nél jóval feljebb igaz. Nem nulla, és nem kell hozzá 100 Hz."}
+    },
+    {
+      "q": {"en": "With no shunt resistor (open circuit, ζ ≈ 0.25), what happens to the sensitivity close to 10 Hz?", "hu": "Sönt ellenállás nélkül (nyitott kivezetés, ζ ≈ 0,25) mi történik az érzékenységgel 10 Hz körül?"},
+      "options": [
+        {"en": "Nothing special: the curve is flat", "hu": "Semmi különös: a görbe lapos"},
+        {"en": "It peaks at about twice the nominal value: the spring rings", "hu": "A névleges érték kb. kétszeresére csúcsosodik: a rugó cseng"},
+        {"en": "It drops to zero at exactly 10 Hz", "hu": "Pontosan 10 Hz-en nullára esik"},
+        {"en": "It doubles at every frequency", "hu": "Minden frekvencián megduplázódik"}
+      ],
+      "answer": 1,
+      "why": {"en": "At resonance the relative sensitivity is 1 / (2ζ). With ζ = 0.25 that is 2. A footstep that happens to contain 10 Hz energy would make the geophone ring. The shunt (ζ ≈ 0.6) cuts the peak down to 0.83.", "hu": "Rezonancián a relatív érzékenység 1 / (2ζ). ζ = 0,25-nél ez 2. Egy lépés, amiben van 10 Hz-es energia, megcsengetné a geofont. A sönt (ζ ≈ 0,6) a csúcsot 0,83-ra viszi le."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "At gain 32 the ADC full scale is ±37.5 mV (1.2 V / 32). Well above 10 Hz the SM-24 gives 28.8 V/(m/s). What floor velocity fills the full scale? Answer in **mm/s**.", "hu": "32-es erősítésnél az ADC teljes skálája ±37,5 mV (1,2 V / 32). 10 Hz-nél jóval feljebb az SM-24 28,8 V/(m/s)-ot ad. Mekkora padlósebesség tölti ki a teljes skálát? Válasz **mm/s**-ban."},
+      "answer": 1.302, "unit": "mm/s", "tol": 0.03,
+      "hint": {"en": "v = V / S. Keep volts and m/s, convert at the end.", "hu": "v = V / S. Dolgozz voltban és m/s-ban, a végén váltsd át."},
+      "solution": {"en": "v = 0.0375 V / 28.8 V/(m/s) = 0.001302 m/s = **1.30 mm/s**. Calculated, flat region only. We have no SM-24 recording yet, so we don't know how large real footsteps are in these units.", "hu": "v = 0,0375 V / 28,8 V/(m/s) = 0,001302 m/s = **1,30 mm/s**. Számolt érték, csak a lapos tartományra. Még nincs SM-24 felvételünk, ezért nem tudjuk, mekkorák a valódi lépések ebben a mértékegységben."}
+    },
+    {
+      "q": {"en": "Assume 28.8 V/(m/s) is the open-circuit value (not confirmed). The coil is 375 Ω, and a 1339 Ω shunt is across it. What is the sensitivity at the terminals? Answer in **V/(m/s)**.", "hu": "Tegyük fel, hogy a 28,8 V/(m/s) a nyitott kivezetésen mért érték (nincs megerősítve). A tekercs 375 Ω, rajta 1339 Ω-os sönt. Mekkora az érzékenység a kivezetésen? Válasz **V/(m/s)**-ban."},
+      "answer": 22.5, "unit": "V/(m/s)", "tol": 0.02,
+      "hint": {"en": "The coil's voltage divides between its own 375 Ω and the shunt: output = emf × Rs / (Rs + Rcoil).", "hu": "A tekercs feszültsége a saját 375 Ω-ja és a sönt között oszlik meg: kimenet = emf × Rs / (Rs + Rtekercs)."},
+      "solution": {"en": "28.8 × 1339 / (1339 + 375) = 28.8 × 0.781 ≈ **22.5 V/(m/s)**. This is a calculation under an assumption. Check the datasheet to see which figure applies with the shunt; the site diagram uses the plain 28.8.", "hu": "28,8 × 1339 / (1339 + 375) = 28,8 × 0,781 ≈ **22,5 V/(m/s)**. Ez egy feltevésen alapuló számítás. Az adatlapon nézd meg, melyik érték érvényes söntnél; az oldal diagramja a sima 28,8-at használja."}
+    },
+    {
+      "q": {"en": "In the model, the sensitivity at exactly 10 Hz is S₀ / (2ζ). With ζ = 0.6 and S₀ = 28.8 V/(m/s), what is it? Answer in **V/(m/s)**.", "hu": "A modellben az érzékenység pontosan 10 Hz-en S₀ / (2ζ). ζ = 0,6 és S₀ = 28,8 V/(m/s) esetén mennyi? Válasz **V/(m/s)**-ban."},
+      "answer": 24, "unit": "V/(m/s)", "tol": 0.02,
+      "solution": {"en": "28.8 / 1.2 = **24 V/(m/s)**, 83 % of the nominal value. Calculated from the second-order model, not measured.", "hu": "28,8 / 1,2 = **24 V/(m/s)**, a névleges érték 83 %-a. A másodrendű modellből számolt, nem mért érték."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What does the geophone's output voltage follow?", "hu": "Mit követ a geofon kimeneti feszültsége?"}, "options": [{"en": "Floor position", "hu": "A padló helyzetét"}, {"en": "Floor velocity", "hu": "A padló sebességét"}, {"en": "Floor acceleration", "hu": "A padló gyorsulását"}, {"en": "Floor temperature", "hu": "A padló hőmérsékletét"}], "answer": 1, "why": {"en": "Faraday: induced voltage ∝ how fast the magnet moves relative to the coil. That is velocity, hence V/(m/s). The ADXL355 is the acceleration sensor.", "hu": "Faraday: az indukált feszültség arányos azzal, hogy milyen gyorsan mozog a mágnes a tekercshez képest. Ez a sebesség, ezért V/(m/s). A gyorsulásmérő az ADXL355."}},
+    {"q": {"en": "Does the SM-24 need a power supply?", "hu": "Kell tápfeszültség az SM-24-hez?"}, "options": [{"en": "Yes, 3.3 V", "hu": "Igen, 3,3 V"}, {"en": "Yes, 5 V", "hu": "Igen, 5 V"}, {"en": "No: it is passive, the motion makes the voltage", "hu": "Nem: passzív, a mozgás kelti a feszültséget"}, {"en": "Only with the shunt", "hu": "Csak a söntnél"}], "answer": 2, "why": {"en": "A coil and a magnet generate their own voltage. That is also why its output is small and why the ADC runs at a high gain for it.", "hu": "A tekercs és a mágnes maga állítja elő a feszültséget. Ezért kicsi a kimenete, és ezért kell az ADC-nek nagy erősítés."}},
+    {"q": {"en": "What does the shunt resistor change?", "hu": "Mit változtat a sönt ellenállás?"}, "options": [{"en": "The natural frequency from 10 Hz to 100 Hz", "hu": "A sajátfrekvenciát 10 Hz-ről 100 Hz-re"}, {"en": "The damping: how quickly ringing dies away", "hu": "A csillapítást: milyen gyorsan hal el a lengés"}, {"en": "The magnet's weight", "hu": "A mágnes tömegét"}, {"en": "Nothing electrical", "hu": "Semmit, ami elektromos"}], "answer": 1, "why": {"en": "Current through the shunt makes the coil brake the magnet. The natural frequency (mass and spring) stays at 10 Hz.", "hu": "A söntön átfolyó áram miatt a tekercs fékezi a mágnest. A sajátfrekvenciát (tömeg és rugó) ez nem változtatja, az marad 10 Hz."}},
+    {"q": {"en": "Where is the SM-24 sensitivity roughly flat?", "hu": "Hol kb. lapos az SM-24 érzékenysége?"}, "options": [{"en": "Below 10 Hz", "hu": "10 Hz alatt"}, {"en": "Only at 10 Hz", "hu": "Csak 10 Hz-en"}, {"en": "Above its natural frequency, up to about 240 Hz (listed range 10–240 Hz)", "hu": "A sajátfrekvencia felett, kb. 240 Hz-ig (megadott tartomány 10–240 Hz)"}, {"en": "Everywhere", "hu": "Mindenhol"}], "answer": 2, "why": {"en": "Below 10 Hz it falls off, near 10 Hz it depends on damping, above it is flat. The 10–240 Hz range is from the supplier listing.", "hu": "10 Hz alatt lecsökken, 10 Hz körül a csillapítástól függ, fölötte lapos. A 10–240 Hz-es tartomány a forgalmazói leírásból való."}}
+  ],
+  "cards": [
+    {"id": "e08-c1", "front": {"en": "Faraday's law in one line", "hu": "Faraday törvénye egy sorban"}, "back": {"en": "A changing flux through a coil makes a voltage: V = −dΦ/dt. Moving magnet → voltage ∝ speed.", "hu": "A tekercsen átmenő fluxus változása feszültséget kelt: V = −dΦ/dt. Mozgó mágnes → a sebességgel arányos feszültség."}},
+    {"id": "e08-c2", "front": {"en": "SM-24 key numbers", "hu": "Az SM-24 fő számai"}, "back": {"en": "10 Hz natural frequency, 28.8 V/(m/s), coil ≈ 375 Ω, range 10–240 Hz.", "hu": "10 Hz sajátfrekvencia, 28,8 V/(m/s), tekercs ≈ 375 Ω, tartomány 10–240 Hz."}},
+    {"id": "e08-c3", "front": {"en": "Damping values (secondary source)", "hu": "Csillapítási értékek (másodlagos forrás)"}, "back": {"en": "ζ 0.25 open · 0.60 with 1339 Ω · 0.69 with 1000 Ω. From a forum post quoting the datasheet.", "hu": "ζ 0,25 nyitva · 0,60 1339 Ω-mal · 0,69 1000 Ω-mal. Az adatlapot idéző fórumbejegyzésből."}},
+    {"id": "e08-c4", "front": {"en": "Sensitivity at resonance", "hu": "Érzékenység rezonancián"}, "back": {"en": "S₀ / (2ζ): twice the nominal at ζ 0.25, 0.83× at ζ 0.60.", "hu": "S₀ / (2ζ): ζ 0,25-nél a névleges kétszerese, ζ 0,60-nál 0,83-szorosa."}},
+    {"id": "e08-c5", "front": {"en": "Floor velocity that fills ±37.5 mV (gain 32)?", "hu": "Mekkora padlósebesség tölti ki a ±37,5 mV-ot (32-es erősítés)?"}, "back": {"en": "37.5 mV / 28.8 V/(m/s) ≈ 1.3 mm/s (flat region, calculated).", "hu": "37,5 mV / 28,8 V/(m/s) ≈ 1,3 mm/s (lapos tartomány, számolt)."}}
+  ],
+  "cases": []
+}

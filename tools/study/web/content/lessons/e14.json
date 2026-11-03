@@ -1,0 +1,63 @@
+{
+  "id": "e14", "minutes": 35,
+  "title": {"en": "Noise, grounding and shielding", "hu": "Zaj, földelés és árnyékolás"},
+  "goal": {"en": "After this lesson you can name the noise sources in our chain, estimate the thermal noise of a bridge, explain why twisted pairs and differential inputs help on the Cat5e head cables, and read what the CH2-on-GND channel tells you.", "hu": "A lecke után meg tudod nevezni a láncunk zajforrásait, meg tudod becsülni egy híd termikus zaját, el tudod magyarázni, miért segít a csavart érpár és a differenciális bemenet a Cat5e fejkábeleken, és le tudod olvasni, mit mond a GND-re kötött CH2 csatorna."},
+  "parts": ["adc15", "yzc133", "cat5e", "rj45", "sm24"],
+  "predict": [
+    {
+      "q": {"en": "CH2 of the ADC 15 Click has both inputs tied to GND. When the rig is handled, CH2 moves together with CH1 (Handoff). What does that tell you?", "hu": "Az ADC 15 Click CH2 csatornájának mindkét bemenete GND-re van kötve. Amikor kezelik az összeállítást, a CH2 együtt mozog a CH1-gyel (Handoff). Mit mond ez?"},
+      "options": [
+        {"en": "The load cell is generating the movement", "hu": "A mérlegcella okozza a mozgást"},
+        {"en": "The cause is something both channels share: ground, supply, the clock or the board, or pickup near the inputs, not the cell", "hu": "Az ok valami, amin mindkét csatorna osztozik: föld, táp, órajel vagy a panel, illetve a bemenetek közelében befogott zavar, nem a cella"},
+        {"en": "The CH2 channel is broken", "hu": "A CH2 csatorna elromlott"},
+        {"en": "Nothing: a shorted channel always shows random numbers", "hu": "Semmi: egy rövidre zárt csatorna mindig véletlen számokat mutat"}
+      ],
+      "answer": 1,
+      "why": {"en": "A shorted input should show only the ADC's own noise and offset. If it moves with the handling, the disturbance enters somewhere common to both channels. The cell cannot be the cause, because CH2 is not connected to it. This narrows the search but does not solve it: the spikes in the vault are still open.", "hu": "Egy rövidre zárt bemenet csak az ADC saját zaját és eltolását mutatja. Ha a kezeléssel együtt mozog, a zavar valahol a két csatornának közös pontján lép be. A cella nem lehet az ok, mert a CH2 nincs hozzákötve. Ez szűkíti a keresést, de nem oldja meg: a vaultban a tüskék ügye még nyitott."}
+    },
+    {
+      "q": {"en": "A 50 Hz hum field induces the same 10 mV in each wire of a twisted pair. The signal is the *difference* between the wires. What does the differential input see from the hum?", "hu": "Egy 50 Hz-es brumm tér minden csavart érpár-vezetékben ugyanazt a 10 mV-ot indukálja. A jel a két vezeték *különbsége*. Mit lát a hummból a differenciális bemenet?"},
+      "options": [
+        {"en": "20 mV, because both wires add up", "hu": "20 mV, mert a két vezeték összeadódik"},
+        {"en": "10 mV", "hu": "10 mV"},
+        {"en": "Ideally zero: the same voltage on both wires cancels in the difference (real inputs reject it only to the CMRR)", "hu": "Ideális esetben nulla: a mindkét vezetéken azonos feszültség kiesik a különbségben (a valódi bemenet csak a CMRR mértékéig ejti ki)"},
+        {"en": "Half the signal", "hu": "A jel fele"}
+      ],
+      "answer": 2,
+      "why": {"en": "Twisting makes both wires pass through the same field on average, so the induced voltages match. The difference removes what they have in common. It does not remove it perfectly: CMRR says how much is left.", "hu": "A csavarás miatt a két vezeték átlagosan ugyanazt a teret látja, így az indukált feszültségek megegyeznek. A különbségképzés kiveszi a közöset. Nem teljesen: a CMRR mondja meg, mennyi marad."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "Thermal (Johnson) noise voltage of the load cell's output resistance: R = 1000 Ω, bandwidth B = 400 Hz, T = 300 K. Use v = √(4·k·T·R·B), k = 1.38·10⁻²³ J/K. Answer in **nV rms**.", "hu": "A mérlegcella kimeneti ellenállásának termikus (Johnson-) zajfeszültsége: R = 1000 Ω, sávszélesség B = 400 Hz, T = 300 K. Használd: v = √(4·k·T·R·B), k = 1,38·10⁻²³ J/K. Válasz **nV rms**-ben."},
+      "answer": 81.4, "unit": "nV", "tol": 0.03,
+      "hint": {"en": "4 × 1.38e-23 × 300 × 1000 × 400 = 6.62e-15, then the square root.", "hu": "4 × 1,38e-23 × 300 × 1000 × 400 = 6,62e-15, aztán a négyzetgyök."},
+      "solution": {"en": "v = √(6.62·10⁻¹⁵) ≈ 8.1·10⁻⁸ V = **81 nV rms** (calculated, textbook formula). Compare: the press signal of +400…+900 µV is thousands of times larger. The resistor's thermal noise is not our limit; the ADC's own noise and the pickup are. For the ADC's noise, see the datasheet's noise table.", "hu": "v = √(6,62·10⁻¹⁵) ≈ 8,1·10⁻⁸ V = **81 nV rms** (számolt, tankönyvi képlet). Összevetésül: a +400…+900 µV-os nyomásjel több ezerszer nagyobb. Az ellenállás termikus zaja nem a mi korlátunk; az ADC saját zaja és a befogott zavar az. Az ADC zajához az adatlap zajtáblázatát nézd."}
+    },
+    {
+      "q": {"en": "A handling spike of −4.5 mV hits an ADC at gain 128 (full scale ±9.375 mV). How many percent of the negative full scale is that? Answer in **%**.", "hu": "Egy −4,5 mV-os kezelési tüske éri az ADC-t 128-as erősítésnél (teljes skála ±9,375 mV). A negatív teljes skála hány százaléka ez? Válasz **%**-ban."},
+      "answer": 48, "unit": "%", "tol": 0.03,
+      "solution": {"en": "4.5 / 9.375 = **48 %**. The −9375 µV hit seen once was 100 %: clipping. The press signal (+400…+900 µV) is 4–10 % of full scale, so the spikes are five to ten times larger than the real signal.", "hu": "4,5 / 9,375 = **48 %**. Az egyszer látott −9375 µV-os találat 100 % volt: telítés. A nyomásjel (+400…+900 µV) a teljes skála 4–10 %-a, így a tüskék öt-tízszer nagyobbak a valódi jelnél."}
+    },
+    {
+      "q": {"en": "An example: 10 mV of common-mode hum on a cable and a differential input with a CMRR of 80 dB (assumed). What hum remains at the input in **µV**?", "hu": "Példa: 10 mV közös módusú brumm a kábelen, és egy differenciális bemenet 80 dB CMRR-rel (feltételezett érték). Mennyi brumm marad a bemeneten **µV**-ban?"},
+      "answer": 1, "unit": "µV", "tol": 0.03,
+      "hint": {"en": "80 dB in voltage = 10⁴ (20·log10(10 000) = 80).", "hu": "80 dB feszültségben = 10⁴ (20·log10(10 000) = 80)."},
+      "solution": {"en": "10 mV / 10 000 = 1·10⁻⁶ V = **1 µV**. The real CMRR of the ADS131M0x is in its datasheet; 80 dB is only an example.", "hu": "10 mV / 10 000 = 1·10⁻⁶ V = **1 µV**. Az ADS131M0x valódi CMRR-je az adatlapban van; a 80 dB csak példa."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Which noise is unavoidable even with a perfect resistor and a perfect shield?", "hu": "Melyik zaj elkerülhetetlen még tökéletes ellenállással és tökéletes árnyékolással is?"}, "options": [{"en": "Thermal noise of any resistance above 0 K", "hu": "Bármely ellenállás termikus zaja 0 K felett"}, {"en": "50 Hz hum", "hu": "Az 50 Hz-es brumm"}, {"en": "A ground loop", "hu": "A földhurok"}, {"en": "Crosstalk from the I²C pair", "hu": "Áthallás az I²C érpárból"}], "answer": 0, "why": {"en": "Thermal noise comes from the random motion of charge carriers in any resistance. The others are interference: you can reduce it by wiring and shielding.", "hu": "A termikus zaj a töltéshordozók véletlen mozgásából jön minden ellenállásban. A többi interferencia: huzalozással és árnyékolással csökkenthető."}},
+    {"q": {"en": "What is a ground loop?", "hu": "Mi a földhurok?"}, "options": [{"en": "Two ground connections that form a closed loop, so a current (or induced voltage) flows in the ground wire and appears as a signal", "hu": "Két földkapcsolat zárt hurkot alkot, így áram (vagy indukált feszültség) folyik a földvezetékben, és jelként jelenik meg"}, {"en": "A loop of wire used as an antenna", "hu": "Antennának használt vezetékhurok"}, {"en": "A circuit with no ground", "hu": "Föld nélküli áramkör"}, {"en": "A fast clock line", "hu": "Gyors órajelvonal"}], "answer": 0, "why": {"en": "Ground is not exactly 0 V everywhere: current through its resistance makes small voltages, and a loop picks up magnetic fields. A star ground (every return meets at one point) removes the loop.", "hu": "A föld nem mindenhol pontosan 0 V: a rajta átfolyó áram kis feszültségeket hoz létre, a hurok pedig mágneses teret fog be. A csillagpontos földelés (minden visszavezetés egy pontban találkozik) megszünteti a hurkot."}},
+    {"q": {"en": "On our head port (RJ45), pins 1–2 carry the analog signal. Why is that a good use of a Cat5e pair?", "hu": "A fejportunkon (RJ45) az 1–2-es láb viszi az analóg jelet. Miért jó ez a Cat5e érpár használata?"}, "options": [{"en": "Pins 1 and 2 are one twisted pair, so the + and − wires pick up the same interference, which a differential input cancels", "hu": "Az 1-es és 2-es láb egy csavart érpár, így a + és − vezeték ugyanazt a zavart fogja be, amit a differenciális bemenet kiejt"}, {"en": "Pair 1–2 is faster than the others", "hu": "Az 1–2 pár gyorsabb a többinél"}, {"en": "Because Ethernet does so", "hu": "Mert az Ethernet is így csinálja"}, {"en": "Because it is shielded", "hu": "Mert árnyékolt"}], "answer": 0, "why": {"en": "In standard Cat5e wiring (T568), pins 1–2, 3–6, 4–5 and 7–8 are the four twisted pairs. Our plan (Master plan) puts the analog ± on pair 1–2, I²C on 3–6, +3.3 V on 4–5 and GND on 7–8. The port is labelled 'not Ethernet'.", "hu": "A szokásos Cat5e bekötésben (T568) az 1–2, 3–6, 4–5 és 7–8 lábak a négy csavart érpár. A tervünk (Master plan) az analóg ±-t az 1–2 párra teszi, az I²C-t a 3–6-ra, a +3,3 V-ot a 4–5-re, a GND-t a 7–8-ra. A portot \"nem Ethernet\" felirattal látjuk el."}},
+    {"q": {"en": "Where should the analog and digital grounds meet on a mixed-signal board?", "hu": "Hol találkozzon az analóg és a digitális föld egy vegyes jelű panelen?"}, "options": [{"en": "At one point, normally close to the ADC, so digital return currents do not flow through the analog ground", "hu": "Egy pontban, általában az ADC közelében, hogy a digitális visszatérő áramok ne folyjanak az analóg földön"}, {"en": "Never", "hu": "Soha"}, {"en": "At every pin", "hu": "Minden lábnál"}, {"en": "It makes no difference", "hu": "Mindegy"}], "answer": 0, "why": {"en": "The idea is to keep noisy digital currents away from the quiet analog reference. How to do it on our own PCB (one plane or split) is a design decision for the PCB lessons and the datasheet's layout guidance.", "hu": "A cél, hogy a zajos digitális áramok ne kerüljenek a csendes analóg referencia közelébe. Hogy a saját NYÁK-on hogyan (egy sík vagy osztott), az a NYÁK-leckék és az adatlap kialakítási útmutatójának dolga."}}
+  ],
+  "cards": [
+    {"id": "e14-c1", "front": {"en": "Thermal noise formula", "hu": "A termikus zaj képlete"}, "back": {"en": "v = √(4·k·T·R·B). 1000 Ω, 400 Hz, 300 K → about 81 nV rms.", "hu": "v = √(4·k·T·R·B). 1000 Ω, 400 Hz, 300 K → kb. 81 nV rms."}},
+    {"id": "e14-c2", "front": {"en": "Quantization noise of an ideal ADC", "hu": "Az ideális ADC kvantálási zaja"}, "back": {"en": "LSB / √12 rms. At gain 128 (LSB ≈ 1.1 nV) that is about 0.3 nV, far below the ADC's real noise.", "hu": "LSB / √12 rms. 128-as erősítésnél (LSB ≈ 1,1 nV) kb. 0,3 nV, jóval az ADC valódi zaja alatt."}},
+    {"id": "e14-c3", "front": {"en": "Why twisted pairs?", "hu": "Miért csavart érpár?"}, "back": {"en": "Both wires see the same field, so the interference is common-mode and a differential input cancels it.", "hu": "Mindkét vezeték ugyanazt a teret látja, így a zavar közös módusú, és a differenciális bemenet kiejti."}},
+    {"id": "e14-c4", "front": {"en": "Star ground", "hu": "Csillagpontos föld"}, "back": {"en": "All ground returns meet at one point, so no ground loop forms and heavy currents do not share wire with the quiet reference.", "hu": "Minden földvisszavezetés egy pontban találkozik, így nincs földhurok, és a nagy áramok nem osztoznak vezetéken a csendes referenciával."}},
+    {"id": "e14-c5", "front": {"en": "What does CH2 tied to GND show?", "hu": "Mit mutat a GND-re kötött CH2?"}, "back": {"en": "The noise floor: ADC noise plus offset. If it moves with handling, the disturbance is common to both channels, not the cell.", "hu": "A zajszintet: ADC-zaj plusz eltolás. Ha a kezeléssel mozog, a zavar mindkét csatornán közös, nem a cella."}}
+  ],
+  "cases": ["case-spikes"]
+}

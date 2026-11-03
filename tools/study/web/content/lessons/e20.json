@@ -1,0 +1,62 @@
+{
+  "id": "e20",
+  "minutes": 45,
+  "title": {"en": "Designing our PCB", "hu": "A saját NYÁK-unk tervezése"},
+  "goal": {"en": "After this lesson you can describe the KiCad flow from schematic to Gerbers, name the layout rules that matter for a 24-bit ADC, and list the open design choices for our node and head ports.", "hu": "A lecke után le tudod írni a KiCad folyamatot a kapcsolási rajztól a Gerberekig, megnevezed a 24 bites ADC-nél számító elrendezési szabályokat, és fel tudod sorolni a node és a fej csatlakozók nyitott tervezési döntéseit."},
+  "parts": ["ads131m04", "osc8m", "rj45", "at24c02", "tca9548a", "esp32-s3"],
+  "predict": [
+    {
+      "q": {"en": "Where should the 100 nF decoupling capacitor for a supply pin of the ADS131M04 go?", "hu": "Hová kerüljön az ADS131M04 egyik tápjához a 100 nF-os hidegítő kondenzátor?"},
+      "options": [
+        {"en": "Next to the voltage regulator, where the supply starts", "hu": "A feszültségstabilizátor mellé, ahol a táp indul"},
+        {"en": "Right at the pin, with a short, direct path to the ground plane", "hu": "Közvetlenül a láb mellé, rövid, közvetlen úttal a földsíkhoz"},
+        {"en": "Anywhere on the board: capacitors work everywhere", "hu": "A panel bárhol: a kondenzátor mindenhol működik"},
+        {"en": "On the other side of the board, to save space", "hu": "A panel másik oldalán, hogy helyet spóroljunk"}
+      ],
+      "answer": 1,
+      "why": {"en": "The capacitor helps only if the loop pin → capacitor → ground → chip is tiny. Every millimetre adds inductance and weakens it. A capacitor near the regulator serves the regulator, not the pin. The other side works if the vias are right there, but it makes the loop longer; the first choice is the same side, as close as possible.", "hu": "A kondenzátor csak akkor segít, ha a láb → kondenzátor → föld → chip hurok parányi. Minden milliméter induktivitást ad, és gyengíti. A stabilizátor melletti kondenzátor a stabilizátort szolgálja, nem a lábat. A túloldal akkor jó, ha a viák ott vannak közvetlenül, de hosszabb a hurok; az első választás ugyanaz az oldal, a lehető legközelebb."}
+    },
+    {
+      "q": {"en": "All AT24C02 head EEPROMs sit at 0x50 on the same two wires. The node has four head ports. What do we need so the node can read each head's ID?", "hu": "Minden AT24C02 fej-EEPROM a 0x50 címen ül ugyanazon a két vezetéken. A node-nak négy fejcsatlakozója van. Mi kell, hogy a node minden fej azonosítóját kiolvashassa?"},
+      "options": [
+        {"en": "Nothing: the ESP32 scans them all at once", "hu": "Semmi: az ESP32 mindet egyszerre beolvassa"},
+        {"en": "A multiplexer such as the TCA9548A, so one head at a time is connected to the bus", "hu": "Egy multiplexer, például a TCA9548A, hogy egyszerre csak egy fej legyen a buszon"},
+        {"en": "A different clock speed for each head", "hu": "Fejenként más órajelsebesség"},
+        {"en": "Four ESP32 chips", "hu": "Négy ESP32 chip"}
+      ],
+      "answer": 1,
+      "why": {"en": "Identical addresses on a shared bus collide (E16). The TCA9548A connects one of its 8 branches at a time, selected by a byte written to it. The alternative is address pins, but a head cannot know which port it is plugged into, so address pins don't solve it.", "hu": "Azonos címek közös buszon ütköznek (E16). A TCA9548A egyszerre egyik a 8 ága közül kapcsol be, amit egy bele írt bájt választ ki. A másik lehetőség a címlábak lennének, de a fej nem tudhatja, melyik portba van dugva, így a címlábak nem oldják meg."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "What is the period of the 8.192 MHz CLKIN signal? Answer in **ns**.", "hu": "Mekkora a 8,192 MHz-es CLKIN jel periódusideje? Válasz **ns**-ban."},
+      "answer": 122.07, "unit": "ns", "tol": 0.01,
+      "solution": {"en": "1 / 8 192 000 Hz = 1.2207·10⁻⁷ s = **122.07 ns**. Each edge is a fast switch: a long, loose CLKIN trace radiates it and picks up noise. That is why the QTM325 sits right next to the pin.", "hu": "1 / 8 192 000 Hz = 1,2207·10⁻⁷ s = **122,07 ns**. Minden él gyors kapcsolás: egy hosszú, szabad CLKIN vezeték sugározza, és zajt szed össze. Ezért ül a QTM325 közvetlenül a láb mellett."}
+    },
+    {
+      "q": {"en": "How long a Cat5e cable can the I²C bus take before the cable alone reaches 400 pF, at about 50 pF/m? Answer in **m**.", "hu": "Milyen hosszú Cat5e kábelt visel el az I²C busz, mielőtt a kábel önmagában eléri a 400 pF-ot, kb. 50 pF/m mellett? Válasz **m**-ben."},
+      "answer": 8, "unit": "m", "tol": 0.02,
+      "solution": {"en": "400 pF / 50 pF/m = **8 m**. Our head cable is 20 m. The 50 pF/m figure is typical, from our cable note. This is an open design question: a mux with local pull-ups, a bus buffer, or a lower I²C speed.", "hu": "400 pF / 50 pF/m = **8 m**. A fejkábelünk 20 m. Az 50 pF/m tipikus érték a kábel jegyzetünkből. Ez nyitott tervezési kérdés: mux helyi felhúzókkal, buszpuffer vagy kisebb I²C sebesség."}
+    },
+    {
+      "q": {"en": "The ADS131M04 data rate with CLKIN = 8.192 MHz and OSR 2048 is fCLKIN / 2 / OSR. Answer in **SPS**.", "hu": "Az ADS131M04 adatrátája CLKIN = 8,192 MHz és OSR 2048 mellett fCLKIN / 2 / OSR. Válasz **SPS**-ben."},
+      "answer": 2000, "unit": "SPS", "tol": 0.001,
+      "solution": {"en": "8 192 000 / 2 / 2048 = **2000 SPS**. This is the rate D-016 uses, and the QTM325 would give it within ±25 ppm.", "hu": "8 192 000 / 2 / 2048 = **2000 SPS**. Ezt a rátát használja a D-016, és a QTM325 ±25 ppm-en belül adja."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What is the order of the KiCad flow?", "hu": "Mi a KiCad folyamat sorrendje?"}, "options": [{"en": "Schematic → footprints → layout → DRC → Gerbers", "hu": "Kapcsolási rajz → footprintek → elrendezés → DRC → Gerberek"}, {"en": "Gerbers → layout → schematic", "hu": "Gerberek → elrendezés → kapcsolási rajz"}, {"en": "Layout → schematic → order", "hu": "Elrendezés → kapcsolási rajz → rendelés"}, {"en": "DRC → schematic → footprints", "hu": "DRC → kapcsolási rajz → footprintek"}], "answer": 0, "why": {"en": "The schematic fixes the connections, the footprints give each part its pads, layout places and routes, DRC checks against the fab's rules, and Gerbers go to the fab.", "hu": "A kapcsolási rajz rögzíti a kapcsolatokat, a footprint adja az alkatrész padjeit, az elrendezés elhelyezi és bekötözi, a DRC a gyártó szabályai ellen ellenőriz, a Gerberek mennek a gyártóhoz."}},
+    {"q": {"en": "Why keep analog input traces away from the SPI lines?", "hu": "Miért tartjuk távol az analóg bemeneti vezetékeket az SPI vonalaktól?"}, "options": [{"en": "SPI edges couple into the microvolt-level analog signal as noise", "hu": "Az SPI élek zajként csatolódnak a mikrovolt szintű analóg jelbe"}, {"en": "SPI uses too much power", "hu": "Az SPI túl sok teljesítményt használ"}, {"en": "It is only for looks", "hu": "Csak a külalak miatt"}, {"en": "The ADC checks it", "hu": "Az ADC ellenőrzi"}], "answer": 0, "why": {"en": "Our signals are down to microvolts, while digital edges swing 3.3 V in nanoseconds. Even small coupling matters.", "hu": "A jeleink mikrovoltos nagyságrendűek, a digitális élek pedig 3,3 V-ot lendülnek nanoszekundumok alatt. Egy kis csatolás is számít."}},
+    {"q": {"en": "Which RJ45 pins carry the analog pair in our head port?", "hu": "Melyik RJ45 lábak viszik az analóg párt a fej csatlakozónkon?"}, "options": [{"en": "1–2", "hu": "1–2"}, {"en": "3–6", "hu": "3–6"}, {"en": "4–5", "hu": "4–5"}, {"en": "7–8", "hu": "7–8"}], "answer": 0, "why": {"en": "1–2 analog ±, 3–6 I²C, 4–5 +3.3 V, 7–8 GND (Master plan). One twisted pair for the analog signal, so noise hits both wires equally.", "hu": "1–2 analóg ±, 3–6 I²C, 4–5 +3,3 V, 7–8 GND (Master plan). Az analóg jelnek egy csavart pár jut, így a zaj mindkét eret egyformán éri."}},
+    {"q": {"en": "A GPIO that is read at boot to configure the chip is called…", "hu": "Azt a GPIO-t, amit induláskor kiolvasnak a chip beállításához, úgy hívjuk…"}, "options": [{"en": "a strapping pin", "hu": "strapping láb"}, {"en": "a bootstrap capacitor", "hu": "bootstrap kondenzátor"}, {"en": "a reset line", "hu": "reset vonal"}, {"en": "a DMA pin", "hu": "DMA láb"}], "answer": 0, "why": {"en": "On the ESP32-S3 the strapping pins are 0, 3, 45 and 46; GPIO 33–37 are taken by the octal PSRAM. Plan the pin map around both.", "hu": "Az ESP32-S3-on a strapping lábak: 0, 3, 45 és 46; a GPIO 33–37-et az oktális PSRAM foglalja. A lábkiosztást mindkettő köré tervezd."}}
+  ],
+  "cards": [
+    {"id": "e20-c1", "front": {"en": "KiCad flow", "hu": "KiCad folyamat"}, "back": {"en": "Schematic → assign footprints → layout → DRC → Gerbers + drill → fab.", "hu": "Kapcsolási rajz → footprintek hozzárendelése → elrendezés → DRC → Gerber + fúrófájl → gyártó."}},
+    {"id": "e20-c2", "front": {"en": "Four layout rules for the ADC", "hu": "Négy elrendezési szabály az ADC-hez"}, "back": {"en": "Solid ground plane · decoupling at each supply pin · CAP 220 nF to DGND close · short CLKIN from the QTM325.", "hu": "Összefüggő földsík · hidegítő minden tápláb mellett · a CAP 220 nF közel a DGND-hez · rövid CLKIN a QTM325-től."}},
+    {"id": "e20-c3", "front": {"en": "Head port pinout (draft)", "hu": "Fej csatlakozó kiosztás (vázlat)"}, "back": {"en": "RJ45: 1–2 analog ±, 3–6 I²C, 4–5 +3.3 V, 7–8 GND. Label: not Ethernet.", "hu": "RJ45: 1–2 analóg ±, 3–6 I²C, 4–5 +3,3 V, 7–8 GND. Felirat: nem Ethernet."}},
+    {"id": "e20-c4", "front": {"en": "Why TCA9548A?", "hu": "Miért TCA9548A?"}, "back": {"en": "All head EEPROMs are at 0x50. The mux (0x70–0x77) connects one of 8 branches at a time.", "hu": "Minden fej-EEPROM a 0x50-en van. A mux (0x70–0x77) egyszerre egyet kapcsol be a 8 ág közül."}},
+    {"id": "e20-c5", "front": {"en": "ESP32-S3 pins to avoid", "hu": "Kerülendő ESP32-S3 lábak"}, "back": {"en": "GPIO 33–37 (octal PSRAM). Strapping: 0, 3, 45, 46.", "hu": "GPIO 33–37 (oktális PSRAM). Strapping: 0, 3, 45, 46."}}
+  ],
+  "cases": ["case-gpio12"]
+}

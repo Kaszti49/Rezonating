@@ -1,0 +1,66 @@
+{
+  "id": "s06",
+  "minutes": 25,
+  "title": {"en": "The microcontroller: ESP32 vs ESP32-S3", "hu": "A mikrovezérlő: ESP32 kontra ESP32-S3"},
+  "goal": {"en": "After this lesson you can name what the bench ESP32 and the planned ESP32-S3 each give us, avoid the pins that bite, and argue either side of the open \"which one is the node\" question with numbers.", "hu": "A lecke után meg tudod mondani, mit ad nekünk a pulton lévő ESP32 és a tervezett ESP32-S3, elkerülöd a bajt okozó lábakat, és számokkal tudsz érvelni a nyitott \"melyik legyen a node\" kérdés bármelyik oldalán."},
+  "parts": ["esp32-devkit", "esp32-s3"],
+  "predict": [
+    {
+      "q": {"en": "You add a microSD breakout to the classic ESP32 bench board. Its data line has a pull-up resistor, and you connect it to GPIO 12. The board no longer boots. Why?", "hu": "A pulton lévő klasszikus ESP32-höz hozzáadsz egy microSD breakoutot. Az adatvonalán felhúzó ellenállás van, és a GPIO 12-re kötöd. A panel már nem bootol. Miért?"},
+      "options": [
+        {"en": "GPIO 12 is input only", "hu": "A GPIO 12 csak bemenet"},
+        {"en": "GPIO 12 is read at reset to set the flash voltage; high at boot picks 1.8 V and the 3.3 V flash can't be read", "hu": "A GPIO 12-t reset után kiolvassa a chip a flash feszültségének beállításához; boot közben magasan 1,8 V-ot választ, és a 3,3 V-os flash nem olvasható"},
+        {"en": "The SD card draws too much current", "hu": "Az SD kártya túl sok áramot vesz fel"},
+        {"en": "GPIO 12 belongs to the PSRAM", "hu": "A GPIO 12 a PSRAM-hoz tartozik"}
+      ],
+      "answer": 1,
+      "why": {"en": "GPIO 12 is a strapping pin on the classic ESP32: it must be low at boot. A pull-up holds it high. Input-only pins on the classic chip are 34, 35, 36 and 39, and GPIO 6–11 belong to the flash. A current problem would not be fixed by moving one signal wire.", "hu": "A klasszikus ESP32-n a GPIO 12 strapping láb: bootoláskor alacsonynak kell lennie. A felhúzó magasan tartja. A klasszikus chip csak-bemenet lábai: 34, 35, 36 és 39; a GPIO 6–11 a flashé. Egy áramprobléma nem oldódna meg egy jelvezeték áttételével."}
+    },
+    {
+      "q": {"en": "The bench firmware keeps its outgoing frames in a 22 kB queue in internal RAM. The planned node would use PSRAM for about 10 s of data. What does that difference buy us?", "hu": "A pult firmware-e a kimenő kereteket egy 22 kB-os várakozási sorban tartja a belső RAM-ban. A tervezett node kb. 10 s adatot tartana PSRAM-ban. Mit nyerünk ezzel a különbséggel?"},
+      "options": [
+        {"en": "Faster sampling", "hu": "Gyorsabb mintavétel"},
+        {"en": "More time to ride out a slow or stalled link without losing samples", "hu": "Több időnk van átvészelni egy lassú vagy elakadt linket mintaveszteség nélkül"},
+        {"en": "Lower power use", "hu": "Kisebb fogyasztás"},
+        {"en": "A better ADC", "hu": "Jobb ADC"}
+      ],
+      "answer": 1,
+      "why": {"en": "A buffer doesn't change the sampling. It gives the link time to catch up. When the queue is full, the firmware drops new frames and counts them (win_link). A larger queue means fewer drops during a hiccup.", "hu": "A puffer nem változtatja a mintavételt. Időt ad a linknek a behozásra. Ha a sor megtelik, a firmware eldobja az új kereteket és megszámolja (win_link). Nagyobb sor kevesebb eldobást jelent egy akadásnál."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "The planned node queues 10 s of `adc_raw`: 2 channels, 2000 samples/s, 4 bytes per sample. How big is that queue? Answer in **kB** (1 kB = 1000 B).", "hu": "A tervezett node 10 s `adc_raw`-t sorba állít: 2 csatorna, 2000 minta/s, 4 bájt/minta. Mekkora ez a sor? Válasz **kB**-ben (1 kB = 1000 B)."},
+      "answer": 160, "unit": "kB", "tol": 0.02,
+      "hint": {"en": "2 × 2000 × 4 bytes per second, times 10.", "hu": "2 × 2000 × 4 bájt másodpercenként, szorozva 10-zel."},
+      "solution": {"en": "2 × 2000 × 4 = 16 000 B/s, × 10 s = **160 kB**. The bench board's whole queue is about 22 kB, so a board without PSRAM would hold well under 2 s of it.", "hu": "2 × 2000 × 4 = 16 000 B/s, × 10 s = **160 kB**. A pult panel teljes sora kb. 22 kB, tehát PSRAM nélkül ennek jóval kevesebb mint 2 s-át tartaná."}
+    },
+    {
+      "q": {"en": "The bench queue holds 64 packets of 40 frames each of the 1 kSPS `adc_dec` stream. How many seconds of data is that? Answer in **s**.", "hu": "A pult sora 64 csomagot tart, mindegyikben 40 keret az 1 kSPS `adc_dec` adatfolyamból. Hány másodpercnyi adat ez? Válasz **s**-ban."},
+      "answer": 2.56, "unit": "s", "tol": 0.01,
+      "hint": {"en": "64 × 40 frames, at 1000 frames per second.", "hu": "64 × 40 keret, másodpercenként 1000 keret."},
+      "solution": {"en": "64 × 40 = 2560 frames / 1000 per second = **2.56 s**. The firmware source states the same.", "hu": "64 × 40 = 2560 keret / 1000 másodpercenként = **2,56 s**. A firmware forráskódja is ezt írja."}
+    },
+    {
+      "q": {"en": "The AMS1117 on the DevKit turns 5 V from USB into 3.3 V. Assume the board draws 150 mA (an assumption, not a measurement). How much power does the regulator turn into heat? Answer in **mW**.", "hu": "A DevKit AMS1117-je az USB 5 V-ját 3,3 V-ra alakítja. Tegyük fel, hogy a panel 150 mA-t vesz fel (feltételezés, nem mérés). Mennyi teljesítményt alakít hővé a stabilizátor? Válasz **mW**-ban."},
+      "answer": 255, "unit": "mW", "tol": 0.02,
+      "hint": {"en": "A linear regulator burns (Vin − Vout) × I.", "hu": "Egy lineáris stabilizátor (Vbe − Vki) × I teljesítményt éget el."},
+      "solution": {"en": "(5 − 3.3) V × 0.150 A = **0.255 W = 255 mW**. Small, but it grows with current: the `power` diagram shows it.", "hu": "(5 − 3,3) V × 0,150 A = **0,255 W = 255 mW**. Kevés, de az árammal nő: a `power` diagram megmutatja."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Which GPIOs must you never use on the ESP32-S3 N16R8?", "hu": "Mely GPIO-kat nem szabad használnod az ESP32-S3 N16R8-on?"}, "options": [{"en": "GPIO 4 to 9", "hu": "GPIO 4–9"}, {"en": "GPIO 33 to 37", "hu": "GPIO 33–37"}, {"en": "GPIO 10 to 14", "hu": "GPIO 10–14"}, {"en": "GPIO 19 and 20", "hu": "GPIO 19 és 20"}], "answer": 1, "why": {"en": "The octal PSRAM takes GPIO 33–37 (ESP32-S3 datasheet, Table 2-14). GPIO 19 and 20 are the native USB D−/D+, so avoid them if you want USB. The others are free in our proposal.", "hu": "Az oktális PSRAM a GPIO 33–37-et használja (ESP32-S3 adatlap, 2-14. táblázat). A GPIO 19 és 20 a natív USB D−/D+, tehát kerüld, ha USB-t akarsz. A többi szabad a javaslatunkban."}},
+    {"q": {"en": "What is a strapping pin?", "hu": "Mi az a strapping láb?"}, "options": [{"en": "A pin that holds the board to the PCB", "hu": "Egy láb, ami a panelt tartja a NYÁK-hoz"}, {"en": "A pin the chip reads at reset to choose boot settings", "hu": "Egy láb, amit a chip reset után olvas a boot beállításokhoz"}, {"en": "A pin that only works as output", "hu": "Egy láb, ami csak kimenetként működik"}, {"en": "A pin for the power supply", "hu": "Egy láb a tápellátáshoz"}], "answer": 1, "why": {"en": "Whatever level is on it at reset sets a boot option. After boot it is an ordinary GPIO, but anything wired to it must not disturb that level at reset.", "hu": "Amilyen szint van rajta resetkor, az egy boot opciót állít be. Boot után egyszerű GPIO, de ami hozzá van kötve, nem zavarhatja a szintet resetkor."}},
+    {"q": {"en": "Which statement about \"which MCU is the node\" is true today?", "hu": "Melyik állítás igaz ma a \"melyik MCU a node\" kérdésről?"}, "options": [{"en": "The S3 is decided, the classic ESP32 is retired", "hu": "Az S3 eldőlt, a klasszikus ESP32 kiesett"}, {"en": "The classic ESP32 is decided", "hu": "A klasszikus ESP32 eldőlt"}, {"en": "It is an open team question", "hu": "Nyitott csapatkérdés"}, {"en": "The boss decided", "hu": "A főnök eldöntötte"}], "answer": 2, "why": {"en": "The bench runs on the classic ESP32 and the S3 is the planned part, but the team has not decided. The Handoff lists it as a question for Kaszti and Viktor. This lesson lays out both sides.", "hu": "A pult klasszikus ESP32-n fut és az S3 a tervezett alkatrész, de a csapat nem döntött. A Handoff kérdésként sorolja Kaszti és Viktor számára. Ez a lecke mindkét oldalt kifejti."}},
+    {"q": {"en": "Why can't you just pick any free GPIO for DRDY on the ESP32-S3?", "hu": "Miért nem választhatsz akármelyik szabad GPIO-t a DRDY-hoz az ESP32-S3-on?"}, "options": [{"en": "You can, apart from the reserved, strapping and USB pins", "hu": "Lehet, a foglalt, strapping és USB lábakat kivéve"}, {"en": "DRDY needs a special pin", "hu": "A DRDY-hoz külön láb kell"}, {"en": "Only even-numbered pins work", "hu": "Csak páros számú láb működik"}, {"en": "Only pins next to GND", "hu": "Csak a GND melletti lábak"}], "answer": 0, "why": {"en": "The GPIO matrix routes most signals to most pins. The rules are about what is already taken (PSRAM, USB) and what is read at reset. The pin map for the S3 is not decided; a proposal is shown in the Build view.", "hu": "A GPIO mátrix a jelek többségét a lábak többségére vezeti. A szabályok arról szólnak, mi foglalt már (PSRAM, USB) és mit olvas ki reset közben. Az S3 lábkiosztása nincs eldöntve; egy javaslatot a Build nézet mutat."}}
+  ],
+  "cards": [
+    {"id": "s06-c1", "front": {"en": "Classic ESP32: input-only pins", "hu": "Klasszikus ESP32: csak-bemenet lábak"}, "back": {"en": "GPIO 34, 35, 36 (VP), 39 (VN); no pull-ups.", "hu": "GPIO 34, 35, 36 (VP), 39 (VN); nincs felhúzás."}},
+    {"id": "s06-c2", "front": {"en": "Classic ESP32: strapping pins", "hu": "Klasszikus ESP32: strapping lábak"}, "back": {"en": "0, 2, 5, 12, 15. GPIO 12 must be LOW at boot.", "hu": "0, 2, 5, 12, 15. A GPIO 12 bootoláskor LEGYEN ALACSONY."}},
+    {"id": "s06-c3", "front": {"en": "S3 N16R8: forbidden GPIOs", "hu": "S3 N16R8: tiltott GPIO-k"}, "back": {"en": "33–37 (octal PSRAM). 19/20 are native USB.", "hu": "33–37 (oktális PSRAM). A 19/20 a natív USB."}},
+    {"id": "s06-c4", "front": {"en": "What the S3 N16R8 has that the bench board lacks", "hu": "Mit tud az S3 N16R8, amit a pult panel nem"}, "back": {"en": "8 MB octal PSRAM, 16 MB flash, native USB, vector instructions for ML.", "hu": "8 MB oktális PSRAM, 16 MB flash, natív USB, vektorutasítások az ML-hez."}},
+    {"id": "s06-c5", "front": {"en": "What the bench ESP32 already has going for it", "hu": "Mi szól a pult ESP32 mellett"}, "back": {"en": "It is in the lab, and the link, the ADC and 997 Hz streaming already run on it.", "hu": "Megvan a laborban, és a link, az ADC és a 997 Hz-es adatfolyam már fut rajta."}},
+    {"id": "s06-c6", "front": {"en": "Is the node MCU decided?", "hu": "Eldőlt a node MCU?"}, "back": {"en": "No. Open team question; the S3 pin map is a proposal only.", "hu": "Nem. Nyitott csapatkérdés; az S3 lábkiosztás csak javaslat."}}
+  ],
+  "cases": ["case-gpio12"]
+}

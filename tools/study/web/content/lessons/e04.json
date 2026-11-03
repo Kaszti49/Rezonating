@@ -1,0 +1,65 @@
+{
+  "id": "e04",
+  "minutes": 30,
+  "title": {"en": "Kirchhoff's laws and nodes", "hu": "Kirchhoff törvényei és csomópontok"},
+  "goal": {"en": "After this lesson you can solve any small circuit on our bench by hand with two rules: currents into a node add to zero, and voltages around a loop add to zero. You can also use them as a bug-finding check on real meter readings.", "hu": "A lecke után bármelyik kis áramkört meg tudod oldani kézzel két szabállyal: egy csomópontba befolyó áramok összege nulla, és egy hurok körül a feszültségek összege nulla. A valódi műszerállásokon hibakeresési ellenőrzésként is használni tudod őket."},
+  "parts": ["breadboard", "passives", "yzc133"],
+  "predict": [
+    {
+      "q": {"en": "In the boss's divider about 6.0 mA flows through the 220 Ω into the midpoint, and about 4.2 mA flows down through the 470 Ω. How much flows through the load cell?", "hu": "A főnök osztójában kb. 6,0 mA folyik a 220 Ω-on át a középpontba, és kb. 4,2 mA folyik le a 470 Ω-on. Mennyi folyik a mérlegcellán?"},
+      "options": [
+        {"en": "About 10.2 mA: the branches add up", "hu": "Kb. 10,2 mA: az ágak összeadódnak"},
+        {"en": "About 6.0 mA: the same as what came in", "hu": "Kb. 6,0 mA: annyi, mint ami bejött"},
+        {"en": "About 1.8 mA: what comes in must leave, so the cell gets the rest", "hu": "Kb. 1,8 mA: aminek be kell jönnie, ki is kell mennie, a cella a maradékot kapja"},
+        {"en": "About 4.2 mA: every branch gets the same", "hu": "Kb. 4,2 mA: minden ág ugyanannyit kap"}
+      ],
+      "answer": 2,
+      "why": {"en": "Charge can't pile up at the midpoint: 6.0 mA in = 4.2 mA (470 Ω) + the cell's current, so the cell gets 6.0 − 4.2 ≈ 1.8 mA. Adding the branches would count the same charge twice; 'every branch the same' is true for a series chain, not for a node.", "hu": "A töltés nem halmozódhat fel a középpontban: 6,0 mA be = 4,2 mA (470 Ω) + a cella árama, tehát a cella 6,0 − 4,2 ≈ 1,8 mA-t kap. Az ágak összeadása ugyanazt a töltést kétszer számolná; a „minden ág ugyanannyi” soros láncra igaz, csomópontra nem."}
+    },
+    {
+      "q": {"en": "During the 680 kΩ fault you put the meter across the big resistor and then across the load cell's bridge (red to black). What do the two readings add up to?", "hu": "A 680 kΩ-os hiba idején a műszert előbb a nagy ellenállásra, aztán a mérlegcella hídjára (piros–fekete) kötötted. Mennyi a két mérés összege?"},
+      "options": [
+        {"en": "About 6.6 V: each one sees the supply", "hu": "Kb. 6,6 V: mindegyik a tápot látja"},
+        {"en": "About 3.3 V: the two drops must add up to the supply", "hu": "Kb. 3,3 V: a két esésnek ki kell adnia a tápot"},
+        {"en": "About 0 V: the bridge reading was 0.00", "hu": "Kb. 0 V: a híd 0,00-t mutatott"},
+        {"en": "It depends on the current", "hu": "Az áramtól függ"}
+      ],
+      "answer": 1,
+      "why": {"en": "Kirchhoff's voltage law around the loop (supply → resistor → bridge → GND): the drops add up to the supply. About 3.295 V across the resistor and 5.3 mV across the bridge make 3.3 V. The 0.00 on the bridge was just 5 mV shown on a coarse range, not a real zero. Calculated values; some meter readings in the case are reconstructed.", "hu": "Kirchhoff hurokegyenlete a körön (táp → ellenállás → híd → GND): az esések összege a tápfeszültség. Kb. 3,295 V az ellenálláson és 5,3 mV a hídon együtt 3,3 V. A hídon látott 0,00 csak 5 mV volt, durva méréshatáron kijelezve, nem igazi nulla. Számolt értékek; az eset néhány műszerállása rekonstruált."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "Use KCL at the midpoint of the boss's divider: 6.008 mA flows in through the 220 Ω and 4.209 mA flows down the 470 Ω. What is the load cell's current? Answer in **mA**.", "hu": "Használd a KCL-t a főnök osztójának középpontján: 6,008 mA folyik be a 220 Ω-on, és 4,209 mA folyik le a 470 Ω-on. Mekkora a mérlegcella árama? Válasz **mA**-ben."},
+      "answer": 1.799, "unit": "mA", "tol": 0.03,
+      "hint": {"en": "In = out: I_220 = I_470 + I_cell.", "hu": "Be = ki: I_220 = I_470 + I_cella."},
+      "solution": {"en": "6.008 − 4.209 = **1.799 mA**. Cross-check with Ohm's law: 1.978 V / 1100 Ω = 1.798 mA. The two routes agree.", "hu": "6,008 − 4,209 = **1,799 mA**. Ellenőrzés Ohm törvényével: 1,978 V / 1100 Ω = 1,798 mA. A két út egyezik."}
+    },
+    {
+      "q": {"en": "Use KVL on the loop supply → 220 Ω → midpoint → GND: the midpoint is at 1.978 V. What is the voltage across the 220 Ω, and then its current? Give the **current in mA**.", "hu": "Használd a KVL-t a táp → 220 Ω → középpont → GND hurokra: a középpont 1,978 V-on van. Mekkora feszültség esik a 220 Ω-on, és ebből mekkora az áram? Add meg az **áramot mA-ben**."},
+      "answer": 6.009, "unit": "mA", "tol": 0.03,
+      "hint": {"en": "Drop across the 220 Ω = 3.3 − 1.978 V. Then I = V / R.", "hu": "A 220 Ω-on eső feszültség = 3,3 − 1,978 V. Aztán I = V / R."},
+      "solution": {"en": "Drop = 3.3 − 1.978 = 1.322 V. I = 1.322 / 220 = **6.009 mA**, the same as the total current from the previous lesson (E03).", "hu": "Esés = 3,3 − 1,978 = 1,322 V. I = 1,322 / 220 = **6,009 mA**, ugyanannyi, mint az előző leckében (E03) kapott teljes áram."}
+    },
+    {
+      "q": {"en": "In the 680 kΩ fault the current was 4.845 µA. Use KVL: the resistor drops 3.2947 V. What is left for the bridge? Answer in **mV**.", "hu": "A 680 kΩ-os hibánál az áram 4,845 µA volt. KVL-lel: az ellenálláson 3,2947 V esik. Mennyi marad a hídra? Válasz **mV**-ban."},
+      "answer": 5.3, "unit": "mV", "tol": 0.05,
+      "hint": {"en": "Supply = drop across resistor + voltage across bridge.", "hu": "Táp = az ellenálláson eső + a hídon lévő feszültség."},
+      "solution": {"en": "3.3 − 3.2947 = **5.3 mV**. Ohm's law agrees: 4.845 µA × 1100 Ω ≈ 5.33 mV. This is the 5 mV that the meter showed on its mV range.", "hu": "3,3 − 3,2947 = **5,3 mV**. Ohm törvénye egyezik: 4,845 µA × 1100 Ω ≈ 5,33 mV. Ez az az 5 mV, amit a műszer a mV méréshatárán mutatott."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "KCL says…", "hu": "A KCL azt mondja…"}, "options": [{"en": "Voltages around a loop add to zero", "hu": "A hurok körüli feszültségek összege nulla"}, {"en": "The currents into a node add to zero (in = out)", "hu": "A csomópontba befolyó áramok összege nulla (be = ki)"}, {"en": "Current is voltage times resistance", "hu": "Az áram a feszültség és az ellenállás szorzata"}, {"en": "Resistances in parallel add", "hu": "A párhuzamos ellenállások összeadódnak"}], "answer": 1, "why": {"en": "KCL is about nodes and currents; KVL about loops and voltages. Charge can't pile up at a node.", "hu": "A KCL csomópontokról és áramokról szól; a KVL hurkokról és feszültségekről. A töltés nem halmozódhat fel egy csomópontban."}},
+    {"q": {"en": "On a typical solderless breadboard, which holes are one node?", "hu": "Egy tipikus forrasztásmentes próbapanelen mely lyukak alkotnak egy csomópontot?"}, "options": [{"en": "A whole row across the board", "hu": "Egy egész sor a panel szélességében"}, {"en": "The five holes of one short column strip", "hu": "Egy rövid oszlopsáv öt lyuka"}, {"en": "Every hole", "hu": "Minden lyuk"}, {"en": "Only the top hole", "hu": "Csak a legfelső lyuk"}], "answer": 1, "why": {"en": "The five holes in one short strip are connected inside; the two sides of the centre gap are not. Some boards split the long power rails in the middle too, so check with continuity (E05).", "hu": "Egy rövid sáv öt lyuka belül össze van kötve; a középső árok két oldala nem. Egyes paneleken a hosszú tápsínek is megszakadnak középen, ezért ellenőrizd átmenőség-méréssel (E05)."}},
+    {"q": {"en": "You measure 3.3 V across resistor A and 1.0 V across resistor B, which are the only two parts between the 3.3 V supply and GND. What do you conclude?", "hu": "A 3,3 V-os táp és a GND között csak két alkatrész van, az A és a B ellenállás. Az A-n 3,3 V-ot, a B-n 1,0 V-ot mérsz. Mit következtetsz?"}, "options": [{"en": "Everything is fine", "hu": "Minden rendben"}, {"en": "A reading is wrong: the two drops must add up to 3.3 V", "hu": "Valamelyik mérés hibás: a két esésnek 3,3 V-ot kell kiadnia"}, {"en": "B is open", "hu": "A B szakadt"}, {"en": "A is shorted", "hu": "Az A zárlatos"}], "answer": 1, "why": {"en": "KVL gives a free consistency check on your own readings. A wrong range, a probe on the wrong node or an extra part in the loop makes the sum fail.", "hu": "A KVL ingyen ellenőrzést ad a saját méréseidre. Rossz méréshatár, rossz csomópontra tett mérőzsinór vagy egy további alkatrész a hurokban miatt nem jön ki az összeg."}},
+    {"q": {"en": "In our series rig (690 Ω + bridge), 1.844 mA flows. Which is true at every point of the loop?", "hu": "A soros pultunkban (690 Ω + híd) 1,844 mA folyik. Mi igaz a hurok minden pontján?"}, "options": [{"en": "The voltage is 3.3 V", "hu": "A feszültség 3,3 V"}, {"en": "The same current flows", "hu": "Ugyanaz az áram folyik"}, {"en": "The power is the same", "hu": "A teljesítmény ugyanaz"}, {"en": "Nothing", "hu": "Semmi"}], "answer": 1, "why": {"en": "No branches means no node where current can split, so KCL gives one current everywhere.", "hu": "Nincs elágazás, így nincs csomópont, ahol az áram szétoszolhatna: a KCL szerint mindenhol ugyanaz az áram."}}
+  ],
+  "cards": [
+    {"id": "e04-c1", "front": {"en": "KCL in one line", "hu": "A KCL egy sorban"}, "back": {"en": "Currents into a node add to zero: in = out. Charge can't pile up.", "hu": "A csomópontba befolyó áramok összege nulla: be = ki. A töltés nem halmozódhat fel."}},
+    {"id": "e04-c2", "front": {"en": "KVL in one line", "hu": "A KVL egy sorban"}, "back": {"en": "Going once around a loop, the voltage rises and drops add to zero. The drops across parts equal the supply.", "hu": "Egyszer körbemenve egy hurkon az emelkedések és esések összege nulla. Az alkatrészeken eső feszültségek kiadják a tápot."}},
+    {"id": "e04-c3", "front": {"en": "Boss's divider: currents (calculated)", "hu": "A főnök osztója: áramok (számolt)"}, "back": {"en": "6.0 mA in via 220 Ω = 4.2 mA via 470 Ω + 1.8 mA via the cell.", "hu": "6,0 mA be a 220 Ω-on = 4,2 mA a 470 Ω-on + 1,8 mA a cellán."}},
+    {"id": "e04-c4", "front": {"en": "680 kΩ fault by KVL", "hu": "A 680 kΩ-os hiba KVL-lel"}, "back": {"en": "3.3 V = 3.295 V (resistor) + 5.3 mV (bridge). The resistor takes nearly all.", "hu": "3,3 V = 3,295 V (ellenállás) + 5,3 mV (híd). Az ellenállás viszi majdnem az egészet."}},
+    {"id": "e04-c5", "front": {"en": "Which breadboard holes form a node?", "hu": "A próbapanel mely lyukai alkotnak csomópontot?"}, "back": {"en": "The five holes of one short strip; not across the centre gap. Check the rails with continuity.", "hu": "Egy rövid sáv öt lyuka; a középső árkon át nem. A tápsíneket ellenőrizd átmenőség-méréssel."}}
+  ],
+  "cases": ["case-680k"]
+}

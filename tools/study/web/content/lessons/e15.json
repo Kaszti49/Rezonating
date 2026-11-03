@@ -1,0 +1,65 @@
+{
+  "id": "e15", "minutes": 40,
+  "title": {"en": "Sampling and ADCs", "hu": "Mintavételezés és ADC-k"},
+  "goal": {"en": "After this lesson you can say what a sample rate lets you see, predict where an alias lands, convert between ADC codes and volts, tell a clipped reading from data, and explain why the ADC runs at 2 kSPS and the packs get 1 kSPS.", "hu": "A lecke után meg tudod mondani, mit enged látni egy mintavételi frekvencia, meg tudod jósolni, hová esik egy alias, át tudod váltani az ADC-kódokat voltra, meg tudod különböztetni a telítést az adattól, és el tudod magyarázni, miért megy az ADC 2 kSPS-en, és miért kapnak a packek 1 kSPS-t."},
+  "parts": ["adc15", "ads131m04", "hx711", "yzc133"],
+  "predict": [
+    {
+      "q": {"en": "The HX711 samples at 80 SPS. A 50 Hz mains hum is on the input and nothing filters it first. Where does it show up in the data?", "hu": "A HX711 80 SPS-sel mintavételez. A bemeneten 50 Hz-es hálózati brumm van, és előtte semmi nem szűri. Hol jelenik meg az adatban?"},
+      "options": [
+        {"en": "At 50 Hz", "hu": "50 Hz-en"},
+        {"en": "At 30 Hz: it is folded around the Nyquist frequency of 40 Hz", "hu": "30 Hz-en: a 40 Hz-es Nyquist-frekvencia körül visszahajlik"},
+        {"en": "At 130 Hz", "hu": "130 Hz-en"},
+        {"en": "Nowhere: too fast to see", "hu": "Sehol: túl gyors, hogy látszódjon"}
+      ],
+      "answer": 1,
+      "why": {"en": "Above Nyquist (fs/2 = 40 Hz) a tone folds back: f_alias = |f − k·fs| with the k that lands in 0…fs/2. |50 − 80| = 30 Hz. A frequency that is too fast is not invisible: it shows up as a wrong, slower one. That is why the chip's own filter matters (the HX711 has its own; check its datasheet).", "hu": "Nyquist (fs/2 = 40 Hz) fölött a hang visszahajlik: f_alias = |f − k·fs|, azzal a k-val, ami a 0…fs/2 sávba esik. |50 − 80| = 30 Hz. Egy túl gyors frekvencia nem láthatatlan: hibás, lassabb frekvenciaként jelenik meg. Ezért számít a chip saját szűrője (a HX711-nek van sajátja; nézd az adatlapját)."}
+    },
+    {
+      "q": {"en": "Every reading from a 24-bit ADC is 8388607. The most useful first guess is:", "hu": "Egy 24 bites ADC minden olvasata 8388607. A leghasznosabb első tipp:"},
+      "options": [
+        {"en": "The input is outside the range: clipping at positive full scale", "hu": "A bemenet kívül van a tartományon: telítés a pozitív teljes skálán"},
+        {"en": "The load cell reads exactly 8388607 grams", "hu": "A mérlegcella pontosan 8388607 grammot mér"},
+        {"en": "The ADC is perfectly accurate", "hu": "Az ADC tökéletesen pontos"},
+        {"en": "A random bit error", "hu": "Véletlen bithiba"}
+      ],
+      "answer": 0,
+      "why": {"en": "8388607 = 0x7FFFFF = 2²³ − 1, the biggest positive 24-bit two's complement value. A reading stuck at the maximum or minimum code is clipping, not data. It happened to the HX711 rig; and −9375 µV on the ADS131M02 at gain 128 is negative full scale.", "hu": "8388607 = 0x7FFFFF = 2²³ − 1, a legnagyobb pozitív 24 bites kettes komplemens érték. A maximum vagy minimum kódon ragadt érték telítés, nem adat. Ez történt a HX711-es összeállítással; az ADS131M02 −9375 µV-ja 128-as erősítésnél a negatív teljes skála."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "The ADS131M02 at gain 128 has full scale ±9.375 mV, which maps to ±8388607 codes. How big is one LSB? Answer in **nV**.", "hu": "Az ADS131M02 128-as erősítésnél ±9,375 mV teljes skálájú, ami ±8388607 kódnak felel meg. Mekkora egy LSB? Válasz **nV**-ban."},
+      "answer": 1.118, "unit": "nV", "tol": 0.03,
+      "hint": {"en": "9.375 mV / 8 388 607.", "hu": "9,375 mV / 8 388 607."},
+      "solution": {"en": "9.375·10⁻³ / 8 388 607 ≈ 1.12·10⁻⁹ V = **1.12 nV**. A +400 µV press is about 358 000 codes. The step is far smaller than the ADC's noise, so the noise, not the step, sets what we can see.", "hu": "9,375·10⁻³ / 8 388 607 ≈ 1,12·10⁻⁹ V = **1,12 nV**. Egy +400 µV-os nyomás kb. 358 000 kód. A lépcső jóval kisebb az ADC zajánál, tehát a zaj szabja meg, mit látunk, nem a lépcső."}
+    },
+    {
+      "q": {"en": "A 700 Hz vibration is sampled at 1000 SPS with no filter before it. At what frequency does the alias appear? Answer in **Hz**.", "hu": "Egy 700 Hz-es rezgést 1000 SPS-sel mintavételezünk, előtte szűrő nélkül. Milyen frekvencián jelenik meg az alias? Válasz **Hz**-ben."},
+      "answer": 300, "unit": "Hz", "tol": 0.02,
+      "hint": {"en": "|f − fs| when f is between fs/2 and fs.", "hu": "|f − fs|, ha f az fs/2 és fs között van."},
+      "solution": {"en": "|700 − 1000| = **300 Hz**. A 700 Hz tone looks like 300 Hz, right in the band footsteps live in. This is why D-016 records at 2 kSPS and filters before decimating to 1 kSPS.", "hu": "|700 − 1000| = **300 Hz**. A 700 Hz-es hang 300 Hz-nek látszik, éppen a lépések sávjában. Ezért rögzít a D-016 2 kSPS-en, és szűr a 1 kSPS-re decimálás előtt."}
+    },
+    {
+      "q": {"en": "The ADS131M0x data rate is f_CLKIN / 2 / OSR. With the measured clock CLKIN ≈ 8.1748 MHz and OSR 2048, what is the sample rate? Answer in **Hz**.", "hu": "Az ADS131M0x adatsebessége f_CLKIN / 2 / OSR. A mért CLKIN ≈ 8,1748 MHz és OSR 2048 mellett mekkora a mintavételi frekvencia? Válasz **Hz**-ben."},
+      "answer": 1995.8, "unit": "Hz", "tol": 0.002,
+      "hint": {"en": "8 174 800 / 2 / 2048.", "hu": "8 174 800 / 2 / 2048."},
+      "solution": {"en": "8 174 800 / 2 / 2048 ≈ **1995.8 Hz**, exactly what the bench measured (−0.21 % from 2000). The ideal 8.192 MHz clock gives 8 192 000 / 2 / 2048 = 2000 Hz.", "hu": "8 174 800 / 2 / 2048 ≈ **1995,8 Hz**, pontosan amit a pult mért (−0,21 % a 2000-hez képest). Az ideális 8,192 MHz-es órajel 8 192 000 / 2 / 2048 = 2000 Hz-et ad."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What is the Nyquist frequency at 2 kSPS?", "hu": "Mekkora a Nyquist-frekvencia 2 kSPS-nél?"}, "options": [{"en": "500 Hz", "hu": "500 Hz"}, {"en": "1000 Hz", "hu": "1000 Hz"}, {"en": "2000 Hz", "hu": "2000 Hz"}, {"en": "4000 Hz", "hu": "4000 Hz"}], "answer": 1, "why": {"en": "Half the sample rate: 1000 Hz. At 1 kSPS (what the packs get) it is 500 Hz; at the HX711's 80 SPS, 40 Hz.", "hu": "A mintavételi frekvencia fele: 1000 Hz. 1 kSPS-nél (amit a packek kapnak) 500 Hz; a HX711 80 SPS-énél 40 Hz."}},
+    {"q": {"en": "Why does the ADS131M0x (delta-sigma) run its modulator much faster than the output data rate?", "hu": "Miért jár az ADS131M0x (delta-szigma) modulátora sokkal gyorsabban, mint a kimeneti adatsebesség?"}, "options": [{"en": "Oversampling spreads the quantization noise over a wide band; the digital filter then removes what is outside the wanted band, leaving less noise", "hu": "A túlmintavételezés széles sávra szórja a kvantálási zajt; a digitális szűrő aztán eltávolítja a kívánt sávon kívülit, így kevesebb zaj marad"}, {"en": "To make the chip use more power", "hu": "Hogy a chip több áramot vegyen fel"}, {"en": "Because the clock cannot be slower", "hu": "Mert az órajel nem lehet lassabb"}, {"en": "To avoid needing a clock", "hu": "Hogy ne kelljen órajel"}], "answer": 0, "why": {"en": "The output rate is the modulator rate divided by the OSR (2048 for us). A higher OSR means lower noise and a sharper filter at a slower output rate. The chip has no internal oscillator; it needs the 8.192 MHz clock.", "hu": "A kimeneti sebesség a modulátor sebessége osztva az OSR-rel (nálunk 2048). Nagyobb OSR kisebb zajt és élesebb szűrést jelent lassabb kimeneti sebesség mellett. A chipnek nincs belső oszcillátora; kell neki a 8,192 MHz-es órajel."}},
+    {"q": {"en": "What does a SAR ADC do that a delta-sigma ADC does not?", "hu": "Mit csinál a SAR ADC, amit a delta-szigma nem?"}, "options": [{"en": "Converts each sample on its own, by successive approximation, with fast, short latency", "hu": "Minden mintát külön alakít át, lépésenkénti közelítéssel, gyorsan és kis késleltetéssel"}, {"en": "Oversamples by 2048", "hu": "2048-szorosan túlmintavételez"}, {"en": "Has no noise", "hu": "Nincs zaja"}, {"en": "Needs no reference", "hu": "Nem kell referencia"}], "answer": 0, "why": {"en": "A SAR ADC compares the input against a binary search of voltages. It suits multiplexed, fast, moderate-resolution jobs. A delta-sigma trades speed for resolution and filtering: right for 24-bit vibration at kSPS.", "hu": "A SAR ADC a bemenetet feszültségek bináris keresésével hasonlítja össze. Multiplexelt, gyors, közepes felbontású feladatokra jó. A delta-szigma sebességet cserél felbontásra és szűrésre: 24 bites rezgésmérésre kSPS-en ez való."}},
+    {"q": {"en": "Which statement about ENOB is right?", "hu": "Melyik állítás igaz az ENOB-ról?"}, "options": [{"en": "It is the number of bits that are real signal rather than noise; it is lower than the nominal 24", "hu": "Azoknak a biteknek a száma, amik valódi jelet hordoznak, nem zajt; kisebb a névleges 24-nél"}, {"en": "It always equals the nominal bits", "hu": "Mindig egyenlő a névleges bitekkel"}, {"en": "It counts the channels", "hu": "A csatornákat számolja"}, {"en": "It is the number of samples per second", "hu": "A másodpercenkénti minták száma"}], "answer": 0, "why": {"en": "ENOB = (SINAD − 1.76 dB) / 6.02 dB per bit. A 24-bit converter's bottom bits are noise. The datasheet lists noise and SNR per setting; compute ENOB from those.", "hu": "ENOB = (SINAD − 1,76 dB) / 6,02 dB bitenként. Egy 24 bites konverter alsó bitjei zajok. Az adatlap beállításonként megadja a zajt és az SNR-t; ezekből számold ki az ENOB-ot."}}
+  ],
+  "cards": [
+    {"id": "e15-c1", "front": {"en": "Nyquist and the alias formula", "hu": "Nyquist és az alias képlete"}, "back": {"en": "Highest usable frequency = fs / 2. A tone above it folds: f_alias = |f − k·fs| in 0…fs/2. 700 Hz at 1 kSPS → 300 Hz.", "hu": "A legmagasabb használható frekvencia = fs / 2. Fölötte a hang visszahajlik: f_alias = |f − k·fs| a 0…fs/2 sávban. 700 Hz 1 kSPS-nél → 300 Hz."}},
+    {"id": "e15-c2", "front": {"en": "LSB at gain 128 on the ADS131M02", "hu": "LSB 128-as erősítésnél az ADS131M02-n"}, "back": {"en": "±9.375 mV over ±8388607 codes → about 1.12 nV per code.", "hu": "±9,375 mV ±8388607 kódon → kb. 1,12 nV kódonként."}},
+    {"id": "e15-c3", "front": {"en": "A reading stuck at 8388607 (0x7FFFFF)", "hu": "8388607-en (0x7FFFFF) ragadt érték"}, "back": {"en": "Clipping at positive full scale, not data. The minimum is −8388608 (0x800000).", "hu": "Telítés a pozitív teljes skálán, nem adat. A minimum −8388608 (0x800000)."}},
+    {"id": "e15-c4", "front": {"en": "Why 2 kSPS in the ADC, 1 kSPS to the packs (D-016)?", "hu": "Miért 2 kSPS az ADC-ben, 1 kSPS a packeknek (D-016)?"}, "back": {"en": "At 2 kSPS the ADC's own filter cuts what could fold into 0–400 Hz (≥ 17.5 dB), then a firmware FIR removes 400–1000 Hz before decimating by 2.", "hu": "2 kSPS-nél az ADC saját szűrője levágja, ami a 0–400 Hz-be hajolhatna (≥ 17,5 dB), aztán a firmware FIR kiszűri a 400–1000 Hz-et a kettővel való decimálás előtt."}},
+    {"id": "e15-c5", "front": {"en": "Sample rate of the ADS131M0x", "hu": "Az ADS131M0x mintavételi frekvenciája"}, "back": {"en": "f_CLKIN / 2 / OSR. 8.192 MHz / 2 / 2048 = 2000 Hz; measured 1995.80 Hz with the Click's LTC6903.", "hu": "f_CLKIN / 2 / OSR. 8,192 MHz / 2 / 2048 = 2000 Hz; a Click LTC6903-ával mért 1995,80 Hz."}},
+    {"id": "e15-c6", "front": {"en": "HX711 vs ADS131M02 speed", "hu": "HX711 és ADS131M02 sebessége"}, "back": {"en": "HX711: 10 or 80 SPS (sees below 40 Hz). ADS131M02: 2 kSPS here, 2 channels at once.", "hu": "HX711: 10 vagy 80 SPS (40 Hz alatt lát). ADS131M02: itt 2 kSPS, 2 csatorna egyszerre."}}
+  ],
+  "cases": ["case-hx-max"]
+}

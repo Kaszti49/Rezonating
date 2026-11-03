@@ -1,0 +1,66 @@
+{
+  "id": "s07",
+  "minutes": 35,
+  "title": {"en": "Firmware: interrupt, FIFO, FIR, link", "hu": "Firmware: megszakítás, FIFO, FIR, link"},
+  "goal": {"en": "After this lesson you can follow one ADC sample from the DRDY edge to a frame on the wire, say where a sample can be lost, and read the counters that make sure no loss is hidden.", "hu": "A lecke után végig tudsz követni egy ADC mintát a DRDY éltől a vezetéken lévő keretig, meg tudod mondani, hol veszhet el egy minta, és olvasod a számlálókat, amik gondoskodnak róla, hogy semmi veszteség ne maradjon rejtve."},
+  "parts": ["esp32-devkit", "adc15"],
+  "predict": [
+    {
+      "q": {"en": "One **raw** sample (2 kSPS) is lost in the middle of a recording. The decimator is a 63-tap FIR that keeps every second output. Roughly how many **decimated** (1 kSPS) outputs are marked invalid?", "hu": "Egy **nyers** minta (2 kSPS) elvész egy felvétel közepén. A decimátor egy 63 tagú FIR, ami minden második kimenetet megtartja. Nagyjából hány **decimált** (1 kSPS) kimenet lesz érvénytelen?"},
+      "options": [
+        {"en": "0: the filter smooths it away", "hu": "0: a szűrő elsimítja"},
+        {"en": "1: only the matching output", "hu": "1: csak a hozzá tartozó kimenet"},
+        {"en": "About 31 or 32: every output whose 63-sample window contains the lost sample", "hu": "Kb. 31 vagy 32: minden kimenet, aminek a 63 mintás ablakában benne van az elveszett minta"},
+        {"en": "63", "hu": "63"}
+      ],
+      "answer": 2,
+      "why": {"en": "Each output is a weighted sum of the last 63 raw samples. The lost sample is inside the window of 63 consecutive raw positions. Half of those are the odd positions we keep, so 31 or 32 outputs are marked invalid. The firmware replaces the lost value with the previous good one (so the numbers stay sane), but it does not pretend: the outputs are counted as dropped.", "hu": "Minden kimenet az utolsó 63 nyers minta súlyozott összege. Az elveszett minta 63 egymást követő nyers pozíció ablakában szerepel. Ezek fele a megtartott páratlan pozíció, tehát 31 vagy 32 kimenet lesz érvénytelen. A firmware az elveszett értéket az előző jóval pótolja (hogy a számok épek maradjanak), de nem tesz úgy, mintha nem történt volna semmi: a kimeneteket eldobottként számolja."}
+    },
+    {
+      "q": {"en": "The DRDY interrupt handler could do the whole job: read the ADC over SPI, run the FIR, build a frame. Why does our firmware only timestamp and notify a task?", "hu": "A DRDY megszakításkezelő elvégezhetné az egész munkát: SPI-n olvasni az ADC-t, futtatni a FIR-t, keretet építeni. Miért csak időbélyeget tesz és értesít egy taskot a firmware-ünk?"},
+      "options": [
+        {"en": "Interrupts can't use SPI", "hu": "A megszakítások nem használhatnak SPI-t"},
+        {"en": "A handler must be short: while it runs, the next DRDY edge can be missed", "hu": "A kezelőnek rövidnek kell lennie: amíg fut, a következő DRDY él elmaradhat"},
+        {"en": "The FIR needs two cores", "hu": "A FIR-hez két mag kell"},
+        {"en": "It is only a style rule", "hu": "Csak stílusszabály"}
+      ],
+      "answer": 1,
+      "why": {"en": "At 2 kSPS a new sample arrives every 500 µs. A long handler delays the next one. So the handler stamps the time (esp_timer) and wakes the ADC task, which does the slow work on core 1.", "hu": "2 kSPS-nél 500 µs-onként érkezik új minta. Egy hosszú kezelő késlelteti a következőt. Ezért a kezelő csak időbélyeget tesz (esp_timer), és felébreszti az ADC taskot, ami az 1-es magon végzi a lassú munkát."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "One `adc_dec` DATA frame carries 40 sample frames of 2 channels × 4 bytes. Its payload is 20 bytes of header fields plus the samples. With the 4-byte frame header and 2-byte CRC, the raw frame is 346 bytes. COBS adds 2 bytes and the delimiter adds 1. What is the wire size? Answer in **bytes**.", "hu": "Egy `adc_dec` DATA keret 40 mintakeretet visz, mindegyik 2 csatorna × 4 bájt. A payload 20 bájt fejmező plusz a minták. A 4 bájtos keretfejjel és a 2 bájtos CRC-vel a nyers keret 346 bájt. A COBS 2 bájtot ad hozzá, a határoló 1-et. Mekkora a vezetéken a méret? Válasz **bájtban**."},
+      "answer": 349, "unit": "bytes", "tol": 0.01,
+      "hint": {"en": "346 + 2 + 1.", "hu": "346 + 2 + 1."},
+      "solution": {"en": "Payload 20 + 40 × 8 = 340. Raw frame 4 + 340 + 2 = 346. COBS adds ⌈346 / 254⌉ = 2. Plus the 0x00 delimiter: **349 bytes**.", "hu": "Payload 20 + 40 × 8 = 340. Nyers keret 4 + 340 + 2 = 346. A COBS ⌈346 / 254⌉ = 2 bájtot ad. Plusz a 0x00 határoló: **349 bájt**."}
+    },
+    {
+      "q": {"en": "The bench sends 25 such frames per second. How much of the 11 520 B/s capacity of the 115200 UART link does `adc_dec` use? Answer in **%** (STATUS frames ignored).", "hu": "A pult másodpercenként 25 ilyen keretet küld. A 115200-as UART link 11 520 B/s kapacitásából mennyit használ az `adc_dec`? Válasz **%**-ban (a STATUS keretek nélkül)."},
+      "answer": 75.7, "unit": "%", "tol": 0.02,
+      "hint": {"en": "25 × 349 bytes per second, divided by 11 520.", "hu": "25 × 349 bájt másodpercenként, osztva 11 520-szal."},
+      "solution": {"en": "25 × 349 = 8725 B/s. 8725 / 11 520 ≈ **75.7 %**. This is calculated, not measured. It also shows why the full 2 kSPS `adc_raw` stream (16 000 B/s of samples alone) can't go over this link.", "hu": "25 × 349 = 8725 B/s. 8725 / 11 520 ≈ **75,7 %**. Ez számolt, nem mért érték. Azt is megmutatja, miért nem mehet át ezen a linken a teljes 2 kSPS `adc_raw` adatfolyam (16 000 B/s csak a mintákból)."}
+    },
+    {
+      "q": {"en": "The DRDY interrupt sees two conversion edges 1.5 ms apart. The data period is 0.5 ms. How many sample intervals were skipped without an edge? Answer as a **count**.", "hu": "A DRDY megszakítás két konverziós élt lát egymástól 1,5 ms-ra. Az adatperiódus 0,5 ms. Hány mintaperiódus maradt ki él nélkül? Válasz **darabszámban**."},
+      "answer": 2, "unit": "", "tol": 0.001,
+      "hint": {"en": "g = round(1.5 / 0.5) periods; skipped = g − 1.", "hu": "g = kerek(1,5 / 0,5) periódus; kimaradt = g − 1."},
+      "solution": {"en": "g = 3 periods, so **2** intervals were skipped. The firmware advances the sample index by 3 and adds 2 to `device_dropped`, so the index stays in step with real time.", "hu": "g = 3 periódus, tehát **2** periódus maradt ki. A firmware a mintaindexet 3-mal lépteti, és 2-t ad a `device_dropped`-hoz, így az index szinkronban marad a valós idővel."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "Where do samples get counted as lost in our firmware?", "hu": "Hol számolja veszteségnek a mintákat a firmware-ünk?"}, "options": [{"en": "Only in the PC", "hu": "Csak a PC-ben"}, {"en": "In acquisition (missed DRDY, failed read, CRC error, FIFO), in the send queue, and as gaps seen on the PC", "hu": "Az akvizícióban (kimaradt DRDY, sikertelen olvasás, CRC hiba, FIFO), a küldési sorban és a PC-n látott hézagokként"}, {"en": "Nowhere: we only keep good samples", "hu": "Sehol: csak a jó mintákat tartjuk meg"}, {"en": "Only in the ADC", "hu": "Csak az ADC-ben"}], "answer": 1, "why": {"en": "The sidecar keeps three counts: device, link and host. Each stage that can lose a sample counts it, so the three add up to the whole loss.", "hu": "A sidecar három számot tart: device, link és host. Minden szakasz, amelyik mintát veszíthet, megszámolja, így a három együtt adja a teljes veszteséget."}},
+    {"q": {"en": "A frame with a bad CRC from the ADC arrives. What does the firmware do?", "hu": "Rossz CRC-jű keret érkezik az ADC-től. Mit csinál a firmware?"}, "options": [{"en": "Uses it anyway", "hu": "Mégis felhasználja"}, {"en": "Counts that sample as lost", "hu": "Elveszettnek számolja azt a mintát"}, {"en": "Resets the ADC", "hu": "Újraindítja az ADC-t"}, {"en": "Ignores it silently", "hu": "Csendben figyelmen kívül hagyja"}], "answer": 1, "why": {"en": "A corrupt frame can't be trusted, so the sample counts as lost (`crc_err`). \"Count every sample\" means a bad sample is never passed off as a good one.", "hu": "Egy sérült keretben nem bízhatunk, ezért a minta elveszettnek számít (`crc_err`). A \"minden mintát megszámolunk\" azt jelenti, hogy rossz mintát sosem adunk el jónak."}},
+    {"q": {"en": "What does the sequence number (seq) of a link frame tell the PC?", "hu": "Mit mond a PC-nek egy link keret sorszáma (seq)?"}, "options": [{"en": "How many samples the frame has", "hu": "Hány minta van a keretben"}, {"en": "Whether frames went missing: a jump means lost frames", "hu": "Hogy kimaradtak-e keretek: az ugrás elveszett kereteket jelent"}, {"en": "The sample rate", "hu": "A mintavételi ráta"}, {"en": "The time", "hu": "Az időt"}], "answer": 1, "why": {"en": "Frames are numbered per direction. A gap in the numbers means frames were lost; the PC counts them and does not ask for a resend.", "hu": "A keretek irányonként számozottak. A számok közti hézag azt jelenti, hogy keretek vesztek el; a PC megszámolja őket, és nem kér újraküldést."}},
+    {"q": {"en": "Why does the link use COBS and a 0x00 delimiter?", "hu": "Miért használ a link COBS-t és 0x00 határolót?"}, "options": [{"en": "To compress the data", "hu": "Az adat tömörítésére"}, {"en": "So a receiver that joins mid-stream, or loses bytes, can find the next frame start", "hu": "Hogy a menet közben csatlakozó vagy bájtokat vesztő vevő megtalálja a következő keret elejét"}, {"en": "To encrypt", "hu": "Titkosításra"}, {"en": "To make frames longer", "hu": "Hogy hosszabbak legyenek a keretek"}], "answer": 1, "why": {"en": "COBS removes every 0x00 from the frame body, so 0x00 can only mean \"frame end\". After any damage the receiver skips to the next 0x00 and starts again.", "hu": "A COBS kivesz minden 0x00-t a keret törzséből, így a 0x00 csak \"keret vége\"-t jelenthet. Sérülés után a vevő a következő 0x00-ig ugrik, és újrakezdi."}}
+  ],
+  "cards": [
+    {"id": "s07-c1", "front": {"en": "The path of one sample", "hu": "Egy minta útja"}, "back": {"en": "DRDY falling edge → ISR stamps the time → ADC task reads over SPI → FIR + ÷2 → 40-frame packet → queue → UART link.", "hu": "DRDY lefutó él → az ISR időbélyeget tesz → az ADC task SPI-n olvas → FIR + ÷2 → 40 keretes csomag → sor → UART link."}},
+    {"id": "s07-c2", "front": {"en": "The decimator (D-016)", "hu": "A decimátor (D-016)"}, "back": {"en": "63-tap FIR, keep odd raw indices: 2 kSPS → 1 kSPS. Delay 31 raw samples.", "hu": "63 tagú FIR, páratlan nyers indexek megtartása: 2 kSPS → 1 kSPS. Késleltetés 31 nyers minta."}},
+    {"id": "s07-c3", "front": {"en": "A raw sample is lost. What happens inside the FIR?", "hu": "Elvész egy nyers minta. Mi történik a FIR-ben?"}, "back": {"en": "Replaced by the previous good one; every output whose window held it is dropped and counted.", "hu": "Az előző jóval pótolja; minden kimenet, aminek az ablakában benne volt, eldobott és megszámolt."}},
+    {"id": "s07-c4", "front": {"en": "Three counters for loss", "hu": "Három veszteségszámláló"}, "back": {"en": "device (acquisition), link (send queue/transport), host (gaps the PC sees).", "hu": "device (akvizíció), link (küldési sor/átvitel), host (a PC által látott hézagok)."}},
+    {"id": "s07-c5", "front": {"en": "Link frame layout", "hu": "Link keret felépítése"}, "back": {"en": "header (ver, type, seq) | payload | CRC-16, then COBS, then a 0x00 delimiter.", "hu": "fejléc (ver, type, seq) | payload | CRC-16, majd COBS, majd 0x00 határoló."}},
+    {"id": "s07-c6", "front": {"en": "adc_dec on the 115200 link", "hu": "adc_dec a 115200-as linken"}, "back": {"en": "About 8725 B/s of 11 520 B/s (calculated, ≈ 76 %).", "hu": "Kb. 8725 B/s a 11 520 B/s-ból (számolt, ≈ 76 %)."}}
+  ],
+  "cases": []
+}

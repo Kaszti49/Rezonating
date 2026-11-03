@@ -1,0 +1,66 @@
+{
+  "id": "s08",
+  "minutes": 30,
+  "title": {"en": "Data and packs: from WAV to a decision", "hu": "Adat és packok: WAV-tól a döntésig"},
+  "goal": {"en": "After this lesson you can read a sidecar, explain why lost samples are stored as spans, follow footstep-id from raw samples to an output, and say why Python and firmware must share test vectors.", "hu": "A lecke után el tudsz olvasni egy sidecart, meg tudod magyarázni, miért tároljuk szakaszként az elveszett mintákat, végig tudod követni a footstep-id-t a nyers mintáktól a kimenetig, és el tudod mondani, miért kell a Pythonnak és a firmware-nek közös tesztvektor."},
+  "parts": ["adc15", "sd-breakout", "sd-card"],
+  "predict": [
+    {
+      "q": {"en": "A recording lost a few samples. The WAV has zeros where they were, and the sidecar only says \"12 samples lost\", not where. On a very quiet floor the real signal is also near zero. What goes wrong when the pipeline builds its mask?", "hu": "Egy felvételben néhány minta elveszett. A WAV-ban nullák vannak a helyükön, és a sidecar csak annyit mond: \"12 minta veszett el\", nem azt, hol. Nagyon csendes padlón a valódi jel is nulla közeli. Mi romlik el, amikor a pipeline elkészíti a maszkot?"},
+      "options": [
+        {"en": "Nothing: zeros are always lost samples", "hu": "Semmi: a nullák mindig elveszett minták"},
+        {"en": "Real quiet frames that happen to be all zeros are also marked lost, and many footstep windows get skipped", "hu": "A véletlenül csupa nulla valódi csendes keretek is elveszettnek számítanak, és sok lépésablak kimarad"},
+        {"en": "The WAV file becomes unreadable", "hu": "A WAV fájl olvashatatlanná válik"},
+        {"en": "The model gets more accurate", "hu": "A modell pontosabb lesz"}
+      ],
+      "answer": 1,
+      "why": {"en": "With only a count, the safe rule is to treat every all-zero frame as possibly lost. On a quiet floor that marks real frames invalid. The 2026-10-13 measurement in D-022: 1834 surplus frames in 10 minutes at noise 10 codes, which skips about 80 % of footstep windows. Storing the exact positions (`loss_spans`) removes the guess.", "hu": "Csak számmal a biztonságos szabály az, hogy minden csupa nulla keretet esetleg elveszettnek tekintünk. Csendes padlón ez valódi kereteket jelöl érvénytelennek. A D-022 2026-10-13-i mérése: 1834 felesleges keret 10 perc alatt 10 kódos zajnál, ami a lépésablakok kb. 80 %-át kihagyja. A pontos helyek tárolása (`loss_spans`) megszünteti a találgatást."}
+    },
+    {
+      "q": {"en": "We record the raw 2 kSPS stream (`adc_raw`) even though the packs run at 1 kSPS. Why not store the decimated stream and save half the space?", "hu": "A nyers 2 kSPS-es adatfolyamot (`adc_raw`) rögzítjük, pedig a packok 1 kSPS-en futnak. Miért nem a decimált adatfolyamot tároljuk, megspórolva a hely felét?"},
+      "options": [
+        {"en": "The SD card can't write 1 kSPS", "hu": "Az SD kártya nem tud 1 kSPS-et írni"},
+        {"en": "Raw data keeps everything the ADC gives: the FIR can still change, and old recordings can be decimated again", "hu": "A nyers adat mindent megőriz, amit az ADC ad: a FIR még változhat, és a régi felvételek újradecimálhatók"},
+        {"en": "Decimated data is illegal to store", "hu": "Decimált adatot tilos tárolni"},
+        {"en": "WAV can't hold 1 kSPS", "hu": "A WAV nem tud 1 kSPS-et"}
+      ],
+      "answer": 1,
+      "why": {"en": "That was decision D-020. A decimated recording has the firmware's current filter baked in for good. Raw costs about 58 MB per hour for 2 channels, which is cheap.", "hu": "Ez volt a D-020 döntés. Egy decimált felvételbe a firmware jelenlegi szűrője örökre bele van égetve. A nyers kb. 58 MB óránként 2 csatornára, ami olcsó."}
+    }
+  ],
+  "calc": [
+    {
+      "q": {"en": "How big is one hour of `adc_raw` as a 32-bit WAV, 2 channels, 2000 samples/s? Answer in **MB** (1 MB = 10⁶ B).", "hu": "Mekkora egy óra `adc_raw` 32 bites WAV-ként, 2 csatorna, 2000 minta/s? Válasz **MB**-ban (1 MB = 10⁶ B)."},
+      "answer": 57.6, "unit": "MB", "tol": 0.02,
+      "hint": {"en": "2 channels × 4 bytes × 2000 per second × 3600 seconds.", "hu": "2 csatorna × 4 bájt × 2000 másodpercenként × 3600 másodperc."},
+      "solution": {"en": "2 × 4 × 2000 = 16 000 B/s, × 3600 = 57.6 MB. D-020 says \"about 58 MB per hour\". The 64 GB microSD card is nowhere near full.", "hu": "2 × 4 × 2000 = 16 000 B/s, × 3600 = 57,6 MB. A D-020 \"kb. 58 MB óránként\"-t ír. A 64 GB-os microSD kártya közel sincs tele."}
+    },
+    {
+      "q": {"en": "A sidecar has `loss_spans` = [[1200, 4], [5000, 7], [9000, 1]]. How many samples were lost in total? Answer as a **count**.", "hu": "Egy sidecarban `loss_spans` = [[1200, 4], [5000, 7], [9000, 1]]. Összesen hány minta veszett el? Válasz **darabszámban**."},
+      "answer": 12, "unit": "", "tol": 0.001,
+      "hint": {"en": "Each pair is [start frame, number of frames].", "hu": "Minden pár [kezdő keret, keretek száma]."},
+      "solution": {"en": "4 + 7 + 1 = **12**. The rule in D-022: the spans' total must equal `loss.device + loss.link + loss.host`, otherwise the file is invalid.", "hu": "4 + 7 + 1 = **12**. A D-022 szabálya: a szakaszok összege egyezzen a `loss.device + loss.link + loss.host` értékkel, különben a fájl érvénytelen."}
+    },
+    {
+      "q": {"en": "footstep-id cuts an event window from 100 ms before the trigger to 400 ms after it. At 1 kSPS, how many samples is one window? Answer as a **count**.", "hu": "A footstep-id az eseményablakot a trigger előtti 100 ms-tól az utána következő 400 ms-ig vágja. 1 kSPS-nél hány minta egy ablak? Válasz **darabszámban**."},
+      "answer": 500, "unit": "", "tol": 0.001,
+      "hint": {"en": "pre_ms + post_ms, one sample per millisecond.", "hu": "pre_ms + post_ms, milliszekundumonként egy minta."},
+      "solution": {"en": "(100 + 400) ms × 1 sample/ms = **500 samples**. If any of them is invalid (lost), the window is skipped and counted, not guessed.", "hu": "(100 + 400) ms × 1 minta/ms = **500 minta**. Ha ezek bármelyike érvénytelen (elveszett), az ablakot kihagyjuk és megszámoljuk, nem találgatunk."}
+    }
+  ],
+  "quiz": [
+    {"q": {"en": "What goes in the sidecar that the WAV can't hold?", "hu": "Mi kerül a sidecarba, amit a WAV nem tud tárolni?"}, "options": [{"en": "The samples", "hu": "A mintákat"}, {"en": "Measured sample rate, loss counts and spans, head and channel info, labels", "hu": "A mért mintavételi rátát, a veszteségszámokat és -szakaszokat, a fej- és csatornainfót, a címkéket"}, {"en": "The firmware source", "hu": "A firmware forrását"}, {"en": "Only the file name", "hu": "Csak a fájlnevet"}], "answer": 1, "why": {"en": "The WAV holds only numbers. The sidecar says what they mean: the real rate (the LTC6903 is off by about 0.2 %), which samples were lost, which sensor, and which person walked when (as a pseudonym like P2, never a name).", "hu": "A WAV csak számokat tartalmaz. A sidecar azt mondja meg, mit jelentenek: a valódi rátát (az LTC6903 kb. 0,2 %-kal tér el), mely minták vesztek el, melyik szenzor, és ki mikor sétált (álnévvel, pl. P2, sosem névvel)."}},
+    {"q": {"en": "Why do Python and the firmware need the same test vectors?", "hu": "Miért kell a Pythonnak és a firmware-nek ugyanaz a tesztvektor?"}, "options": [{"en": "To save disk space", "hu": "Lemezhely megtakarítása miatt"}, {"en": "The model trained in Python only works if the firmware computes exactly the same features", "hu": "A Pythonban tanított modell csak akkor működik, ha a firmware pontosan ugyanazokat a jellemzőket számolja"}, {"en": "Because the firmware is written in Python", "hu": "Mert a firmware Pythonban íródott"}, {"en": "They don't need them", "hu": "Nem kell nekik"}], "answer": 1, "why": {"en": "One feature implementation, two languages. A tiny difference in a filter or a feature shifts the model's inputs, and its accuracy silently drops. The vectors are fixed inputs with expected outputs that both sides must hit.", "hu": "Egy jellemző-implementáció, két nyelven. Egy szűrő vagy jellemző apró eltérése eltolja a modell bemeneteit, és a pontosság csendben leesik. A vektorok rögzített bemenetek várt kimenetekkel, amiket mindkét oldalnak el kell találnia."}},
+    {"q": {"en": "What does the STA/LTA trigger compare?", "hu": "Mit hasonlít össze az STA/LTA trigger?"}, "options": [{"en": "Two sensors", "hu": "Két szenzort"}, {"en": "The energy over a short window (50 ms) against a long one (2000 ms); a high ratio means something just happened", "hu": "Egy rövid (50 ms) és egy hosszú (2000 ms) ablak energiáját; magas arány azt jelenti, hogy most történt valami"}, {"en": "Two frequencies", "hu": "Két frekvenciát"}, {"en": "Two files", "hu": "Két fájlt"}], "answer": 1, "why": {"en": "The long window is the floor's usual noise, the short one the present moment. When the short one is 3.5 times the long one (the ratio in pack.json), the trigger fires and the event window is cut.", "hu": "A hosszú ablak a padló szokásos zaja, a rövid a jelen pillanat. Ha a rövid 3,5-szerese a hosszúnak (a pack.json aránya), a trigger elsül, és kivágódik az eseményablak."}},
+    {"q": {"en": "What are the Year 1 packs, in order?", "hu": "Melyek az 1. év packjai, sorrendben?"}, "options": [{"en": "footstep-id, fall, appliance", "hu": "footstep-id, fall, appliance"}, {"en": "appliance, fall, footstep-id", "hu": "appliance, fall, footstep-id"}, {"en": "fall, footstep-id, appliance", "hu": "fall, footstep-id, appliance"}, {"en": "only footstep-id", "hu": "csak a footstep-id"}], "answer": 0, "why": {"en": "Decision D-003. footstep-id comes first, so this lesson follows it.", "hu": "D-003 döntés. A footstep-id az első, ezért ez a lecke azt követi."}}
+  ],
+  "cards": [
+    {"id": "s08-c1", "front": {"en": "What do we record?", "hu": "Mit rögzítünk?"}, "back": {"en": "Multichannel 32-bit WAV of adc_raw (2 kSPS) + JSON sidecar (D-008, D-020).", "hu": "Többcsatornás 32 bites WAV az adc_raw-ról (2 kSPS) + JSON sidecar (D-008, D-020)."}},
+    {"id": "s08-c2", "front": {"en": "How are lost samples stored?", "hu": "Hogyan tároljuk az elveszett mintákat?"}, "back": {"en": "As zeros in the WAV, plus loss counts and loss_spans [start, n] in the sidecar (D-022).", "hu": "Nullákként a WAV-ban, plusz veszteségszámokkal és loss_spans [kezdet, n] párokkal a sidecarban (D-022)."}},
+    {"id": "s08-c3", "front": {"en": "footstep-id pipeline", "hu": "footstep-id pipeline"}, "back": {"en": "Decimate 2→1 kSPS → high-pass 5 Hz, low-pass 400 Hz → STA/LTA trigger → footstep_v1 features → classifier.", "hu": "Decimálás 2→1 kSPS → felüláteresztő 5 Hz, aluláteresztő 400 Hz → STA/LTA trigger → footstep_v1 jellemzők → osztályozó."}},
+    {"id": "s08-c4", "front": {"en": "STA/LTA settings in pack.json", "hu": "STA/LTA beállítások a pack.json-ban"}, "back": {"en": "sta 50 ms, lta 2000 ms, ratio 3.5, window −100 ms/+400 ms.", "hu": "sta 50 ms, lta 2000 ms, arány 3,5, ablak −100 ms/+400 ms."}},
+    {"id": "s08-c5", "front": {"en": "What are test vectors for?", "hu": "Mire jók a tesztvektorok?"}, "back": {"en": "Fixed inputs with expected outputs: Python and firmware must match them, so features stay identical.", "hu": "Rögzített bemenetek várt kimenettel: a Pythonnak és a firmware-nek egyeznie kell velük, így a jellemzők azonosak maradnak."}},
+    {"id": "s08-c6", "front": {"en": "What does footstep-id output?", "hu": "Mit ad ki a footstep-id?"}, "back": {"en": "An event (step) and a label (person: P1, P2, … or unknown). Pseudonyms only.", "hu": "Egy eseményt (step) és egy címkét (person: P1, P2, … vagy unknown). Csak álnevek."}}
+  ],
+  "cases": []
+}
