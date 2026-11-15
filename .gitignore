@@ -23,6 +23,8 @@ venv/
 *.wav
 data/raw/
 data/private/
+data/*.csv
+data/*.log
 ml/artifacts/
 *.tflite.tmp
 
@@ -50,3 +52,10 @@ CLAUDE.local.md
 node_modules/
 tools/lab/src/rezonating_lab/static/
 tools/lab/runs/
+
+# Hackathon fall detector (firmware/hackathon-rezon): phone number, laptop tools, derived events
+firmware/hackathon-rezon/rezon/secrets.h
+firmware/hackathon-rezon/tools/*.exe
+firmware/hackathon-rezon/data/events.tsv
+firmware/hackathon-rezon/build/
+*.blend1

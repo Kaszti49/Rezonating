@@ -1,0 +1,16 @@
+# PROVISIONAL labels: the 7 impact-sized events of recordings 2 and 3, ASSUMED to be the "7 known falls". Kaszti must confirm.
+# file  seconds  label   (labels: fall_stay fall_getup drop sit stomp step other)
+geophone_2026-11-12T10-50-07 28.04 fall_stay
+geophone_2026-11-12T10-50-07 42.60 fall_stay
+geophone_2026-11-12T10-50-07 54.45 fall_stay
+geophone_2026-11-12T11-01-32 28.6 fall_stay
+geophone_2026-11-12T11-01-32 40.7 fall_stay
+geophone_2026-11-12T11-01-32 42.4 fall_stay
+geophone_2026-11-12T11-01-32 53.9 fall_stay
+# Stage test 2026-11-14 (Kaszti): walking near 0-11 s, mid 12-30 s, far 31-43 s; falls near / mid / far; then 3 jumps. Gain x2.
+session_2026-11-14T01-41-28 43.71 fall_getup
+session_2026-11-14T01-41-28 51.46 fall_getup
+session_2026-11-14T01-41-28 60.38 fall_getup
+session_2026-11-14T01-41-28 64.33 stomp
+session_2026-11-14T01-41-28 70.08 stomp
+session_2026-11-14T01-41-28 74.85 stomp

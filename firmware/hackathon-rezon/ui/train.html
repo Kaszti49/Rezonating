@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REZON · training</title>
+<!--
+  REZON training and tuning page. One file, no internet needed. Open in Chrome or Edge (Web Serial).
+  The device runs the detection core and sends every event with its feature vector (protocol: rezon_proto.h).
+  This page shows the signal and the events, lets you label them, records sessions and changes settings on the device.
+    1. Connect, press Record, do the test (walk, fall, drop things). Press the label keys 1-7 at the moment it happens,
+       or click an event in the table and give it a label afterwards.
+    2. Stop: the session is saved as a .log file. Put it in firmware/data/.
+    3. Save labels: labels.tsv. Append its rows to firmware/data/labels.tsv, then run firmware/tools/train.bat.
+  You can also open a .log (a saved session, or one written by "replay --log") to look through it and label it.
+-->
+<style>
+  :root { --bg: #0c1220; --panel: #151d2e; --line: #26324a; --text: #e6edf7; --muted: #8592a8; --cyan: #7fe3f5; --amber: #f2c14e; --red: #f0625a; --ok: #58d68d; --violet: #b49cf5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13.5px/1.4 "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  h1 { font-size: 16px; margin: 0 8px 0 0; letter-spacing: .12em; } h1 span { color: var(--muted); font-weight: 400; letter-spacing: 0; }
+  button, select, input { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--cyan); }
+  button.primary { background: var(--cyan); color: #06222a; border-color: var(--cyan); font-weight: 600; }
+  button.rec { border-color: var(--red); color: var(--red); } button.on { border-color: var(--amber); color: var(--amber); }
+  .pill { padding: 3px 9px; border-radius: 99px; font-size: 12px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.on { color: var(--ok); border-color: var(--ok); } .pill.bad { color: var(--red); border-color: var(--red); } .pill.warn { color: var(--amber); border-color: var(--amber); }
+  .sp { flex: 1; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; padding: 14px; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 11px 13px; margin-bottom: 14px; }
+  .lab { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 7px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .lab .r { margin-left: auto; text-transform: none; letter-spacing: 0; display: flex; gap: 6px; align-items: center; }
+  canvas { display: block; width: 100%; background: #0a0f1b; border-radius: 8px; border: 1px solid var(--line); }
+  #wave { height: 280px; } #over { height: 70px; cursor: pointer; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  th { text-align: right; color: var(--muted); font-weight: 500; padding: 3px 6px; position: sticky; top: 0; background: var(--panel); white-space: nowrap; }
+  td { text-align: right; padding: 3px 6px; border-top: 1px solid var(--line); white-space: nowrap; }
+  th:nth-child(2), td:nth-child(2), th:last-child, td:last-child { text-align: left; }
+  tr.sel td { background: #1d2940; } tbody tr { cursor: pointer; }
+  .c-FALL { color: var(--red); font-weight: 700; } .c-impact { color: var(--amber); } .c-step, .c-newstep { color: var(--cyan); } .c-bystander { color: var(--violet); } .c-floor, .c-ring, .c-noise { color: var(--muted); }
+  #evwrap { max-height: 330px; overflow: auto; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 7px; color: var(--muted); }
+  .row input { width: 84px; margin-left: auto; padding: 3px 6px; } .row select { margin-left: auto; padding: 3px 6px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; } .stats b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; } .stats span { color: var(--muted); font-size: 11px; }
+  #labels button { font-size: 12px; padding: 4px 8px; margin: 0 5px 5px 0; }
+  #log { font: 11.5px/1.45 Consolas, monospace; color: var(--muted); white-space: pre-wrap; max-height: 150px; overflow: auto; margin: 0; }
+  .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+  #state { font-size: 15px; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>REZON <span>· training</span></h1>
+  <button class="primary" id="bConnect">Connect device</button>
+  <button id="bBle" title="Wireless: Rezon on the power bank, rocker on">Bluetooth</button>
+  <button id="bOpen">Open .log</button><input type="file" id="file" accept=".log,.csv,.txt" hidden>
+  <button id="bDemo">Demo</button>
+  <span class="pill" id="status">not connected</span>
+  <span id="state"></span>
+  <span class="sp"></span>
+  <input id="note" placeholder="session note: who, shoes, distance, floor" style="width:290px">
+  <button id="bRec">● Record</button>
+  <button id="bLabels">Save labels</button>
+</header>
+<main>
+  <div>
+    <section class="card">
+      <div class="lab"><span id="waveTitle">Live signal</span>
+        <span class="r">
+          <label><input type="checkbox" id="showStep" checked> step path 18–60 Hz</label>
+          <label><input type="checkbox" id="showImp" checked> impact path 10–45 Hz</label>
+          <select id="win"><option value="4">4 s</option><option value="8" selected>8 s</option><option value="20">20 s</option></select>
+          <button id="bLive">Back to live</button>
+        </span></div>
+      <canvas id="wave"></canvas>
+      <div class="lab" style="margin-top:10px">Whole session · peak per 100 ms · click to look at a moment</div>
+      <canvas id="over"></canvas>
+    </section>
+    <section class="card">
+      <div class="lab">Events from the device · click a row, then a label <span class="r"><span id="evCount"></span><button id="bClear">clear</button></span></div>
+      <div id="evwrap"><table><thead><tr><th>t (s)</th><th>class</th><th>peak</th><th title="peak ÷ step level (impact-sized at relMin)">×lvl</th><th title="ms above 30 % of its own peak (fall at holdMin)">hold</th><th>score</th><th>trk</th><th>sim</th><th>lnE</th><th>dur</th><th>nSub</th><th>rise</th><th>decay</th><th>band</th><th>fc</th><th>rel</th><th>label</th></tr></thead><tbody id="ev"></tbody></table></div>
+    </section>
+  </div>
+  <div>
+    <section class="card">
+      <div class="lab">Device</div>
+      <div class="stats">
+        <div><b id="sRate">–</b><span>samples / s</span></div><div><b id="sCrc">–</b><span>CRC errors / s</span></div><div><b id="sGain">–</b><span>gain</span></div>
+        <div><b id="sBg">–</b><span>background mm/s</span></div><div><b id="sTh">–</b><span>step threshold</span></div><div><b id="sWalk">–</b><span>walkers tracked</span></div>
+        <div><b id="sLvl">–</b><span>step level mm/s</span></div><div><b id="sImp">–</b><span>impact needs mm/s</span></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="lab">Labels · keys 1–7</div>
+      <div id="labels"></div>
+      <p class="hint">With an event selected, a label goes onto that event. With nothing selected, it marks "now" (the nearest impact within 0.7 s gets it).</p>
+    </section>
+    <section class="card">
+      <div class="lab">Settings on the device <span class="r"><button id="bGet">read</button><button id="bSave">store in flash</button></span></div>
+      <div class="row">ADC gain <select id="gain"><option value="0">×1</option><option value="1">×2</option><option value="2" selected>×4 (±14 mm/s)</option><option value="3">×8</option><option value="4">×16</option><option value="5">×32 (±1.8 mm/s)</option></select></div>
+      <div class="row">Profile <select id="profile"><option>stage</option><option>home</option></select></div>
+      <div id="params"></div>
+      <div class="row" style="gap:6px"><button id="bCal">Calibrate floor</button><button id="bTest">Test alarm</button><button id="bReset">Reset alarm</button></div>
+      <p class="hint">Changes apply at once and are lost at power-off unless stored. "Test alarm" runs the whole sequence, including the phone call.</p>
+    </section>
+    <section class="card"><div class="lab">Device messages</div><pre id="log"></pre></section>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const FS = 1000, MAXN = 30 * 60 * FS;                      // up to 30 minutes per session in memory
+let yS = new Float32Array(1 << 18), yI = new Float32Array(1 << 18), n = 0, tBase = 0, gainV = 4;
+const events = []; let sel = null, viewAt = null;          // viewAt = sample index at the right edge when looking back, null = live
+const marks = [];                                          // labels pressed "now": {i, label}
+const logLines = [];
+function log(s) { logLines.push(s); if (logLines.length > 80) logLines.shift(); $('log').textContent = logLines.join('\n'); $('log').scrollTop = 1e9; }
+function setStatus(t, c) { $('status').textContent = t; $('status').className = 'pill ' + (c || ''); }
+
+// ---------------------------------------------------------------- display filters (the device decides; this is only for drawing)
+function biquad(type, f0, Q) {
+  const w = 2 * Math.PI * f0 / FS, c = Math.cos(w), al = Math.sin(w) / (2 * Q), a0 = 1 + al;
+  const b = type === 'hp' ? [(1 + c) / 2, -(1 + c), (1 + c) / 2] : [(1 - c) / 2, 1 - c, (1 - c) / 2];
+  const k = { b0: b[0] / a0, b1: b[1] / a0, b2: b[2] / a0, a1: -2 * c / a0, a2: (1 - al) / a0, z1: 0, z2: 0 };
+  return x => { const y = k.b0 * x + k.z1; k.z1 = k.b1 * x - k.a1 * y + k.z2; k.z2 = k.b2 * x - k.a2 * y; return y; };
+}
+const bp = (lo, hi) => [biquad('hp', lo, .5412), biquad('hp', lo, 1.3066), biquad('lp', hi, .5412), biquad('lp', hi, 1.3066)];
+let chI, chS, dc, dcInit;
+function resetSignal() { chI = bp(10, 45); chS = bp(18, 60); dcInit = false; }
+resetSignal();
+function pushCounts(c) {
+  if (!dcInit) { dc = c; dcInit = true; }
+  dc += (c - dc) * 0.002;
+  const v = (c - dc) * 1200 / gainV / 8388608 / 20.9;
+  if (n >= yS.length) { if (n >= MAXN) return; const a = new Float32Array(n * 2), b = new Float32Array(n * 2); a.set(yS); b.set(yI); yS = a; yI = b; }
+  yS[n] = chS.reduce((x, f) => f(x), v); yI[n] = chI.reduce((x, f) => f(x), v); n++;
+}
+
+// ---------------------------------------------------------------- lines
+let rec = null, recName = '';
+const FEATS = ['lnE', 'dur', 'nSub', 'rise', 'decay', 'band', 'fc', 'rel'];
+function onLine(l) {
+  if (!l) return;
+  if (l.charCodeAt(0) === 66 && l[1] === ',') { unpackB(l, c => { if (rec) rec.push(`D,${c},0`); pushCounts(c); }); return; }   // B, (Bluetooth): stored as D lines, so recordings replay
+  if (rec) rec.push(l);
+  if (l.charCodeAt(0) === 68 && l[1] === ',') { const c = parseInt(l.slice(2), 10); if (Number.isFinite(c)) pushCounts(c); return; }
+  const p = l.split(',');
+  switch (p[0]) {
+    case 'S': $('sRate').textContent = p[1]; $('sCrc').textContent = p[2]; $('sCrc').style.color = +p[2] ? 'var(--red)' : '';
+      if (+p[3] > 0 && +p[3] !== gainV) { gainV = +p[3]; resetSignal(); $('gain').value = Math.round(Math.log2(gainV)); }
+      $('sGain').textContent = '×' + gainV; if (p[4] !== undefined) tBase = +p[4] - n;
+      if (p[5] !== undefined) { $('sBg').textContent = (+p[5]).toFixed(3); $('sTh').textContent = (+p[6]).toFixed(3); $('sWalk').textContent = p[7]; }
+      if (p[9] !== undefined) { $('sLvl').textContent = (+p[8]).toFixed(2); $('sImp').textContent = (+p[9]).toFixed(2); }
+      break;
+    case 'E': addEvent({ id: +p[1], tOn: +p[2], tPk: +p[3], dur: +p[4], cls: p[5], track: +p[6], flags: +p[7], score: +p[8], sim: +p[9], peak: +p[10], peakS: +p[11], bg: +p[12], x: p.slice(13, 22).map(Number), hold: p[22] === undefined ? NaN : +p[22], rel: p[23] === undefined ? NaN : +p[23], label: '' }); break;
+    case 'F': log(`FALL-shaped event at ${(+p[1] / 1000).toFixed(2)} s, score ${p[3]}`); break;
+    case 'U': log(`got up (new steady rhythm, track ${p[2]})`); break;
+    case 'A': $('state').textContent = p[1] === 'WATCH' ? '' : 'alarm: ' + p[1]; $('state').style.color = p[1] === 'OK' ? 'var(--ok)' : 'var(--amber)'; break;
+    case 'P': { const el = document.querySelector(`#params input[data-k="${p[1]}"]`); if (el) el.value = p[2]; if (p[1] === 'profile') $('profile').value = p[2]; } break;
+    case 'L': marks.push({ i: n, label: p[1] }); break;
+    case 'T': case 'I': break;
+    default: log(l.replace(/^[#M],?\s?/, ''));
+  }
+}
+function addEvent(e) {
+  e.i = e.tOn - tBase; events.push(e);
+  for (const m of marks) if (!m.used && (e.flags & 1) && Math.abs(m.i - e.i) < 700) { e.label = m.label; m.used = true; }
+  const tr = document.createElement('tr'); e.tr = tr; fillRow(e);
+  tr.onclick = () => select(e);
+  $('ev').prepend(tr); $('evCount').textContent = events.length + ' events';
+}
+function fillRow(e) {
+  const x = e.x, f = (v, d) => (v === undefined || isNaN(v)) ? '' : v.toFixed(d);
+  e.tr.innerHTML = `<td>${(e.tOn / 1000).toFixed(2)}</td><td class="c-${e.cls}">${e.cls}${e.flags & 4 ? ' ?' : ''}</td><td>${f(e.peak, 3)}</td><td>${f(e.rel, 1)}</td><td>${e.hold > 0 ? f(e.hold * 1000, 0) : ''}</td><td>${f(e.score, 1)}</td><td>${e.track < 0 ? '' : e.track}</td><td>${e.sim ? f(e.sim, 2) : ''}</td>` +
+    `<td>${f(x[1], 1)}</td><td>${f(x[2], 3)}</td><td>${f(x[3], 0)}</td><td>${f(x[4], 3)}</td><td>${f(x[5], 3)}</td><td>${f(x[6], 2)}</td><td>${f(x[7], 1)}</td><td>${f(x[8], 2)}</td><td>${e.label}</td>`;
+}
+function select(e) {
+  if (sel) sel.tr.classList.remove('sel');
+  sel = e === sel ? null : e;
+  if (sel) { sel.tr.classList.add('sel'); viewAt = Math.min(n, Math.max(0, sel.i) + (+$('win').value) * FS / 2); } else viewAt = null;
+}
+
+// ---------------------------------------------------------------- labels
+const LABELS = [['fall_stay', 'Fall · stays down'], ['fall_getup', 'Fall · gets up'], ['drop', 'Object dropped'], ['sit', 'Sits / kneels down'], ['stomp', 'Stomp / jump'], ['step', 'Just walking'], ['other', 'Other (write a note)']];
+LABELS.forEach(([id, txt], i) => { const b = document.createElement('button'); b.textContent = `${i + 1} · ${txt}`; b.onclick = () => mark(id); $('labels').appendChild(b); });
+function mark(id) {
+  if (sel) { sel.label = sel.label === id ? '' : id; fillRow(sel); return; }
+  onLine('L,' + id); log(`label "${id}" at ${(n / 1000).toFixed(1)} s`);
+  let best = null; for (const e of events) if ((e.flags & 1) && Math.abs(e.i - n) < 700 && (!best || Math.abs(e.i - n) < Math.abs(best.i - n))) best = e;
+  if (best) { best.label = id; fillRow(best); marks[marks.length - 1].used = true; }
+}
+addEventListener('keydown', e => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; const k = +e.key; if (k >= 1 && k <= LABELS.length) mark(LABELS[k - 1][0]); if (e.key === 'Escape' && sel) select(sel); });
+function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = name; a.click(); }
+const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+$('bLabels').onclick = () => {
+  const rows = events.filter(e => e.label).map(e => `${recName || 'session'} ${(e.tOn / 1000).toFixed(2)} ${e.label}`);
+  if (!rows.length) { log('no labelled events yet'); return; }
+  download(`labels_${recName || stamp()}.tsv`, '# file seconds label\n' + rows.join('\n') + '\n'); log(`saved ${rows.length} labels: append them to firmware/data/labels.tsv`);
+};
+$('bRec').onclick = () => {
+  if (!rec) { recName = 'session_' + stamp(); rec = [`# REZON session ${recName}`, `# note: ${$('note').value}`, `S,1000,0,${gainV},${tBase + n}`]; $('bRec').textContent = '■ Stop & save'; $('bRec').classList.add('rec'); log('recording ' + recName); return; }
+  download(recName + '.log', rec.join('\n') + '\n'); log(`saved ${recName}.log: put it in firmware/data/`); rec = null; $('bRec').textContent = '● Record'; $('bRec').classList.remove('rec');
+};
+$('bClear').onclick = () => { events.length = 0; marks.length = 0; sel = null; viewAt = null; n = 0; $('ev').innerHTML = ''; $('evCount').textContent = ''; };
+
+// ---------------------------------------------------------------- settings
+const PARAMS = [['rule', 'Fall rule (0 absolute, 1 normalised)'], ['relMin', 'Impact ≥ × step level (rule 1)'], ['holdMin', 'Fall: stays ≥ 30 % of own peak (s)'],
+  ['stepMin', 'Step minimum (mm/s)'], ['impactMin', 'Impact minimum (mm/s; rule 1: floor)'], ['kOn', 'Start: × background variance'], ['scoreMin', 'Fall score threshold (rule 0)'],
+  ['walkerMargin', 'Impact ≥ × walkers’ steps'], ['stepRef', 'Typical step peak (mm/s; level when quiet)'], ['segMode', 'End rule (0 variance, 1 60 % of peak)'], ['ringMs', 'Ringing ignored (ms)'], ['simMin', 'Track: min. similarity'], ['volume', 'Voice volume (%)'], ['chime', 'Start-up chime (1 on, 0 off)']];
+PARAMS.forEach(([k, t]) => { const d = document.createElement('div'); d.className = 'row'; d.innerHTML = `${t} <input data-k="${k}" inputmode="decimal">`; d.firstElementChild.onchange = ev => send(`!set ${k} ${ev.target.value}`); $('params').appendChild(d); });
+$('gain').onchange = e => send('G' + e.target.value);
+$('profile').onchange = e => send('!profile ' + e.target.value);
+$('bGet').onclick = () => send('!get'); $('bSave').onclick = () => send('!save'); $('bCal').onclick = () => send('!cal'); $('bTest').onclick = () => send('!test'); $('bReset').onclick = () => send('!reset');
+
+// ---------------------------------------------------------------- Web Serial, files, demo
+let port = null, reader = null, writer = null, closing = false, lastData = 0, quiet = false;
+$('bConnect').onclick = async () => {
+  if (port) { closing = true; try { await reader?.cancel(); } catch (e) {} return; }
+  closing = false;
+  if (!('serial' in navigator)) { setStatus('Web Serial needs Chrome or Edge', 'bad'); return; }
+  try {
+    port = await navigator.serial.requestPort(); await port.open({ baudRate: 460800, bufferSize: 65536 });
+    writer = port.writable.getWriter(); stopDemo(); $('bClear').onclick(); resetSignal(); setStatus('connected', 'on'); $('bConnect').textContent = 'Disconnect'; readLoop(); setTimeout(() => send('!get'), 600);
+  } catch (e) { port = null; setStatus('connect failed', 'bad'); log('connect failed: ' + e.message + ' (is the Arduino Serial Monitor or the other page holding the port?)'); }
+};
+// Keeps reading through serial glitches (break, framing, parity, overrun: Web Serial then hands out a new port.readable)
+// and through a bad line (one line that throws is logged and skipped). Only Disconnect or a lost device ends it.
+let lineErrors = 0;
+function onLineSafe(l) {
+  try { onLine(l); }
+  catch (e) { if (++lineErrors <= 20) log(`page error on line "${l.slice(0, 70)}": ${e.message}`); console.error(e, l); }
+}
+async function readLoop() {
+  let glitches = 0;
+  while (port && port.readable && !closing) {
+    let pipeErr = null;
+    const dec = new TextDecoderStream(), closed = port.readable.pipeTo(dec.writable).catch(e => { pipeErr = e; });
+    reader = dec.readable.getReader(); let rest = '';
+    try { for (;;) { const { value, done } = await reader.read(); if (done) break; lastData = performance.now(); if (quiet) { quiet = false; setStatus('connected', 'on'); log('data is back'); } const parts = (rest + value).split('\n'); rest = parts.pop(); for (const l of parts) onLineSafe(l.trimEnd()); } }
+    catch (e) { if (!closing) log(`read error: ${e.name}: ${e.message}`); }
+    finally { try { reader.releaseLock(); } catch (e) {} await closed; }
+    if (closing) break;
+    if (pipeErr) log(`serial: ${pipeErr.name}: ${pipeErr.message}`);
+    if (!port.readable) { log('device lost (USB unplugged or reset?)'); break; }
+    if (++glitches > 50) { log('too many serial errors, giving up'); break; }
+    setStatus(`connected · recovered from serial glitch ×${glitches}`, 'warn'); log('serial glitch: reading on');
+  }
+  try { writer?.releaseLock(); } catch (e) {} try { await port?.close(); } catch (e) {}
+  port = reader = writer = null; setStatus('not connected', closing ? '' : 'bad'); $('bConnect').textContent = 'Connect device'; closing = false;
+}
+// Data watchdog: if the device goes quiet while connected, say so (a frozen page and a silent device look the same otherwise)
+setInterval(() => { if ((port || ble) && lastData && performance.now() - lastData > 2000) { if (!quiet) log('device went quiet'); quiet = true; setStatus(`connected · NO DATA for ${((performance.now() - lastData) / 1000).toFixed(0)} s`, 'bad'); } }, 1000);
+function send(s) {
+  if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {});
+  if (bleRx) bleSend(s);
+  if (!writer && !bleRx) log('not connected: "' + s + '" was not sent');
+}
+
+// ---------------------------------------------------------------- Bluetooth (BLE, Nordic UART service): the same lines as USB, samples packed in B lines
+const NUS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e', NUS_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+let ble = null, bleRx = null, bleRest = '', bleQ = Promise.resolve(), bleClosing = false;
+const bleDec = new TextDecoder();
+function unpackB(l, each) {                // B,<base64>: 3 bytes per sample, big-endian signed 24-bit
+  let s; try { s = atob(l.slice(2)); } catch (e) { return; }
+  for (let i = 0; i + 2 < s.length; i += 3) { let v = (s.charCodeAt(i) << 16) | (s.charCodeAt(i + 1) << 8) | s.charCodeAt(i + 2); if (v & 0x800000) v -= 0x1000000; each(v); }
+}
+function bleSend(s) {                      // small writes, one after the other
+  const b = new TextEncoder().encode(s + '\n');
+  bleQ = bleQ.then(async () => { for (let i = 0; i < b.length; i += 20) await bleRx.writeValueWithoutResponse(b.slice(i, i + 20)); }).catch(e => log('Bluetooth send failed: ' + e.message));
+}
+function bleGone() {
+  ble = bleRx = null; bleRest = ''; $('bBle').textContent = 'Bluetooth'; $('bBle').classList.remove('on');
+  if (!port) setStatus('not connected', bleClosing ? '' : 'bad');
+  log(bleClosing ? 'Bluetooth disconnected' : 'Bluetooth link lost (out of range, or Rezon switched off?)'); bleClosing = false;
+}
+$('bBle').onclick = async () => {
+  if (ble) { bleClosing = true; ble.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) { setStatus('Web Bluetooth needs Chrome or Edge', 'bad'); return; }
+  try {
+    const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'REZON' }], optionalServices: [NUS] });
+    dev.addEventListener('gattserverdisconnected', bleGone);
+    setStatus('Bluetooth: connecting…', 'warn');
+    const svc = await (await dev.gatt.connect()).getPrimaryService(NUS);
+    bleRx = await svc.getCharacteristic(NUS_RX);
+    const tx = await svc.getCharacteristic(NUS_TX);
+    tx.addEventListener('characteristicvaluechanged', ev => {
+      lastData = performance.now(); if (quiet) { quiet = false; setStatus('connected · Bluetooth', 'on'); log('data is back'); }
+      const parts = (bleRest + bleDec.decode(ev.target.value, { stream: true })).split('\n'); bleRest = parts.pop();
+      for (const l of parts) onLineSafe(l.trimEnd());
+    });
+    await tx.startNotifications();
+    ble = dev; stopDemo(); $('bClear').onclick(); resetSignal(); lastData = performance.now();
+    setStatus('connected · Bluetooth', 'on'); $('bBle').textContent = 'Disconnect BT'; $('bBle').classList.add('on'); log('Bluetooth connected to ' + (dev.name || 'REZON'));
+    setTimeout(() => send('!get'), 600);
+  } catch (e) { bleRx = null; if (e.name !== 'NotFoundError') { setStatus('Bluetooth failed', 'bad'); log('Bluetooth: ' + e.message); } else setStatus(port ? 'connected' : 'not connected'); }
+};
+$('bOpen').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  stopDemo(); $('bClear').onclick(); resetSignal(); recName = f.name.replace(/\.[^.]+$/, ''); tBase = 0;
+  const lines = (await f.text()).split('\n');
+  if (lines[0].startsWith('t_ms')) { log('this is a raw CSV recording without events: run  tools/replay --log out.log <file>  and open out.log'); const g = lines[0].split(',').indexOf('gain'); gainV = g >= 0 ? (+lines[1].split(',')[g] || 4) : 32; for (let k = 1; k < lines.length; k++) if (lines[k]) pushCounts(+lines[k].split(',')[1]); }
+  else for (const l of lines) onLine(l.trimEnd());
+  setStatus('file: ' + f.name, 'warn'); viewAt = Math.min(n, (+$('win').value) * FS); e.target.value = '';
+};
+let demo = null;
+function stopDemo() { if (demo) { clearInterval(demo); demo = null; $('bDemo').classList.remove('on'); setStatus('not connected'); } }
+$('bDemo').onclick = () => {
+  if (demo) return stopDemo(); if (port) return log('disconnect first');
+  $('bClear').onclick(); resetSignal(); gainV = 4; tBase = 0; setStatus('demo (page-made signal, no detection)', 'warn'); $('bDemo').classList.add('on'); let t = 0, id = 1;
+  const cnt = mm => Math.round(mm * 20.9 * 8388608 * 4 / 1200);
+  const tick = cnt50 => { for (let i = 0; i < cnt50; i++, t++) {
+    const cyc = t % 16000; let v = (Math.random() - .5) * 0.008;
+    if (cyc < 9000 && cyc % 600 < 150) { const k = cyc % 600; v += 0.12 * Math.exp(-k / 25) * Math.sin(2 * Math.PI * 36 * k / 1000);
+      if (k === 149) onLine(`E,${id++},${t - 149},${t - 130},120,step,0,0,-6.0,0.8,0.110,0.120,0.008,-2.2,-8.5,0.08,1,0.02,0.05,-0.4,31,0.1`); }
+    if (cyc >= 10000 && cyc < 11200) { const k = cyc - 10000; v += 1.2 * Math.exp(-k / 90) * Math.sin(2 * Math.PI * 21 * k / 1000);
+      if (k === 600) onLine(`E,${id++},${t - 600},${t - 560},600,FALL,-1,3,6.2,0,1.150,1.400,0.008,0.14,-2.6,0.27,1,0.11,0.16,0.4,21,2.4`); }
+    onLine('D,' + cnt(v) + ',0'); } };
+  if (location.hash === '#shot') { tick(13000); demo = 1; return; }
+  demo = setInterval(() => tick(50), 50);
+};
+$('bLive').onclick = () => { viewAt = null; if (sel) select(sel); };
+
+// ---------------------------------------------------------------- drawing
+const COL = { FALL: '#f0625a', impact: '#f2c14e', step: '#7fe3f5', newstep: '#7fe3f5', bystander: '#b49cf5', floor: '#8592a8', ring: '#56607a', noise: '#56607a' };
+function fit(cv) { const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1, w = Math.round(r.width * d), h = Math.round(r.height * d); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } return [cv.getContext('2d'), w, h, d]; }
+let sc = 0.05;
+function drawWave() {
+  const [g, w, h, d] = fit($('wave')); g.clearRect(0, 0, w, h);
+  const span = +$('win').value * FS, end = viewAt === null ? n : viewAt, start = end - span;
+  $('waveTitle').textContent = viewAt === null ? 'Live signal' : `Looking back: ${(Math.max(0, start) / 1000).toFixed(1)}–${(end / 1000).toFixed(1)} s`; $('bLive').style.display = viewAt === null ? 'none' : '';
+  let pk = 0; for (let i = Math.max(0, start); i < end; i++) { const a = Math.max($('showImp').checked ? Math.abs(yI[i]) : 0, $('showStep').checked ? Math.abs(yS[i]) : 0); if (a > pk) pk = a; }
+  const target = Math.max(0.03, pk * 1.2); sc = viewAt === null ? sc + (target - sc) * (target > sc ? .5 : .05) : target;
+  const mid = h / 2, Y = v => mid - v / sc * (h / 2 - 16 * d), X = i => (i - start) / span * w;
+  g.strokeStyle = '#1c2740'; g.fillStyle = '#6a7890'; g.font = `${11 * d}px Segoe UI`; g.lineWidth = 1;
+  for (const f of [-1, -.5, 0, .5, 1]) { const y = Y(f * sc); g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); g.fillText((f * sc).toFixed(sc < .1 ? 3 : 2) + ' mm/s', 6 * d, y - 3 * d); }
+  const trace = (b, col, lw) => { g.strokeStyle = col; g.lineWidth = lw * d; g.beginPath();
+    for (let x = 0; x < w; x++) { const i0 = Math.floor(start + x / w * span), i1 = Math.floor(start + (x + 1) / w * span); if (i1 <= 0 || i0 >= end) continue;
+      let lo = Infinity, hi = -Infinity; for (let i = Math.max(0, i0); i < Math.min(end, Math.max(i1, i0 + 1)); i++) { const v = b[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+      if (hi >= lo) { g.moveTo(x + .5, Y(hi)); g.lineTo(x + .5, Y(lo) + .5); } } g.stroke(); };
+  if ($('showImp').checked) trace(yI, '#4c6fa8', 1);
+  if ($('showStep').checked) trace(yS, '#7fe3f5', 1.2);
+  for (const e of events) { if (e.i + e.dur < start || e.i > end) continue;
+    const x0 = X(e.i), x1 = X(e.i + e.dur); g.fillStyle = (COL[e.cls] || '#888') + (e === sel ? '55' : '26'); g.fillRect(x0, 0, Math.max(2, x1 - x0), h);
+    g.fillStyle = COL[e.cls] || '#888'; g.fillText(e.cls + (e.label ? ' · ' + e.label : ''), x0 + 3 * d, h - 6 * d - (e.id % 3) * 13 * d); }
+}
+function drawOver() {
+  const [g, w, h, d] = fit($('over')); g.clearRect(0, 0, w, h); if (!n) return;
+  const cols = Math.min(w, Math.ceil(n / 100)), per = n / cols; let mx = 0.05; const pk = new Float32Array(cols);
+  for (let c = 0; c < cols; c++) { let p = 0; const a = Math.floor(c * per), b = Math.min(n, Math.floor((c + 1) * per)); for (let i = a; i < b; i += 4) { const v = Math.abs(yI[i]); if (v > p) p = v; } pk[c] = p; if (p > mx) mx = p; }
+  g.fillStyle = '#35507c'; for (let c = 0; c < cols; c++) { const bh = Math.sqrt(pk[c] / mx) * (h - 6 * d); g.fillRect(c * w / cols, h - bh, Math.max(1, w / cols - .3), bh); }
+  for (const e of events) if (e.flags & 1 || e.label) { g.fillStyle = COL[e.cls] || '#888'; g.fillRect(e.i / n * w - d, 0, 2 * d, h); }
+  const end = viewAt === null ? n : viewAt, span = +$('win').value * FS; g.strokeStyle = '#e6edf7'; g.lineWidth = d; g.strokeRect(Math.max(0, (end - span) / n * w), .5, Math.max(3, span / n * w), h - 1);
+}
+$('over').onclick = e => { const r = $('over').getBoundingClientRect(); viewAt = Math.min(n, Math.round((e.clientX - r.left) / r.width * n + (+$('win').value) * FS / 2)); };
+(function loop() { drawWave(); drawOver(); requestAnimationFrame(loop); })();
+if (location.hash === '#shot') { $('bDemo').onclick(); drawWave(); drawOver(); }
+</script>
+</body>
+</html>

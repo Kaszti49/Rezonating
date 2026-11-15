@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REZON</title>
+<!--
+  REZON presentation screen. One file, no internet needed. Open in Chrome or Edge (Web Serial).
+  Keys:  C connect to the device     D demo signal on/off     F fake a fall (demo)     S fake a step (demo)
+         T ask the device to run the alarm sequence (real call!)     R or Esc reset     H hide/show the corner hint
+         drop a session .log file on the page to play it back
+  The device decides everything (lines I / F / A, see rezon_proto.h). The page only draws.
+  If the stream has no alarm lines (old practice sketch), the page falls back to its own impact trigger: display only, no call.
+-->
+<style>
+  :root { --bg: #0a1024; --ink: #eaf1ff; --cyan: #7fe3f5; --u: min(1vh, 0.5625vw); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; overflow: hidden;
+         display: grid; grid-template-rows: auto 1fr auto; justify-items: center; user-select: none; }
+  h1 { margin: calc(var(--u) * 5.2) 0 0; font-size: calc(var(--u) * 9.2); font-weight: 700; letter-spacing: 0.34em; padding-left: 0.34em; line-height: 1; }
+  .glass { align-self: center; width: min(84vw, calc(var(--u) * 150)); height: calc(var(--u) * 30); border-radius: calc(var(--u) * 3.4);
+           background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.16);
+           -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* ---------- the blob ---------- */
+  .stage { position: relative; width: calc(var(--u) * 110); height: calc(var(--u) * 40); margin-bottom: calc(var(--u) * 3); }
+  .ground { position: absolute; left: 50%; bottom: calc(var(--u) * 5); width: calc(var(--u) * 17); height: calc(var(--u) * 2.2); margin-left: calc(var(--u) * -8.5);
+            border-radius: 50%; background: #060a18; }
+  .blob { position: absolute; left: 50%; bottom: calc(var(--u) * 3); width: calc(var(--u) * 22); height: calc(var(--u) * 22); margin-left: calc(var(--u) * -11);
+          transform-origin: 50% 86%; animation: breathe 3.4s ease-in-out infinite; }
+  .blob svg { width: 100%; height: 100%; overflow: visible; display: block; }
+  .eyes { transform-origin: 100px 104px; transition: transform .18s cubic-bezier(.2, .8, .2, 1); }
+  .eye { transform-box: fill-box; transform-origin: center; animation: blink 4.6s infinite; }
+  @keyframes breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.025, 0.965); } }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
+
+  .blob.hop { animation: hop .34s cubic-bezier(.3, .7, .4, 1); }
+  @keyframes hop { 0% { transform: scale(1.05, .93); } 45% { transform: translateY(calc(var(--u) * -1.6)) scale(.98, 1.04); } 100% { transform: none; } }
+
+  .blob.startle { animation: startle .62s cubic-bezier(.2, .9, .3, 1); }
+  @keyframes startle { 0% { transform: scale(1.16, .78); } 22% { transform: translateY(calc(var(--u) * -7.5)) scale(.86, 1.2); }
+                       55% { transform: translateY(0) scale(1.14, .84); } 78% { transform: scale(.97, 1.04); } 100% { transform: none; } }
+  .s-alert .eyes, .s-ask .eyes, .s-wait .eyes { transform: scale(1.32); }
+  .s-alert .eye, .s-ask .eye, .s-wait .eye, .s-announce .eye, .s-call .eye { animation: none; }
+  .s-alert .blob:not(.startle), .s-wait .blob { animation: tense .5s ease-in-out infinite; }
+  @keyframes tense { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.02, .975); } }
+  .s-ask .blob { animation: tilt 1.5s ease-in-out infinite; }
+  @keyframes tilt { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(-6.5deg) scale(1.01, .99); } }
+  .s-ask .eyes { transform: scale(1.32) translate(2px, -3px); }
+  .s-announce .blob, .s-call .blob, .s-incall .blob { animation: firm 1.1s ease-in-out infinite; }
+  @keyframes firm { 0%, 100% { transform: scale(1, 1); } 50% { transform: translateY(calc(var(--u) * -.5)) scale(.99, 1.02); } }
+  .s-call .eyes, .s-incall .eyes, .s-announce .eyes { transform: translate(6px, 0); }
+  .s-ok .blob { animation: relief .9s cubic-bezier(.2, .8, .3, 1); }
+  @keyframes relief { 0% { transform: scale(.94, 1.08); } 40% { transform: scale(1.1, .88); } 100% { transform: none; } }
+  .s-ok .eye { animation: none; transform: scaleY(.35); }
+
+  .bang { position: absolute; left: 50%; bottom: calc(var(--u) * 27); width: calc(var(--u) * 6); margin-left: calc(var(--u) * -3); text-align: center;
+          font-size: calc(var(--u) * 8); font-weight: 800; line-height: 1; opacity: 0; transform: translateY(calc(var(--u) * 2)) scale(.5); }
+  .s-alert .bang { animation: bang .5s cubic-bezier(.2, 1.5, .4, 1) forwards; }
+  @keyframes bang { to { opacity: 1; transform: none; } }
+
+  .bubble { position: absolute; left: calc(50% + var(--u) * 9); bottom: calc(var(--u) * 24); padding: calc(var(--u) * 1.5) calc(var(--u) * 2.6);
+            background: #fff; color: #0a1024; border-radius: calc(var(--u) * 2.6); font-size: calc(var(--u) * 3.5); font-weight: 600; white-space: nowrap;
+            transform-origin: 0 100%; transform: scale(0); opacity: 0; transition: transform .2s ease-in, opacity .15s ease-in; }
+  .bubble::after { content: ""; position: absolute; left: calc(var(--u) * 1.6); bottom: calc(var(--u) * -1.5); width: calc(var(--u) * 3); height: calc(var(--u) * 3);
+                   background: #fff; border-radius: 0 0 0 100%; transform: skewX(18deg); }
+  .bubble.on { transform: scale(1); opacity: 1; transition: transform .34s cubic-bezier(.2, 1.5, .35, 1), opacity .12s; }
+
+  .count { position: absolute; left: 50%; bottom: calc(var(--u) * 27.6); width: calc(var(--u) * 15); margin-left: calc(var(--u) * -7.5); height: calc(var(--u) * 1.1);
+           border-radius: 99px; background: rgba(255, 255, 255, .16); overflow: hidden; opacity: 0; transform: scaleX(.3); transition: opacity .2s, transform .25s cubic-bezier(.2, .9, .3, 1); }
+  .count.on { opacity: 1; transform: none; }
+  .count i { display: block; height: 100%; width: 100%; border-radius: 99px; background: var(--cyan); transform-origin: 0 50%; }
+
+  .phone { position: absolute; left: calc(50% + var(--u) * 12.5); bottom: calc(var(--u) * 4.5); width: calc(var(--u) * 19); height: calc(var(--u) * 19);
+           opacity: 0; transform: translateX(calc(var(--u) * -6)) scale(.4); transition: transform .2s ease-in, opacity .2s; }
+  .phone.on { opacity: 1; transform: none; transition: transform .4s cubic-bezier(.2, 1.4, .35, 1), opacity .15s; }
+  .phone svg { width: 100%; height: 100%; overflow: visible; }
+  .handset { transform-origin: 50px 62px; }
+  .s-call .handset { animation: ring .9s ease-in-out infinite; }
+  @keyframes ring { 0%, 55%, 100% { transform: rotate(0); } 8%, 24%, 40% { transform: rotate(-11deg); } 16%, 32%, 48% { transform: rotate(11deg); } }
+  .wave-arc { opacity: 0; }
+  .s-call .wave-arc { animation: arc 1.2s ease-out infinite; }
+  .s-call .wave-arc:nth-of-type(2) { animation-delay: .18s; }
+  .s-call .wave-arc:nth-of-type(3) { animation-delay: .36s; }
+  @keyframes arc { 0% { opacity: 0; } 25% { opacity: 1; } 70%, 100% { opacity: 0; } }
+  .s-incall .wave-arc { opacity: 1; }
+
+  .noanim *, .noanim *::after { transition: none !important; animation: none !important; }
+  .noanim .s-alert .bang { opacity: 1; transform: none; }
+  .corner { position: fixed; left: 14px; bottom: 10px; font-size: 12px; color: rgba(234, 241, 255, .42); display: flex; gap: 10px; align-items: center; }
+  .corner b { width: 8px; height: 8px; border-radius: 50%; background: #56607a; display: inline-block; }
+  .corner b.on { background: #58d68d; } .corner b.demo { background: #f2c14e; } .corner b.bad { background: #e05252; }
+  .corner.hide span { display: none; }
+</style>
+</head>
+<body class="s-idle">
+<h1>REZON</h1>
+<div class="glass"><canvas id="wave"></canvas></div>
+<div class="stage">
+  <div class="ground"></div>
+  <div class="bang">!</div>
+  <div class="count" id="count"><i id="countFill"></i></div>
+  <div class="bubble" id="bubble"></div>
+  <div class="blob" id="blob">
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <path d="M100 34 C146 34 172 76 172 116 C172 152 144 172 100 172 C56 172 28 152 28 116 C28 76 54 34 100 34 Z" fill="#fff"/>
+      <g class="eyes"><ellipse class="eye" cx="78" cy="104" rx="7.5" ry="12" fill="#0a0d16"/><ellipse class="eye" cx="122" cy="104" rx="7.5" ry="12" fill="#0a0d16"/></g>
+    </svg>
+  </div>
+  <div class="phone" id="phone">
+    <svg viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <g class="handset"><path d="M30 44 C24 36 28 28 34 26 L40 24 L47 37 L41 42 C44 50 51 57 59 60 L64 54 L77 61 L75 67 C73 73 65 77 57 71 C44 65 35 55 30 44 Z" fill="#fff"/></g>
+      <path class="wave-arc" d="M60 30 C66 32 70 36 72 42"/><path class="wave-arc" d="M64 18 C74 21 81 28 84 38"/><path class="wave-arc" d="M68 6 C82 10 92 20 96 34"/>
+    </svg>
+  </div>
+</div>
+<div class="corner" id="corner"><b id="dot"></b><span id="hint">C csatlakozás · D demó · F esés · R alaphelyzet · H elrejt</span></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const FS = 1000, WIN = 6 * FS, N = 16384;
+const buf = new Float32Array(N); let head = 0, total = 0;
+const TXT = { ask: 'Minden rendben van?', call: 'Hívok segítséget!', ok: 'Rendben!' };
+
+// ---------------------------------------------------------------- signal (display only)
+function biquad(type, f0, Q) {
+  const w = 2 * Math.PI * f0 / FS, c = Math.cos(w), al = Math.sin(w) / (2 * Q), a0 = 1 + al;
+  const b = type === 'hp' ? [(1 + c) / 2, -(1 + c), (1 + c) / 2] : [(1 - c) / 2, 1 - c, (1 - c) / 2];
+  const k = { b0: b[0] / a0, b1: b[1] / a0, b2: b[2] / a0, a1: -2 * c / a0, a2: (1 - al) / a0, z1: 0, z2: 0 };
+  return x => { const y = k.b0 * x + k.z1; k.z1 = k.b1 * x - k.a1 * y + k.z2; k.z2 = k.b2 * x - k.a2 * y; return y; };
+}
+let chain = [], dc = 0, dcInit = false, gain = 4;
+function resetFilter() { chain = [biquad('hp', 10, .5412), biquad('hp', 10, 1.3066), biquad('lp', 45, .5412), biquad('lp', 45, 1.3066)]; dcInit = false; }
+resetFilter();
+function pushMm(v) { buf[head] = v; head = (head + 1) % N; total++; localTrigger(v); }
+function pushCounts(c) {
+  if (!dcInit) { dc = c; dcInit = true; }
+  dc += (c - dc) * 0.002;
+  let v = (c - dc) * 1200 / gain / 8388608 / 20.9;                 // counts -> mV -> mm/s (20.9 mV per mm/s)
+  for (const f of chain) v = f(v);
+  pushMm(warm > 0 ? (warm--, 0) : v);
+}
+let warm = 1200;
+
+// ---------------------------------------------------------------- blob states
+let state = 'idle', timers = [], sawAlarmLines = false;
+const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+function bubble(text) { const b = $('bubble'); if (text) { b.textContent = text; b.classList.add('on'); } else b.classList.remove('on'); }
+function countdown(ms) {
+  const c = $('count'), f = $('countFill');
+  if (!ms) { c.classList.remove('on'); return; }
+  f.style.transition = 'none'; f.style.transform = 'scaleX(1)'; c.classList.add('on');
+  f.getBoundingClientRect(); f.style.transition = `transform ${ms}ms linear`; f.style.transform = 'scaleX(0)';
+}
+function once(cls, ms) { const b = $('blob'); b.classList.remove('hop', 'startle'); void b.offsetWidth; b.classList.add(cls); setTimeout(() => b.classList.remove(cls), ms); }
+function setState(s, len) {
+  if (s === state && s !== 'wait') return;
+  state = s; document.body.className = 's-' + s;
+  if (s === 'idle') { bubble(''); countdown(0); $('phone').classList.remove('on'); }
+  if (s === 'alert') { bubble(''); countdown(0); $('phone').classList.remove('on'); once('startle', 640); }
+  if (s === 'ask') { countdown(0); bubble(TXT.ask); }
+  if (s === 'wait') { bubble(TXT.ask); countdown(len || 3000); }
+  if (s === 'announce') { countdown(0); bubble(TXT.call); }
+  if (s === 'call') { countdown(0); bubble(TXT.call); $('phone').classList.add('on'); }
+  if (s === 'incall') { bubble(TXT.call); $('phone').classList.add('on'); }
+  if (s === 'ok') { countdown(0); $('phone').classList.remove('on'); bubble(TXT.ok); }
+}
+function reset() { clearTimers(); setState('idle'); send('!reset'); }
+function step() { if (state === 'idle') once('hop', 340); }
+// the whole sequence on the page's own clock (demo, log without alarm lines, old practice sketch): same times as the stage profile
+function localSequence() {
+  clearTimers(); setState('alert');
+  later(750, () => setState('ask'));
+  later(750 + 1600, () => setState('wait', 3000));
+  later(750 + 1600 + 3000, () => setState('announce'));
+  later(750 + 1600 + 3000 + 1500, () => setState('call'));
+  later(750 + 1600 + 3000 + 1500 + 7000, () => setState('incall'));
+}
+// fallback trigger for streams without alarm lines: a clear impact on the 10-45 Hz path
+let trigHold = 0;
+function localTrigger(v) {
+  if (sawAlarmLines || demo) return;
+  if (trigHold > 0) { trigHold--; return; }
+  if (Math.abs(v) >= 0.3 && state === 'idle') { trigHold = 3000; localSequence(); }
+}
+
+// ---------------------------------------------------------------- lines from the device
+let alertTimer = null;
+function onLine(l) {
+  if (l.charCodeAt(0) === 68 && l[1] === ',') { const c = parseInt(l.slice(2), 10); if (Number.isFinite(c)) pushCounts(c); return; }   // D,
+  if (l.charCodeAt(0) === 66 && l[1] === ',') { unpackB(l, pushCounts); return; }                                                      // B, (Bluetooth)
+  const p = l.split(',');
+  switch (p[0]) {
+    case 'S': { const g = +p[3]; if (g > 0 && g !== gain) { gain = g; resetFilter(); } break; }
+    case 'I': if (state === 'idle') { setState('alert'); clearTimeout(alertTimer); alertTimer = setTimeout(() => { if (state === 'alert') setState('idle'); }, 1800); } break;
+    case 'F': clearTimeout(alertTimer); if (state === 'idle') setState('alert'); break;
+    case 'E': if (p[5] === 'step' && +p[10] > 0.03) step(); break;
+    case 'A': sawAlarmLines = true; clearTimeout(alertTimer); clearTimers(); {
+      const st = p[1], len = +p[2] || 0;
+      if (st === 'WATCH') setState('idle'); else if (st === 'GETUP') setState('alert'); else if (st === 'ASK') setState('ask');
+      else if (st === 'WAIT') setState('wait', len); else if (st === 'ANNOUNCE') setState('announce'); else if (st === 'CALL') setState('call');
+      else if (st === 'INCALL') setState('incall'); else if (st === 'OK') setState('ok'); else if (st === 'DONE') setState('incall');
+      else if (st === 'FAIL') { setState('call'); setDot('bad', 'a hívás nem sikerült'); }
+    } break;
+  }
+}
+
+// ---------------------------------------------------------------- Web Serial
+let port = null, reader = null, writer = null;
+function setDot(cls, text) { $('dot').className = cls || ''; if (text !== undefined) $('hint').textContent = text; }
+const HINT = 'C csatlakozás · B bluetooth · D demó · F esés · R alaphelyzet · H elrejt';
+async function connect() {
+  if (port) { try { await reader?.cancel(); } catch (e) {} return; }
+  if (!('serial' in navigator)) { setDot('bad', 'Web Serial: Chrome vagy Edge kell'); return; }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 460800, bufferSize: 65536 });
+    writer = port.writable.getWriter(); stopDemo(); resetFilter(); warm = 1200; sawAlarmLines = false;
+    setDot('on', 'csatlakozva · ' + HINT); readLoop();
+  } catch (e) { port = null; setDot('bad', 'nem sikerült: ' + e.message); }
+}
+async function readLoop() {
+  const dec = new TextDecoderStream(), closed = port.readable.pipeTo(dec.writable).catch(() => {});
+  reader = dec.readable.getReader(); let rest = '';
+  try { for (;;) { const { value, done } = await reader.read(); if (done) break; const parts = (rest + value).split('\n'); rest = parts.pop(); for (const l of parts) onLine(l.trimEnd()); } }
+  catch (e) {} finally { try { reader.releaseLock(); } catch (e) {} await closed; try { writer?.releaseLock(); } catch (e) {} try { await port.close(); } catch (e) {}
+    port = reader = writer = null; setDot('bad', 'kapcsolat megszakadt · ' + HINT); }
+}
+function send(s) { if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {}); if (bleRx) bleSend(s); }
+
+// ---------------------------------------------------------------- Bluetooth (BLE, Nordic UART service): the same lines as USB, samples packed in B lines
+const NUS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e', NUS_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+let ble = null, bleRx = null, bleRest = '', bleQ = Promise.resolve(), bleClosing = false;
+const bleDec = new TextDecoder();
+function unpackB(l, each) {
+  let s; try { s = atob(l.slice(2)); } catch (e) { return; }
+  for (let i = 0; i + 2 < s.length; i += 3) { let v = (s.charCodeAt(i) << 16) | (s.charCodeAt(i + 1) << 8) | s.charCodeAt(i + 2); if (v & 0x800000) v -= 0x1000000; each(v); }
+}
+function bleSend(s) {
+  const b = new TextEncoder().encode(s + '\n');
+  bleQ = bleQ.then(async () => { for (let i = 0; i < b.length; i += 20) await bleRx.writeValueWithoutResponse(b.slice(i, i + 20)); }).catch(() => {});
+}
+async function bleConnect() {
+  if (ble) { bleClosing = true; ble.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) { setDot('bad', 'Web Bluetooth: Chrome vagy Edge kell'); return; }
+  try {
+    const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'REZON' }], optionalServices: [NUS] });
+    dev.addEventListener('gattserverdisconnected', () => {
+      ble = bleRx = null; bleRest = '';
+      if (!port) setDot(bleClosing ? '' : 'bad', (bleClosing ? 'bluetooth bontva · ' : 'bluetooth kapcsolat megszakadt · ') + HINT); bleClosing = false;
+    });
+    setDot('', 'bluetooth: kapcsolódás…');
+    const svc = await (await dev.gatt.connect()).getPrimaryService(NUS);
+    bleRx = await svc.getCharacteristic(NUS_RX);
+    const tx = await svc.getCharacteristic(NUS_TX);
+    tx.addEventListener('characteristicvaluechanged', ev => {
+      const parts = (bleRest + bleDec.decode(ev.target.value, { stream: true })).split('\n'); bleRest = parts.pop();
+      for (const l of parts) { try { onLine(l.trimEnd()); } catch (e) { console.error(e, l); } }
+    });
+    await tx.startNotifications();
+    ble = dev; stopDemo(); resetFilter(); warm = 1200; sawAlarmLines = false;
+    setDot('on', 'bluetooth · csatlakozva · ' + HINT);
+  } catch (e) { bleRx = null; if (e.name !== 'NotFoundError') setDot('bad', 'bluetooth nem sikerült: ' + e.message); }
+}
+
+// ---------------------------------------------------------------- demo signal and log playback
+let demo = null, demoT = 0, demoFall = -1e9, demoStep = -1e9;
+function demoSample() {
+  let v = (Math.random() - .5) * 0.008 + 0.004 * Math.sin(demoT * 0.0917);
+  const kS = demoT - demoStep; if (kS >= 0 && kS < 300) v += 0.11 * Math.exp(-kS / 28) * Math.sin(2 * Math.PI * 34 * kS / 1000);
+  const k = demoT - demoFall;
+  if (k >= 0 && k < 2500) { v += 1.25 * Math.exp(-k / 95) * Math.sin(2 * Math.PI * 21 * k / 1000);
+    const k2 = k - 210; if (k2 >= 0) v += 0.7 * Math.exp(-k2 / 120) * Math.sin(2 * Math.PI * 16 * k2 / 1000); }
+  demoT++; return v;
+}
+function startDemo() {
+  if (port || ble) return;
+  stopPlay(); setDot('demo', 'demó · F esés · S lépés · ' + HINT);
+  let last = performance.now();
+  demo = setInterval(() => {
+    const now = performance.now(); let n = Math.min(200, Math.round(now - last)); last = now;
+    for (; n > 0; n--) pushMm(demoSample());
+  }, 16);
+}
+function stopDemo() { if (demo) { clearInterval(demo); demo = null; setDot('', HINT); } }
+function demoFallNow() { if (!demo) startDemo(); demoFall = demoT; later(60, localSequence); }
+function demoStepNow() { if (!demo) return; demoStep = demoT; setTimeout(step, 40); }
+let play = null;
+function stopPlay() { if (play) { clearInterval(play.timer); play = null; } }
+function playLog(text, name) {
+  stopDemo(); stopPlay(); resetFilter(); warm = 1200; sawAlarmLines = /^A,/m.test(text); clearTimers(); setState('idle');
+  const lines = text.split('\n'); let i = 0, last = performance.now(), owed = 0;
+  if (lines[0] && lines[0].startsWith('t_ms')) {                       // old CSV recording: t_ms,ch1_counts,...
+    const g = lines[0].split(',').indexOf('gain'); gain = g >= 0 ? (+lines[1].split(',')[g] || 4) : 32; i = 1;
+    for (let k = 1; k < lines.length; k++) lines[k] = 'D,' + lines[k].split(',')[1];
+  }
+  setDot('demo', 'lejátszás: ' + name);
+  play = { timer: setInterval(() => {
+    const now = performance.now(); owed += now - last; last = now;
+    while (owed >= 1 && i < lines.length) { const l = lines[i++].trimEnd(); if (l.startsWith('D,')) owed -= 1; if (l) onLine(l); }
+    if (i >= lines.length) { stopPlay(); setDot('', HINT); }
+  }, 16) };
+}
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) f.text().then(t => playLog(t, f.name)); });
+
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'c') connect(); else if (k === 'b') bleConnect(); else if (k === 'd') demo ? stopDemo() : startDemo(); else if (k === 'f') demoFallNow(); else if (k === 's') demoStepNow();
+  else if (k === 'r' || k === 'escape') reset(); else if (k === 't') send('!test'); else if (k === 'h') $('corner').classList.toggle('hide');
+});
+
+// ---------------------------------------------------------------- the wave
+const cv = $('wave'), g = cv.getContext('2d'); let scale = 0.12;
+function draw() {
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1, w = Math.round(r.width * d), h = Math.round(r.height * d);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  g.clearRect(0, 0, w, h);
+  const n = Math.min(WIN, total), at = k => buf[((head - k) % N + N) % N];
+  let peak = 0; for (let k = 1; k <= n; k++) { const a = Math.abs(at(k)); if (a > peak) peak = a; }
+  const target = Math.max(0.12, peak * 1.12); scale += (target - scale) * (target > scale ? 0.35 : 0.03);
+  const mid = h / 2, amp = h / 2 - 14 * d, Y = v => mid - Math.max(-1, Math.min(1, v / scale)) * amp;
+  g.strokeStyle = 'rgba(255,255,255,.10)'; g.lineWidth = d; g.beginPath(); g.moveTo(0, mid); g.lineTo(w, mid); g.stroke();
+  g.strokeStyle = '#7fe3f5'; g.lineWidth = 2.4 * d; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath();
+  const cols = Math.floor(w / (1.5 * d)); let started = false;
+  for (let c = 0; c < cols; c++) {
+    const k0 = Math.floor((1 - c / cols) * WIN), k1 = Math.floor((1 - (c + 1) / cols) * WIN) + 1;
+    if (k1 > n) continue;
+    let lo = Infinity, hi = -Infinity, iLo = 0, iHi = 0;
+    for (let k = Math.min(k0, n); k >= k1; k--) { const v = at(k); if (v < lo) { lo = v; iLo = k; } if (v > hi) { hi = v; iHi = k; } }
+    const x = (c + .5) * w / cols, a = iLo > iHi ? lo : hi, b = iLo > iHi ? hi : lo;
+    if (!started) { g.moveTo(x, Y(a)); started = true; } else g.lineTo(x, Y(a));
+    g.lineTo(x, Y(b));
+  }
+  g.stroke();
+  const fade = g.createLinearGradient(0, 0, w, 0); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(.12, 'rgba(0,0,0,1)'); fade.addColorStop(1, 'rgba(0,0,0,1)');
+  g.globalCompositeOperation = 'destination-in'; g.fillStyle = fade; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over';
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+navigator.serial?.addEventListener('disconnect', () => setDot('bad', 'USB kihúzva · ' + HINT));
+// #demo = start with the demo signal · #demo,fall = and fake a fall after 1.5 s · #shot=<state> = jump to a state (for checking the layout)
+if (location.hash.startsWith('#demo')) { startDemo(); if (location.hash.includes('fall')) setTimeout(demoFallNow, 1500); }
+const shot = /#shot=(\w+)/.exec(location.hash);
+if (shot) {                                                            // still picture of one state, no animation
+  document.documentElement.classList.add('noanim'); $('corner').classList.add('hide'); demo = 1;
+  for (let i = 0; i < WIN; i++) { if (i === 2600 && shot[1] !== 'idle') demoFall = demoT; if (i % 640 === 200 && i < 2400) demoStep = demoT; pushMm(demoSample()); }
+  setState(shot[1], 3000); if (shot[1] === 'wait') $('countFill').style.transform = 'scaleX(.62)';
+}
+</script>
+</body>
+</html>

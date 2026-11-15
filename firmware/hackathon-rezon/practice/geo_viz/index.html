@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geophone Monitor</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #182029; --line: #2a3542; --text: #e6edf3; --muted: #8b98a5;
+    --teal: #3fb6ae; --amber: #f2c14e; --red: #f85149; --ok: #3fb950; --ch2: #7d8ea3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  h1 { font-size: 17px; margin: 0 10px 0 0; letter-spacing: .3px; }
+  h1 b { color: var(--teal); }
+  button, select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--teal); }
+  button.primary { background: var(--teal); color: #08201e; border-color: var(--teal); font-weight: 600; }
+  button.on { border-color: var(--amber); color: var(--amber); }
+  button.rec { border-color: var(--red); color: var(--red); }
+  .pill { padding: 4px 10px; border-radius: 99px; font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); }
+  .pill.on { color: var(--ok); border-color: var(--ok); } .pill.bad { color: var(--red); border-color: var(--red); } .pill.warn { color: var(--amber); border-color: var(--amber); }
+  .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .label .r { margin-left: auto; text-transform: none; letter-spacing: 0; display: flex; gap: 6px; align-items: center; }
+  .label select, .label button { padding: 3px 8px; font-size: 12.5px; border-radius: 6px; }
+  canvas { display: block; width: 100%; background: #0b1015; border-radius: 8px; border: 1px solid var(--line); }
+  #wave { height: 300px; } #seis { height: 120px; } #spec { height: 140px; }
+  .left { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  #big { font-size: 46px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  #big small { font-size: 16px; color: var(--muted); font-weight: 400; }
+  #state { font-size: 18px; font-weight: 600; margin-top: 8px; min-height: 26px; }
+  .meter { height: 12px; background: #0b1015; border-radius: 99px; overflow: hidden; margin-top: 10px; border: 1px solid var(--line); position: relative; }
+  .meter > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--amber) 60%, var(--red)); }
+  .meter i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; opacity: .7; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 14px; }
+  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 11.5px; }
+  .row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .row input[type=range] { flex: 1; accent-color: var(--teal); }
+  .row input[type=number] { width: 70px; background: #0b1015; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font: inherit; }
+  .row output { min-width: 64px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+  #events { max-height: 210px; overflow: auto; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+  #events li { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  #events li .t { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 62px; }
+  #events li.step .k { color: var(--teal); } #events li.walk .k { color: var(--teal); font-weight: 600; } #events li.ok .k { color: var(--ok); } #events li.impact .k { color: var(--amber); } #events li.fall .k { color: var(--red); font-weight: 700; }
+  #log { font: 12px/1.45 Consolas, monospace; color: var(--muted); white-space: pre-wrap; max-height: 130px; overflow: auto; margin: 0; }
+  .hint { color: var(--muted); font-size: 12.5px; }
+  label.chk { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1><b>REZON</b> · geophone monitor</h1>
+  <button class="primary" id="btnConnect">Connect ESP32</button>
+  <button id="btnDemo">Demo</button>
+  <span class="pill" id="status">not connected</span>
+  <span class="spacer"></span>
+  <button id="btnPause">Pause</button>
+  <button id="btnRec">● Record CSV</button>
+</header>
+
+<main>
+  <div class="left">
+    <section class="card">
+      <div class="label">Live signal · SM-24 on CH1 · ground velocity <span id="bandTag" style="color:var(--teal)">(step path: <span class="bandTxt">18–60</span> Hz, hum removed)</span>
+        <span class="r">
+          <label class="chk"><input type="checkbox" id="band" checked> step path</label>
+          <label class="chk"><input type="checkbox" id="ch2"> CH2 (shorted, noise floor)</label>
+          <select id="win"><option value="2">2 s</option><option value="5" selected>5 s</option><option value="10">10 s</option></select>
+          <select id="scale"><option value="auto" selected>auto scale</option><option value="0.05">±0.05 mm/s</option><option value="0.2">±0.2 mm/s</option><option value="1">±1 mm/s</option><option value="5">±5 mm/s</option><option value="20">±20 mm/s</option></select>
+        </span></div>
+      <canvas id="wave"></canvas>
+    </section>
+    <section class="card">
+      <div class="label">Seismograph · last 60 s · <span class="bandTxt">10–45</span> Hz band (peak per 100 ms) · dashed = current step threshold</div>
+      <canvas id="seis"></canvas>
+    </section>
+    <section class="card">
+      <div class="label">Spectrum · last 1 s · unfiltered · 0–500 Hz <span class="r"><span id="fpeak" class="hint"></span></span></div>
+      <canvas id="spec"></canvas>
+    </section>
+  </div>
+
+  <div class="side">
+    <section class="card">
+      <div class="label">Peak in the last 0.5 s · impact path 10–45 Hz</div>
+      <div id="big">0.000 <small>mm/s</small></div>
+      <div id="state" style="color:var(--muted)">waiting for data</div>
+      <div class="meter"><div id="bar"></div><i id="thMark"></i></div>
+      <div class="stats">
+        <div class="stat"><b id="sRate">–</b><span>samples / s</span></div>
+        <div class="stat"><b id="sNoise">–</b><span>noise RMS (µV)</span></div>
+        <div class="stat"><b id="sMv">–</b><span>peak at ADC (mV)</span></div>
+        <div class="stat"><b id="sCrc">–</b><span>CRC errors / s</span></div>
+        <div class="stat"><b id="sBg">–</b><span>background (mm/s)</span></div>
+        <div class="stat"><b id="sTh">–</b><span>step threshold now (mm/s)</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="label">Settings</div>
+      <div class="row">ADC gain
+        <select id="gain" style="margin-left:auto">
+          <option value="0">×1 (±1200 mV)</option><option value="1">×2 (±600 mV)</option><option value="2" selected>×4 (±300 mV)</option><option value="3">×8 (±150 mV)</option>
+          <option value="4">×16 (±75 mV)</option><option value="5">×32 (±37.5 mV)</option><option value="6">×64 (±18.75 mV)</option><option value="7">×128 (±9.4 mV)</option>
+        </select></div>
+      <div class="row">Step band <input type="number" id="bLo" min="1" max="100" step="1" value="18"> – <input type="number" id="bHi" min="5" max="200" step="1" value="60"> Hz</div>
+      <div class="row"><label class="chk"><input type="checkbox" id="ale" checked> remove steady hum (adaptive tone canceller)</label></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="rhy" checked> rhythm tracking (expect the next step: soft shoes, longer distance)</label></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="soft"> soft-shoe mode (onset trigger, sensitivity</label> <input type="number" id="kOn" min="1.2" max="5" step="0.1" value="2">)</div>
+      <p class="hint" style="margin:2px 0 6px">Soft-shoe mode also counts weak, fast-rising hits as steps: sneakers ≈ boots, but more false steps in quiet rooms (higher number = stricter). Its steps never cancel a fall.</p>
+      <div class="row">Step threshold (min) <input type="range" id="th" min="0.005" max="0.3" step="0.005" value="0.02"><output id="thv">0.020</output></div>
+      <div class="row">Adaptive: at least <input type="number" id="kAd" min="1" max="10" step="0.5" value="2"> × background</div>
+      <div class="row">Impact above <input type="range" id="big2" min="0.05" max="5" step="0.05" value="0.3"><output id="bigv">0.30</output></div>
+      <div class="row">“Fall” = impact, then no walking for <input type="number" id="quiet" min="1" max="30" value="5"> s</div>
+      <div class="row">“Got up” = <input type="number" id="nRec" min="2" max="8" step="1" value="4"> footfalls in a row after the impact</div>
+      <div class="row">Sensitivity <input type="number" id="sens" step="0.1" value="20.9"> V/(m/s)</div>
+      <div class="row"><label class="chk"><input type="checkbox" id="hp" checked> remove DC offset</label></div>
+      <p class="hint" style="margin:8px 0 0">SM-24: 28.8 V/(m/s) open, about 20.9 V/(m/s) with the 1 kΩ resistor across the coil. All thresholds are mm/s in the band. A hit counts when it beats both the minimum and N × the room’s background (it adapts to noisy rooms). Hit ≥ impact → <b>Impact</b>; smaller hits are <b>Step / tap</b>; 3+ footfalls 0.35–1.6 s apart → <b>Walking</b> (hits closer than 0.35 s count as one footfall; the first 1.2 s after an impact is ignored as ringing). Impact, then no <i>walking</i> (4 steady footfalls) within that time → <b>FALL-LIKE</b>; small movements after a fall don’t cancel it. Steps are detected on the step path (18–60 Hz, steady building hum subtracted), impacts on 10–45 Hz. Defaults tuned on recordings 1–3: about 97 % of steps found, about 0.2 false hits/s while lying still, all 7 known falls right.</p>
+    </section>
+
+    <section class="card">
+      <div class="label">Labels for ML training · keys 1–7</div>
+      <div id="labels" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <p class="hint" style="margin:8px 0 0">While <b>recording</b>, a teammate presses the matching label at the moment it happens. Each press is written into the CSV’s <code>label</code> column, so every fall and every walk in the file is tagged.</p>
+    </section>
+
+    <section class="card">
+      <div class="label">Events <span class="r"><button id="btnClear">clear</button></span></div>
+      <ul id="events"></ul>
+    </section>
+
+    <section class="card">
+      <div class="label">ESP32 messages</div>
+      <pre id="log"></pre>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const FS = 1000;                      // samples per second from the sketch
+const N = FS * 60;                    // ring buffer: 60 s
+const buf1 = new Float32Array(N), buf2 = new Float32Array(N), bufB = new Float32Array(N), bufI = new Float32Array(N);   // mm/s: CH1 raw, CH2 raw, CH1 5–45 Hz band
+let head = 0, total = 0;              // head = next write index
+let gainCode = 2, paused = false, rate = 0, crc = 0;
+let dc1 = 0, dc2 = 0, dcInit = false;
+const logLines = [];
+function log(s) { logLines.push(s); if (logLines.length > 60) logLines.shift(); $('log').textContent = logLines.join('\n'); $('log').scrollTop = 1e9; }
+function setStatus(t, cls) { const p = $('status'); p.textContent = t; p.className = 'pill ' + (cls || ''); }
+
+// band-pass (default 10–45 Hz): two high-pass + two low-pass biquads (4th-order Butterworth each side)
+function biquad(type, f0, Q) {
+  const w = 2 * Math.PI * f0 / FS, c = Math.cos(w), al = Math.sin(w) / (2 * Q), a0 = 1 + al;
+  const b = type === 'hp' ? [(1 + c) / 2, -(1 + c), (1 + c) / 2] : [(1 - c) / 2, 1 - c, (1 - c) / 2];
+  const k = { b0: b[0] / a0, b1: b[1] / a0, b2: b[2] / a0, a1: -2 * c / a0, a2: (1 - al) / a0, z1: 0, z2: 0 };
+  return x => { const y = k.b0 * x + k.z1; k.z1 = k.b1 * x - k.a1 * y + k.z2; k.z2 = k.b2 * x - k.a2 * y; return y; };
+}
+// Two paths:
+//  • impact path, fixed 10–45 Hz: falls are mostly below 20 Hz and 20–50× stronger than any noise
+//  • step path, default 18–60 Hz + adaptive tone canceller: the building hum (several steady tones at 14–15.3 Hz)
+//    beats into 0.04–0.07 mm/s swells that look like footsteps; above 18 Hz and with the tones subtracted,
+//    the weakest steps went from 0.29× to 0.90× the strongest swell (measured on recordings 2 and 3)
+let bandChain = [], stepChain = [], ale = null;
+const bp = (lo, hi) => [biquad('hp', lo, 0.5412), biquad('hp', lo, 1.3066), biquad('lp', hi, 0.5412), biquad('lp', hi, 1.3066)];
+// adaptive line enhancer: an LMS predictor learns whatever is steady (tones), the prediction error is what is NOT steady
+function makeALE(L = 48, D = 25, mu = 0.004) {
+  const w = new Float64Array(L), buf = new Float64Array(L + D);
+  return x => {
+    buf.copyWithin(1, 0); buf[0] = x;
+    let p = 0, uu = 0; for (let i = 0; i < L; i++) { const u = buf[D + i]; p += w[i] * u; uu += u * u; }
+    const e = x - p, g = mu * e / (uu + 1e-12);
+    for (let i = 0; i < L; i++) w[i] += g * buf[D + i];
+    return e;
+  };
+}
+function buildBand() {
+  let lo = +$('bLo').value || 18, hi = +$('bHi').value || 60;
+  lo = Math.min(Math.max(lo, 1), 100); hi = Math.min(Math.max(hi, lo + 5), 200); $('bLo').value = lo; $('bHi').value = hi;
+  bandChain = bp(10, 45); stepChain = bp(lo, hi); ale = makeALE();
+  document.querySelectorAll('.bandTxt').forEach(e => e.textContent = `${lo}–${hi}`);
+}
+const band = x => bandChain.reduce((v, f) => f(v), x);
+const stepBand = x => { const y = stepChain.reduce((v, f) => f(v), x); return $('ale').checked ? ale(y) : y; };
+// one raw sample (mm/s, DC removed) in -> [step-path, impact-path] out, and the detector runs
+// soft-shoe onset path: 8–30 Hz (includes the floor's own ~15 Hz ringing, where soft steps live) and a trigger on how FAST
+// the envelope rises (steps kick the floor within ~40 ms, the hum swells over 0.3–0.7 s). Tested on recording 4:
+// sneakers 1.0 steps/s (was 0.36), boots 1.06/s, but ~0.3–0.8 false hits/s in quiet stretches, so these steps are
+// shown and counted as walking but NEVER used to cancel a fall.
+let onsetChain = bp(8, 30), o2 = 0, oBg = 0.01, oRing = new Float64Array(40), oIdx = 0, oHit = null, oLast = -9;
+function onsetStep(v) {
+  const y = onsetChain.reduce((a, f) => f(a), v);
+  o2 += (y * y - o2) / 20; const e = Math.sqrt(2 * o2);
+  const eLag = oRing[oIdx]; oRing[oIdx] = e; oIdx = (oIdx + 1) % oRing.length;
+  oBg += (e - oBg) * (e < oBg ? 0.01 : 0.0005);
+  const sc = (e - eLag) / (oBg + 1e-6), tNow = total / FS, k = +$('kOn').value || 2;
+  if (!oHit) { if (sc > k && tNow - oLast > 0.3) oHit = { i: total, best: sc, pk: Math.abs(y) }; }
+  else {
+    if (sc > oHit.best) { oHit.best = sc; oHit.i = total; } oHit.pk = Math.max(oHit.pk, Math.abs(y));
+    if (sc < 0.5 * oHit.best || total - oHit.i > 150) { oLast = oHit.i / FS; const h = oHit; oHit = null; onHit(oLast, h.pk, false, true); }
+  }
+}
+function feed(v) { const yi = band(v), ys = stepBand(v); detect(ys, yi); if ($('soft').checked) onsetStep(v); return [ys, yi]; }
+function resetSignal() { buildBand(); dcInit = false; e2 = 0; i2 = 0; onsetChain = bp(8, 30); o2 = 0; oRing.fill(0); }
+
+// counts -> mm/s
+function countsToMv(c) { return c * 1200 / (1 << gainCode) / 8388608; }
+function mvToMms(mv) { return mv / (+$('sens').value || 20.9); }   // mV / (V/(m/s)) = mm/s
+
+// ---------------------------------------------------------------- recording
+let rec = null;
+$('btnRec').onclick = () => {
+  if (!rec) { rec = ['t_ms,ch1_counts,ch2_counts,gain,ch1_mm_s,ch1_band_mm_s,ch1_step_mm_s,label']; $('btnRec').textContent = '■ Stop & save'; $('btnRec').classList.add('rec'); return; }
+  const blob = new Blob([rec.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'geophone_' + new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '.csv'; a.click();
+  log(`saved ${rec.length - 1} samples`); rec = null; $('btnRec').textContent = '● Record CSV'; $('btnRec').classList.remove('rec');
+};
+
+// ---------------------------------------------------------------- labels (ground truth for ML)
+const LABELS = [['walk_start', 'Walking starts'], ['walk_stop', 'Walking stops'], ['fall_stay', 'Fall · stays down'], ['fall_getup', 'Fall · gets up'],
+  ['drop', 'Object dropped'], ['sit', 'Sits / kneels down'], ['other', 'Other (note it)']];
+let pendingLabel = '';
+LABELS.forEach(([id, txt], i) => { const b = document.createElement('button'); b.textContent = `${i + 1} · ${txt}`; b.style.fontSize = '12.5px'; b.style.padding = '5px 9px';
+  b.onclick = () => markLabel(id, txt); $('labels').appendChild(b); });
+function markLabel(id, txt) {
+  if (!rec) { log('labels are only saved while recording: press ● Record CSV first'); return; }
+  pendingLabel = id; addEvent('ok', '🏷 label: ' + txt, 0); log(`label "${id}" at sample ${total}`);
+}
+window.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; const k = +e.key; if (k >= 1 && k <= LABELS.length) markLabel(...LABELS[k - 1]); });
+
+// ---------------------------------------------------------------- sample in
+function push(c1, c2) {
+  if (!dcInit) { dc1 = c1; dc2 = c2; dcInit = true; }
+  dc1 += (c1 - dc1) * 0.002; dc2 += (c2 - dc2) * 0.002;           // ~0.1 Hz high-pass
+  const hp = $('hp').checked;
+  const v1 = mvToMms(countsToMv(hp ? c1 - dc1 : c1)), v2 = mvToMms(countsToMv(hp ? c2 - dc2 : c2));
+  const [vs, vi] = feed(mvToMms(countsToMv(c1 - dc1)));
+  if (rec) { rec.push(`${total},${c1},${c2},${1 << gainCode},${v1.toFixed(5)},${vi.toFixed(5)},${vs.toFixed(5)},${pendingLabel}`); pendingLabel = ''; }
+  buf1[head] = v1; buf2[head] = v2; bufB[head] = vs; bufI[head] = vi; head = (head + 1) % N; total++;
+  lastAbsCounts = Math.max(lastAbsCounts, Math.abs(c1));
+}
+let lastAbsCounts = 0;
+$('bLo').onchange = $('bHi').onchange = () => { buildBand(); log(`step band set to ${$('bLo').value}–${$('bHi').value} Hz`); };
+$('ale').onchange = () => { buildBand(); log('hum canceller ' + ($('ale').checked ? 'on' : 'off')); };
+
+// ---------------------------------------------------------------- event detection
+// Tuned on our first recording (practice/…/uploads/geophone_2026-11-12T10-00-51.csv): finds 12/12 walking steps,
+// 2 false hits in 6.5 s of background, and flags impact + 5 s stillness as FALL-LIKE.
+//   envelope : 15 ms RMS of each path
+//   background: lower-envelope follower of the step path (falls fast, rises over ~2 s)
+//   hit      : step envelope above max(step min, k × background), or impact envelope near the impact level;
+//              ends when both drop to 60 % of their peak; 0.25 s between hits
+let e2 = 0, i2 = 0, bgLvl = 0.01, curTh = 0.03, hit = null, lastHitT = -9, stepTimes = [], impactAt = -1, impactPeak = 0;
+let lastWalkT = -9, cadence = 0, walkLi = null, walkCount = 0, walkPeak = 0;
+function detect(ys, yi) {
+  e2 += (ys * ys - e2) / 15; const env = Math.sqrt(2 * e2);
+  i2 += (yi * yi - i2) / 15; const envI = Math.sqrt(2 * i2);
+  bgLvl += (env - bgLvl) * (env < bgLvl ? 0.01 : 0.0005);
+  curTh = Math.max(+$('th').value, (+$('kAd').value || 2) * bgLvl);
+  const tNow = total / FS, impTh = +$('big2').value;
+  // rhythm tracking: once 3 footfalls keep a steady cadence, a weaker hit is accepted where the next step is due
+  stepDue = false; let thStep = curTh;
+  const nf = footHist.length;
+  if ($('rhy').checked && nf >= 3) {
+    const g1 = footHist[nf - 1] - footHist[nf - 2], g2 = footHist[nf - 2] - footHist[nf - 3], cad = (g1 + g2) / 2, dt = tNow - footHist[nf - 1];
+    if (cad > 0.35 && cad < 1.6 && Math.abs(g1 - g2) < 0.35 * cad && Math.abs(dt - cad) < 0.25 * cad) { stepDue = true; thStep = curTh * 0.6; }
+  }
+  if (!hit) { if ((env > thStep || envI > 0.7 * impTh) && tNow - lastHitT > 0.25) hit = { i: total, pk: env, ipk: envI, ys: Math.abs(ys), yi: Math.abs(yi) }; }
+  else {
+    if (env > hit.pk) { hit.pk = env; if (hit.yi < impTh) hit.i = total; }
+    if (envI > hit.ipk) { hit.ipk = envI; if (Math.max(hit.yi, Math.abs(yi)) >= impTh) hit.i = total; }
+    hit.ys = Math.max(hit.ys, Math.abs(ys)); hit.yi = Math.max(hit.yi, Math.abs(yi));
+    if ((env < 0.6 * hit.pk && envI < 0.6 * hit.ipk) || total - hit.i > 400) { lastHitT = hit.i / FS; onHit(lastHitT, hit.yi >= impTh ? hit.yi : hit.ys, hit.yi >= impTh); hit = null; }
+  }
+  if (impactAt >= 0 && total - impactAt >= (+$('quiet').value) * FS) {
+    addEvent('fall', 'FALL-LIKE: impact, nobody got up', impactPeak); impactAt = -1; fallFlash = performance.now();
+  }
+}
+let impLi = null, impN = 0, lastImpT = -9, footT = -9, postFoot = [], footHist = [], stepDue = false;
+const addFoot = t => { footHist.push(t); if (footHist.length > 6) footHist.shift(); };
+// After an impact, small movements (shifting, trying to push up, other people far away) must NOT cancel a fall.
+// Only getting up and walking does: N footfalls in a row, each 0.35–1.6 s apart (N = "got up" setting).
+function recovered(t, pk) {
+  postFoot.push(t);
+  const need = Math.max(2, +$('nRec').value || 4), f = postFoot.slice(-need), gaps = f.slice(1).map((x, i) => x - f[i]);
+  impLi.querySelector('.k').textContent = `Impact · ${postFoot.length} movement${postFoot.length > 1 ? 's' : ''} since`;
+  if (f.length === need && gaps.every(x => x > 0.35 && x < 1.6)) {
+    addEvent('ok', 'Got up and walking after impact: OK', pk); impactAt = -1; stepTimes = f.slice(); return true;
+  }
+  return false;
+}
+function onHit(t, pk, isImpact, soft) {
+  const watching = impactAt >= 0, sinceImp = watching ? t - impactAt / FS : 99;
+  if (isImpact) {
+    if (watching && sinceImp > 1.2 && t - footT >= 0.35) {
+      // a big hit while we wait for the person to get up = pushing off the floor / a heavy first step:
+      // it counts as movement and restarts the quiet clock, but it does NOT reset the get-up count
+      footT = t; addFoot(t); impactAt = Math.round(t * FS); impactPeak = Math.max(impactPeak, pk); recovered(t, pk); return;
+    }
+    if (impLi && impLi.isConnected && t - lastImpT < 1.5) { impN++; impactPeak = Math.max(impactPeak, pk); }   // a series within 1.5 s is one entry
+    else { impN = 1; impactPeak = pk; impLi = addEvent('impact', 'Impact', pk); postFoot = []; }
+    impLi.querySelector('.k').textContent = impN > 1 ? `Impact ×${impN}` : 'Impact';
+    impLi.querySelector('.v').textContent = `${impactPeak.toFixed(3)} mm/s`;
+    lastImpT = t; impactAt = Math.round(t * FS); walkLi = null; return;
+  }
+  if (watching && sinceImp <= 1.2) return;                         // ringing right after an impact: ignore
+  if (t - footT < 0.35) return;                                    // same footfall (heel + toe, double knock)
+  footT = t; if (!soft) addFoot(t);
+  if (watching) { if (!soft) recovered(t, pk); return; }        // soft-shoe steps never cancel a fall
+  stepTimes = stepTimes.filter(x => t - x < 4); stepTimes.push(t);
+  const n = stepTimes.length, iv = n >= 3 ? [stepTimes[n - 1] - stepTimes[n - 2], stepTimes[n - 2] - stepTimes[n - 3]] : [];
+  if (n >= 3 && iv.every(x => x > 0.3 && x < 1.6)) {
+    cadence = 120 / (iv[0] + iv[1]);
+    if (walkLi && walkLi.isConnected && t - lastWalkT < 4) { walkCount++; walkPeak = Math.max(walkPeak, pk); }
+    else { walkCount = 3; walkPeak = pk; walkLi = addEvent('walk', 'Walking', pk); }
+    walkLi.querySelector('.k').textContent = `Walking · ${walkCount} steps · ${cadence.toFixed(0)}/min`;
+    walkLi.querySelector('.v').textContent = `${walkPeak.toFixed(3)} mm/s`;
+    lastWalkT = t;
+  } else { addEvent('step', 'Step / tap', pk); walkLi = null; }
+}
+let fallFlash = -1e9;
+function addEvent(cls, name, peak) {
+  const li = document.createElement('li'); li.className = cls;
+  const tt = new Date().toLocaleTimeString();
+  li.innerHTML = `<span class="t">${tt}</span><span class="k">${name}</span><span class="v" style="margin-left:auto">${peak.toFixed(3)} mm/s</span>`;
+  $('events').prepend(li); while ($('events').children.length > 80) $('events').lastChild.remove();
+  return li;
+}
+$('btnClear').onclick = () => $('events').innerHTML = '';
+
+// ---------------------------------------------------------------- serial lines
+function onLine(line) {
+  if (paused && line[0] === 'D') return;
+  if (line.startsWith('D,')) { const p = line.split(','); const a = +p[1], b = +p[2]; if (Number.isFinite(a) && Number.isFinite(b)) push(a, b); }
+  else if (line.startsWith('S,')) { const p = line.split(','); rate = +p[1]; crc = +p[2]; const g = Math.round(Math.log2(+p[3])); if (g >= 0 && g <= 7 && g !== gainCode) { gainCode = g; $('gain').value = g; resetSignal(); } }
+  else if (line.trim()) log(line.replace(/^#\s?/, ''));
+}
+
+// ---------------------------------------------------------------- Web Serial
+let port = null, reader = null, writer = null, demoTimer = null;
+$('btnConnect').onclick = async () => {
+  if (port) { await disconnect(); return; }
+  if (!('serial' in navigator)) { setStatus('Web Serial needs Chrome or Edge', 'bad'); log('This browser has no Web Serial. Open the page in Chrome or Edge.'); return; }
+  stopDemo();
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 460800, bufferSize: 65536 });
+    writer = port.writable.getWriter();
+    setStatus('connected', 'on'); $('btnConnect').textContent = 'Disconnect';
+    log('connected – press EN on the ESP32 to see the start-up messages');
+    readLoop();
+  } catch (e) { setStatus('connect failed', 'bad'); log('Connect failed: ' + e.message + '  (is Arduino Serial Monitor holding the port?)'); port = null; }
+};
+async function readLoop() {
+  const decoder = new TextDecoderStream();
+  const closed = port.readable.pipeTo(decoder.writable).catch(() => {});
+  reader = decoder.readable.getReader(); let rest = '';
+  try {
+    while (true) {
+      const { value, done } = await reader.read(); if (done) break;
+      const parts = (rest + value).split('\n'); rest = parts.pop();
+      for (const l of parts) onLine(l.replace('\r', ''));
+    }
+  } catch (e) { log('read error: ' + e.message); }
+  finally { try { reader.releaseLock(); } catch (e) {} await closed; }
+}
+async function disconnect() {
+  try { await reader?.cancel(); } catch (e) {}
+  try { writer?.releaseLock(); } catch (e) {}
+  try { await port?.close(); } catch (e) {}
+  port = null; reader = null; writer = null; setStatus('not connected'); $('btnConnect').textContent = 'Connect ESP32';
+}
+navigator.serial?.addEventListener('disconnect', () => { port = null; setStatus('USB unplugged', 'bad'); $('btnConnect').textContent = 'Connect ESP32'; });
+async function send(s) { if (writer) await writer.write(new TextEncoder().encode(s + '\n')); }
+$('gain').onchange = e => { gainCode = +e.target.value; resetSignal(); send('G' + gainCode); if (!port && !demoTimer) log('not connected – gain only changes the scaling'); };
+
+// ---------------------------------------------------------------- demo (no hardware): footsteps, a tap, a fall
+function startDemo() {
+  stopDemo(); setStatus('demo', 'warn'); $('btnDemo').classList.add('on'); log('demo: synthetic footsteps every 0.6 s, a fall every 20 s');
+  let t = 0, ring = [];
+  demoTimer = setInterval(() => {
+    for (let i = 0; i < 50; i++, t++) {
+      const cyc = t % 20000; let v = (Math.random() - 0.5) * 0.006;            // mm/s noise
+      if (cyc < 12000 && cyc % 600 < 120) { const k = cyc % 600; v += 0.18 * Math.exp(-k / 25) * Math.sin(2 * Math.PI * 38 * k / 1000); }
+      if (cyc >= 12500 && cyc < 13500) { const k = cyc - 12500; v += 1.1 * Math.exp(-k / 70) * Math.sin(2 * Math.PI * 22 * k / 1000) + 0.5 * Math.exp(-k / 15) * Math.sin(2 * Math.PI * 90 * k / 1000); }
+      const toCounts = mms => Math.round(mms * (+$('sens').value || 20.9) * 8388608 * (1 << gainCode) / 1200);
+      const c = Math.max(-8388608, Math.min(8388607, toCounts(v)));
+      push(c, Math.round((Math.random() - 0.5) * 40));
+    }
+    rate = 1000; crc = 0;
+  }, 50);
+}
+function stopDemo() { if (demoTimer) { clearInterval(demoTimer); demoTimer = null; $('btnDemo').classList.remove('on'); if (!port) setStatus('not connected'); } }
+$('btnDemo').onclick = () => demoTimer ? stopDemo() : (port ? log('disconnect first') : startDemo());
+$('btnPause').onclick = () => { paused = !paused; $('btnPause').classList.toggle('on', paused); $('btnPause').textContent = paused ? 'Resume' : 'Pause'; };
+$('th').oninput = () => $('thv').value = (+$('th').value).toFixed(3);
+$('big2').oninput = () => $('bigv').value = (+$('big2').value).toFixed(2);
+$('thv').value = (+$('th').value).toFixed(3); $('bigv').value = (+$('big2').value).toFixed(2);
+buildBand();
+
+// ---------------------------------------------------------------- drawing
+function fit(cv) { const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1; const w = Math.round(r.width * d), h = Math.round(r.height * d);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); return [g, w, h, d]; }
+const at = (b, k) => b[((head - k) % N + N) % N];       // k = 1 is the newest sample
+let autoScale = 0.05;
+
+function drawWave() {
+  const [g, w, h, d] = fit($('wave')); g.clearRect(0, 0, w, h);
+  const span = +$('win').value * FS, n = Math.min(span, total), main = $('band').checked ? bufB : buf1;
+  $('bandTag').style.display = $('band').checked ? '' : 'none';
+  let peak = 0; for (let k = 1; k <= n; k++) peak = Math.max(peak, Math.abs(at(main, k)));
+  if ($('scale').value === 'auto') { const target = Math.max(0.01, peak * 1.25); autoScale += (target - autoScale) * (target > autoScale ? 0.5 : 0.05); }
+  const S = $('scale').value === 'auto' ? autoScale : +$('scale').value;
+  const mid = h / 2, Y = v => mid - (v / S) * (h / 2 - 8 * d);
+  // grid
+  g.strokeStyle = '#1f2a35'; g.lineWidth = 1; g.font = `${11 * d}px Segoe UI`; g.fillStyle = '#5d6b78';
+  for (const f of [-1, -0.5, 0, 0.5, 1]) { const y = Y(f * S); g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); g.fillText((f * S).toFixed(S < 0.1 ? 3 : 2) + ' mm/s', 6 * d, f === 1 ? y + 13 * d : y - 3 * d); }
+  for (let s = 1; s < +$('win').value; s++) { const x = w - (s * FS / span) * w; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.fillText(`-${s} s`, x + 3 * d, h - 5 * d); }
+  // threshold
+  const th = curTh; g.setLineDash([5 * d, 5 * d]); g.strokeStyle = '#f2c14e66';
+  [th, -th].forEach(v => { const y = Y(v); if (y > 0 && y < h) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } }); g.setLineDash([]);
+  const trace = (b, col, lw) => { g.strokeStyle = col; g.lineWidth = lw * d; g.beginPath();
+    for (let x = 0; x < w; x++) { const k0 = Math.floor((1 - x / w) * span) + 1, k1 = Math.max(1, Math.floor((1 - (x + 1) / w) * span) + 1); if (k0 > n) continue;
+      let lo = Infinity, hi = -Infinity; for (let k = k1; k <= Math.min(k0, n); k++) { const v = at(b, k); if (v < lo) lo = v; if (v > hi) hi = v; }
+      g.moveTo(x + 0.5, Y(hi)); g.lineTo(x + 0.5, Y(lo) + 0.5); } g.stroke(); };
+  if ($('ch2').checked) trace(buf2, '#7d8ea3', 1);
+  trace(main, '#3fb6ae', 1.2);
+  if (!total) { g.fillStyle = '#5d6b78'; g.font = `${14 * d}px Segoe UI`; g.textAlign = 'center'; g.fillText('Connect the ESP32 (or press Demo), then tap the table next to the geophone', w / 2, mid - 20 * d); g.textAlign = 'left'; }
+}
+
+function drawSeis() {
+  const [g, w, h, d] = fit($('seis')); g.clearRect(0, 0, w, h);
+  const cols = 600, n = Math.min(total, N), TH = curTh; let mx = TH * 2; const peaks = new Float32Array(cols);
+  for (let c = 0; c < cols; c++) { let p = 0; for (let k = c * 100 + 1; k <= (c + 1) * 100 && k <= n; k++) p = Math.max(p, Math.abs(at(bufB, k))); peaks[c] = p; mx = Math.max(mx, p); }
+  const Y = v => h - 6 * d - (Math.log10(1 + v / TH * 9) / Math.log10(1 + mx / TH * 9)) * (h - 14 * d);
+  g.strokeStyle = '#1f2a35'; g.fillStyle = '#5d6b78'; g.font = `${11 * d}px Segoe UI`;
+  for (let s = 10; s < 60; s += 10) { const x = w - (s / 60) * w; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.fillText(`-${s} s`, x + 3 * d, 12 * d); }
+  const bw = w / cols, th = TH, big = +$('big2').value;
+  for (let c = 0; c < cols; c++) { const p = peaks[c]; if (!p) continue; const x = w - (c + 1) * bw, y = Y(p);
+    g.fillStyle = p >= th ? '#3fb6ae' : '#2d4a52'; g.fillRect(x, y, Math.max(1, bw - 0.5), h - 6 * d - y); }
+  g.setLineDash([4 * d, 4 * d]); g.strokeStyle = '#f2c14e88'; const yt = Y(th); g.beginPath(); g.moveTo(0, yt); g.lineTo(w, yt); g.stroke(); g.setLineDash([]);
+}
+
+// radix-2 FFT, 1024 points, Hann window
+const FN = 1024, re = new Float32Array(FN), im = new Float32Array(FN), hann = Float32Array.from({ length: FN }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (FN - 1)));
+function fft() { for (let i = 1, j = 0; i < FN; i++) { let bit = FN >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+  for (let len = 2; len <= FN; len <<= 1) { const a = -2 * Math.PI / len; for (let i = 0; i < FN; i += len) for (let k = 0; k < len / 2; k++) {
+    const c = Math.cos(a * k), s = Math.sin(a * k), xr = re[i + k + len / 2] * c - im[i + k + len / 2] * s, xi = re[i + k + len / 2] * s + im[i + k + len / 2] * c;
+    re[i + k + len / 2] = re[i + k] - xr; im[i + k + len / 2] = im[i + k] - xi; re[i + k] += xr; im[i + k] += xi; } } }
+let specSmooth = new Float32Array(FN / 2);
+function drawSpec() {
+  const [g, w, h, d] = fit($('spec')); g.clearRect(0, 0, w, h); if (total < FN) return;
+  for (let i = 0; i < FN; i++) { re[i] = at(buf1, FN - i) * hann[i]; im[i] = 0; } fft();
+  let mx = 1e-6, mi = 1;
+  for (let i = 1; i < FN / 2; i++) { const m = Math.hypot(re[i], im[i]); specSmooth[i] += (m - specSmooth[i]) * 0.35; if (i >= 5 && specSmooth[i] > mx) { mx = specSmooth[i]; mi = i; } }
+  g.strokeStyle = '#1f2a35'; g.fillStyle = '#5d6b78'; g.font = `${11 * d}px Segoe UI`;
+  for (let f = 50; f < 500; f += 50) { const x = (f / 500) * w; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.fillText(f + ' Hz', x + 3 * d, 12 * d); }
+  g.fillStyle = 'rgba(63,182,174,.18)'; g.fillRect(0, 0, (10 / 500) * w, h); g.fillRect((240 / 500) * w, 0, w, h);   // outside the SM-24 band (10–240 Hz) shaded
+  g.fillStyle = '#3fb6ae'; const bw = w / (FN / 2);
+  for (let i = 3; i < FN / 2; i++) { const bh = Math.min(1, Math.sqrt(specSmooth[i] / mx)) * (h - 18 * d); g.fillRect(i * bw, h - bh, Math.max(1, bw - 0.3), bh); }
+  $('fpeak').textContent = mx > 1e-4 ? `strongest: ${(mi * FS / FN).toFixed(0)} Hz` : '';
+}
+
+let lastStatsT = 0, lastClip = 0;
+function drawStats(now) {
+  const n = Math.min(500, total); let p = 0; for (let k = 1; k <= n; k++) p = Math.max(p, Math.abs(at(bufI, k)));
+  $('big').innerHTML = `${p.toFixed(p < 1 ? 3 : 2)} <small>mm/s</small>`;
+  const big = +$('big2').value, th = curTh, sens = +$('sens').value || 20.9;
+  $('bar').style.width = Math.min(100, (p / big) * 100) + '%'; $('thMark').style.left = Math.min(100, (th / big) * 100) + '%';
+  const st = $('state');
+  if (now - fallFlash < 4000) { st.textContent = '⚠ FALL-LIKE pattern'; st.style.color = 'var(--red)'; }
+  else if (impactAt >= 0) { st.textContent = `possible fall · waiting for walking (${Math.max(0, (+$('quiet').value) - (total - impactAt) / FS).toFixed(1)} s)`; st.style.color = 'var(--amber)'; }
+  else if (!total) { st.textContent = 'waiting for data'; st.style.color = 'var(--muted)'; }
+  else if (total / FS - lastWalkT < 2.5) { st.textContent = `walking · ${cadence.toFixed(0)} steps/min`; st.style.color = 'var(--teal)'; }
+  else if (p >= big) { st.textContent = 'impact'; st.style.color = 'var(--amber)'; }
+  else if (p >= th) { st.textContent = 'vibration'; st.style.color = 'var(--teal)'; }
+  else { st.textContent = 'quiet'; st.style.color = 'var(--muted)'; }
+  if (now - lastStatsT > 500) { lastStatsT = now;
+    const m = Math.min(1000, total); let s = 0; for (let k = 1; k <= m; k++) { const v = at(buf2, k); s += v * v; }   // CH2 is shorted: its RMS is the electronic noise floor
+    $('sNoise').textContent = m ? (Math.sqrt(s / m) * sens * 1000).toFixed(1) : '–';
+    $('sBg').textContent = total ? bgLvl.toFixed(3) : '–'; $('sTh').textContent = total ? curTh.toFixed(3) : '–';
+    $('sRate').textContent = rate || '–'; $('sCrc').textContent = (port || demoTimer) ? crc : '–'; $('sCrc').style.color = crc ? 'var(--red)' : '';
+    const fsMv = 1200 / (1 << gainCode), pk = countsToMv(lastAbsCounts); lastAbsCounts = 0;
+    $('sMv').textContent = total ? pk.toFixed(pk < 1 ? 3 : 2) : '–'; $('sMv').style.color = pk > fsMv * 0.95 ? 'var(--red)' : '';
+    if (pk > fsMv * 0.95 && now - lastClip > 3000) lastClip = now, log(`clipping: ${pk.toFixed(1)} mV is at full scale (±${fsMv} mV) – lower the gain`);
+  }
+}
+
+function frameLoop(now) { if (!paused) { drawWave(); drawSeis(); drawSpec(); } drawStats(now); requestAnimationFrame(frameLoop); }
+requestAnimationFrame(frameLoop);
+if (location.hash === '#demo') startDemo();
+</script>
+</body>
+</html>

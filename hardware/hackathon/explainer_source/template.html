@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Rezon: how it works</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif; color: #2a2c2e; font-size: 9.6pt; line-height: 1.44; }
+h1 { font-size: 25pt; margin: 0 0 3px; line-height: 1.1; } h1 b { color: #2f8f8b; letter-spacing: .5px; }
+.sub { color: #6f7377; font-size: 10.5pt; }
+.head { border-bottom: 2px solid #5f8f8b; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+.date { text-align: right; color: #6f7377; font-size: 8.5pt; white-space: nowrap; }
+h2 { font-size: 15pt; margin: 0 0 6px; padding-left: 9px; border-left: 4px solid #2f8f8b; break-before: page; break-after: avoid; }
+h2 .n { color: #2f8f8b; margin-right: 6px; }
+h2.first { break-before: auto; margin-top: 14px; }
+h3 { font-size: 11pt; margin: 13px 0 3px; break-after: avoid; }
+p { margin: 4px 0 6px; }
+ul, ol { margin: 4px 0 6px; padding-left: 17px; } li { margin: 2px 0; }
+.box { border: 1px solid #ddd8cf; border-radius: 6px; padding: 7px 11px; margin: 8px 0; break-inside: avoid; }
+.box h4 { margin: 0 0 3px; font: 700 8pt "IBM Plex Sans", Arial; letter-spacing: .8px; text-transform: uppercase; color: #2f8f8b; }
+.teal { background: #e9f3f2; border-color: #bcd9d6; }
+.warm { background: #fdf3e1; border-color: #efd7a6; } .warm h4 { color: #a8701c; }
+.red { background: #fbeeea; border-color: #e4b0a4; } .red h4 { color: #8e3b2c; }
+.eq { margin: 6px 0 6px 14px; padding: 4px 11px; border-left: 3px solid #b9d5d2; background: #f6f9f9; font-family: Cambria, Georgia, serif; font-size: 10.6pt; break-inside: avoid; }
+.eq .c { font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif; font-size: 8.4pt; color: #6f7377; margin-left: 10px; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 8px; font-size: 8.8pt; } tr { break-inside: avoid; } thead { display: table-header-group; }
+th { text-align: left; font: 600 7.4pt "IBM Plex Sans", Arial; letter-spacing: .5px; text-transform: uppercase; color: #7b7f83; background: #f4f2ee; padding: 4px 5px; }
+td { padding: 3.2px 5px; border-bottom: 1px solid #e6e1d8; vertical-align: top; }
+code, .m { font: 8.6pt "IBM Plex Mono", Consolas, monospace; background: #f4f2ee; border-radius: 3px; padding: 0 3px; }
+figure { margin: 9px 0; break-inside: avoid; } figure svg { width: 100%; height: auto; display: block; }
+figcaption { color: #6f7377; font-size: 8.3pt; margin-top: 3px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+svg text { font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif; font-size: 10.5px; fill: #2a2c2e; }
+svg .t { font-weight: 700; } svg .s { font-size: 9px; fill: #6f7377; } svg .l { font-size: 9.2px; fill: #2f6f6c; }
+svg .bx { fill: #fff; stroke: #8c959f; stroke-width: 1.1; } svg .bt { fill: #e9f3f2; stroke: #2f8f8b; stroke-width: 1.3; }
+svg .w { stroke: #55595d; stroke-width: 1.3; fill: none; }
+.tag { display: inline-block; font: 700 6.8pt "IBM Plex Sans", Arial; border-radius: 3px; padding: 0 5px; vertical-align: 1px; }
+.tm { background: #d9ece9; color: #1f6663; } .td { background: #e3e6e8; color: #4b5156; } .te { background: #f6e3bf; color: #95621a; }
+</style></head><body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#55595d"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b3493a"/></marker>
+</defs></svg>
+
+<div class="head"><div><h1><b>REZON</b> · how it works</h1>
+<div class="sub">Every part of the fall detector: what it says to the next part, where the current flows, and the maths behind it</div></div>
+<div class="date"><b>2026-11-12</b><br>final build: SM-24 + ESP32-S3 + SIM868</div></div>
+
+<div class="box teal"><h4>The one-minute version</h4>
+A fall shakes the floor. A <b>geophone</b> (a magnet and a coil on a spring) turns that shaking into a few millivolts. A <b>24-bit ADC</b> measures the voltage 1000 times a second and hands the numbers to the <b>ESP32-S3</b> over SPI. The ESP32 filters the signal, tells footsteps from impacts, and watches what happens <i>after</i> an impact. Impact followed by no walking means a likely fall: the <b>speaker</b> asks “Mari néni, jól van?”, the <b>LED</b> changes colour, and if nobody presses the <b>“I’m OK” button</b>, the <b>SIM868 modem</b> phones for help. One 18650 cell powers everything.</div>
+
+<div class="box warm"><h4>Where each number in this document comes from</h4>
+<span class="tag tm">MEASURED</span> our own bench results from 12 Nov (recordings in <code>uploads/</code>, call test in <code>NOTES.md</code>). &nbsp;
+<span class="tag td">DESIGN</span> taken from our wiring source, parts list and test sketches. &nbsp;
+<span class="tag te">TYPICAL</span> datasheet or textbook values I have not measured on our unit; check before quoting them as ours.<br>
+Two things to know: the <b>detection logic</b> is described as it runs today in the tuning tool (<code>practice/geo_viz</code>); the firmware on the device should use the same numbers. The <b>pin numbers</b> are the final ESP32-S3 map; the practice rig on the classic ESP32 uses different pins.</div>
+
+<h2 class="first"><span class="n">1</span>The whole system at a glance</h2>
+<p>There are three chains that meet in the ESP32-S3: a <b>sensing chain</b> coming in, an <b>alert chain</b> going out, and the <b>power chain</b> underneath both.</p>
+
+<figure>
+<svg viewBox="0 0 720 300">
+  <rect class="bx" x="10" y="40" width="105" height="50" rx="5"/><text class="t" x="62" y="61" text-anchor="middle">SM-24 geophone</text><text class="s" x="62" y="76" text-anchor="middle">magnet + coil</text>
+  <rect class="bx" x="180" y="40" width="112" height="50" rx="5"/><text class="t" x="236" y="61" text-anchor="middle">ADC 15 Click</text><text class="s" x="236" y="76" text-anchor="middle">ADS131M02 · 24-bit</text>
+  <path class="w" d="M115 65 H179" marker-end="url(#ah)"/><text class="l" x="147" y="58" text-anchor="middle">analog, mV</text><text class="s" x="147" y="79" text-anchor="middle">twisted pair</text>
+  <rect class="bt" x="352" y="20" width="110" height="262" rx="6"/><text class="t" x="407" y="140" text-anchor="middle" style="font-size:13px">ESP32-S3</text><text class="s" x="407" y="156" text-anchor="middle">filters · decision</text><text class="s" x="407" y="168" text-anchor="middle">state machine</text>
+  <path class="w" d="M293 56 H351" marker-end="url(#ah)" marker-start="url(#ah)"/><text class="l" x="322" y="49" text-anchor="middle">SPI 2 MHz</text>
+  <path class="w" d="M292 78 H351" marker-end="url(#ah)"/><text class="l" x="322" y="92" text-anchor="middle">DRDY</text>
+  <rect class="bx" x="180" y="130" width="112" height="44" rx="5"/><text class="t" x="236" y="149" text-anchor="middle">“I’m OK” button</text><text class="s" x="236" y="163" text-anchor="middle">10 kΩ pull-up</text>
+  <path class="w" d="M292 152 H351" marker-end="url(#ah)"/><text class="l" x="322" y="145" text-anchor="middle">GPIO7</text>
+  <rect class="bx" x="180" y="212" width="112" height="44" rx="5"/><text class="t" x="236" y="231" text-anchor="middle">Battery voltage ÷ 2</text><text class="s" x="236" y="245" text-anchor="middle">2 × 100 kΩ</text>
+  <path class="w" d="M292 234 H351" marker-end="url(#ah)"/><text class="l" x="322" y="227" text-anchor="middle">GPIO1</text><text class="s" x="322" y="247" text-anchor="middle">analog</text>
+  <rect class="bx" x="512" y="28" width="80" height="44" rx="5"/><text class="t" x="552" y="47" text-anchor="middle">PCM5102A</text><text class="s" x="552" y="61" text-anchor="middle">DAC</text>
+  <path class="w" d="M462 50 H511" marker-end="url(#ah)"/><text class="l" x="487" y="43" text-anchor="middle">I²S</text>
+  <rect class="bx" x="624" y="28" width="86" height="44" rx="5"/><text class="t" x="667" y="47" text-anchor="middle">PAM8403</text><text class="s" x="667" y="61" text-anchor="middle">class-D amp</text>
+  <path class="w" d="M592 50 H623" marker-end="url(#ah)"/><text class="s" x="608" y="84" text-anchor="middle">analog</text>
+  <rect class="bx" x="624" y="100" width="86" height="36" rx="5"/><text class="t" x="667" y="122" text-anchor="middle">Speaker 8 Ω</text>
+  <path class="w" d="M667 72 V99" marker-end="url(#ah)"/>
+  <rect class="bx" x="512" y="158" width="86" height="50" rx="5"/><text class="t" x="555" y="179" text-anchor="middle">SIM868</text><text class="s" x="555" y="194" text-anchor="middle">2G modem</text>
+  <path class="w" d="M463 176 H511" marker-end="url(#ah)" marker-start="url(#ah)"/><text class="l" x="487" y="169" text-anchor="middle">UART</text><text class="s" x="487" y="190" text-anchor="middle">115200</text>
+  <path class="w" d="M462 200 H511" marker-end="url(#ah)"/><text class="s" x="487" y="213" text-anchor="middle">PWRKEY</text>
+  <rect class="bx" x="640" y="158" width="70" height="50" rx="5"/><text class="t" x="675" y="179" text-anchor="middle">Phone</text><text class="s" x="675" y="194" text-anchor="middle">rings</text>
+  <path class="w" d="M599 183 H639" stroke-dasharray="4 3" marker-end="url(#ah)"/><text class="l" x="619" y="176" text-anchor="middle">radio</text>
+  <rect class="bx" x="512" y="236" width="86" height="40" rx="5"/><text class="t" x="555" y="254" text-anchor="middle">WS2812B</text><text class="s" x="555" y="267" text-anchor="middle">status LED</text>
+  <path class="w" d="M462 256 H511" marker-end="url(#ah)"/><text class="l" x="487" y="249" text-anchor="middle">1 wire</text><text class="s" x="487" y="270" text-anchor="middle">800 kHz</text>
+</svg>
+<figcaption>Figure 1. Who talks to whom. Arrows show the direction of information; double arrows carry data both ways.</figcaption></figure>
+
+<table><thead><tr><th>Link</th><th>Kind of signal</th><th>Wires</th><th>Speed</th><th>What travels on it</th></tr></thead><tbody>
+<tr><td>Geophone → ADC</td><td>Analog voltage</td><td>2 (twisted pair)</td><td>continuous</td><td>A voltage proportional to how fast the floor moves</td></tr>
+<tr><td>ADC ↔ ESP32</td><td>SPI (digital, clocked)</td><td>4 + DRDY + reset</td><td>2 MHz clock, 1000 frames/s</td><td>Two 24-bit samples and a checksum per frame; settings the other way</td></tr>
+<tr><td>ESP32 → clock chip</td><td>SPI, own chip-select</td><td>shares the SPI wires</td><td>once at start-up</td><td>One 16-bit word that sets the ADC’s 8.192 MHz clock</td></tr>
+<tr><td>ESP32 → DAC</td><td>I²S (digital audio)</td><td>3</td><td>about 1.4 MHz bit clock</td><td>The voice clip as 16-bit sound samples</td></tr>
+<tr><td>DAC → amp → speaker</td><td>Analog audio, then switched power</td><td>2 + 2</td><td>audio band</td><td>The same clip as a voltage, then as current through the speaker coil</td></tr>
+<tr><td>ESP32 ↔ SIM868</td><td>UART (digital, no clock wire)</td><td>2 + PWRKEY</td><td>115 200 bit/s</td><td>Text commands (“AT…”) and text replies</td></tr>
+<tr><td>SIM868 ↔ mobile network</td><td>Radio, GSM 900/1800 MHz</td><td>antenna</td><td>bursts every 4.6 ms</td><td>The phone call</td></tr>
+<tr><td>ESP32 → LED</td><td>One-wire pulse code</td><td>1</td><td>800 000 bit/s</td><td>24 bits: green, red, blue brightness</td></tr>
+<tr><td>Button → ESP32</td><td>On/off level</td><td>1</td><td>–</td><td>3.3 V = not pressed, 0 V = pressed</td></tr>
+</tbody></table>
+
+<h3>Five ideas that explain every wire</h3>
+<ul>
+<li><b>Voltage</b> (volts) is the push; <b>current</b> (amps) is the flow of charge; <b>resistance</b> (ohms) is how hard a part resists the flow. Ohm’s law ties them: <i>V = I · R</i>.</li>
+<li><b>Power</b> is <i>P = V · I</i> (watts). Energy is power × time; a battery stores energy in watt-hours.</li>
+<li><b>Current flows in loops.</b> Whatever leaves the battery’s + terminal must return to its − terminal. That return path is <b>ground (GND)</b>, which is why every module has a GND wire and why they all meet on one rail.</li>
+<li>A <b>digital signal</b> is just a voltage that is either near 0 V (“0”) or near the supply (“1”). Almost no current flows on a signal wire; it only charges the tiny input capacitance of the receiver.</li>
+<li>A <b>capacitor</b> is a small local reservoir of charge: <i>Q = C · V</i>. It supplies short bursts faster than a battery at the end of a wire can.</li>
+</ul>
+
+<h2><span class="n">2</span>Power: where the current flows</h2>
+
+<figure>
+<svg viewBox="0 0 720 290">
+  <rect class="bx" x="10" y="33" width="112" height="44" rx="5"/><text class="t" x="66" y="52" text-anchor="middle">18650 Li-ion cell</text><text class="s" x="66" y="66" text-anchor="middle">3.0–4.2 V · 3500 mAh</text>
+  <rect class="bx" x="150" y="33" width="112" height="44" rx="5"/><text class="t" x="206" y="52" text-anchor="middle">TP4056 + DW01</text><text class="s" x="206" y="66" text-anchor="middle">charger + protection</text>
+  <rect class="bx" x="290" y="33" width="92" height="44" rx="5"/><text class="t" x="336" y="52" text-anchor="middle">Rocker switch</text><text class="s" x="336" y="66" text-anchor="middle">main on/off</text>
+  <path d="M122 55 H149" stroke="#b3493a" stroke-width="2.4" marker-end="url(#ar)"/><path d="M262 55 H289" stroke="#b3493a" stroke-width="2.4" marker-end="url(#ar)"/>
+  <path d="M382 55 H416 V258" stroke="#b3493a" stroke-width="2.6" fill="none"/><text x="398" y="120" class="t" style="fill:#b3493a" transform="rotate(-90 398 120)" text-anchor="middle">VBAT rail</text>
+  <path d="M416 55 H449" stroke="#b3493a" stroke-width="2.4" marker-end="url(#ar)"/>
+  <rect class="bx" x="450" y="33" width="150" height="44" rx="5"/><text class="t" x="525" y="52" text-anchor="middle">SIM868 modem supply</text><text class="s" x="525" y="66" text-anchor="middle">3.4–4.4 V · bursts up to 2 A</text>
+  <text class="s" x="608" y="52">C1 1000 µF</text><text class="s" x="608" y="64">right at the take-off</text>
+  <path d="M416 164 H449" stroke="#b3493a" stroke-width="2.4" marker-end="url(#ar)"/>
+  <rect class="bt" x="450" y="142" width="92" height="44" rx="5"/><text class="t" x="496" y="161" text-anchor="middle">Boost converter</text><text class="s" x="496" y="175" text-anchor="middle">cell → 5.0 V</text>
+  <path d="M542 164 H570 M570 107 V227" stroke="#c58c1c" stroke-width="2.4" fill="none"/><text class="t" x="556" y="157" text-anchor="middle" style="fill:#a8701c;font-size:9px">5 V</text>
+  <g stroke="#c58c1c" stroke-width="2" marker-end="url(#ah)"><path d="M570 107 H589"/><path d="M570 147 H589"/><path d="M570 187 H589"/><path d="M570 227 H589"/></g>
+  <rect class="bx" x="590" y="92" width="124" height="30" rx="4"/><text x="652" y="111" text-anchor="middle">ESP32-S3 → 3.3 V</text>
+  <rect class="bx" x="590" y="132" width="124" height="30" rx="4"/><text x="652" y="151" text-anchor="middle">PCM5102A DAC</text>
+  <rect class="bx" x="590" y="172" width="124" height="30" rx="4"/><text x="652" y="191" text-anchor="middle">PAM8403 → speaker</text>
+  <rect class="bx" x="590" y="212" width="124" height="30" rx="4"/><text x="652" y="231" text-anchor="middle">diode → LED (4.3 V)</text>
+  <path d="M416 258 H449" stroke="#b3493a" stroke-width="2" marker-end="url(#ar)"/>
+  <rect class="bx" x="450" y="240" width="110" height="38" rx="5"/><text class="t" x="505" y="256" text-anchor="middle">R4 + R5 divider</text><text class="s" x="505" y="269" text-anchor="middle">21 µA → GPIO1</text>
+  <text class="s" x="10" y="120">The ESP32 board’s own regulator makes 3.3 V</text><text class="s" x="10" y="132">from the 5 V rail. That 3.3 V feeds the ESP32 chip,</text><text class="s" x="10" y="144">the ADC Click, the SIM868 board’s level shifter</text><text class="s" x="10" y="156">and the button pull-up.</text>
+  <text class="s" x="10" y="186">Every arrow has a return path: all currents come</text><text class="s" x="10" y="198">back through the GND rail to the cell’s − terminal.</text>
+  <text class="s" x="10" y="228">The geophone is not on this picture:</text><text class="s" x="10" y="240">it needs no power at all.</text>
+</svg>
+<figcaption>Figure 2. The power tree. Red = battery voltage, amber = 5 V. <span class="tag td">DESIGN</span></figcaption></figure>
+
+<h3>From the cell to the two rails</h3>
+<ul>
+<li><b>18650 cell.</b> 4.2 V full, about 3.6 V for most of its discharge, 3.0 V empty. Stored energy: 3.6 V × 3.5 Ah ≈ <b>12.6 Wh</b>.</li>
+<li><b>TP4056 + DW01.</b> When USB-C is plugged in, the TP4056 charges the cell: constant current first (1 A with the module’s standard resistor), then it holds 4.2 V while the current tapers off. The DW01 chip and its two MOSFETs sit in the cell’s − lead and open the circuit on over-discharge (about 2.4 V), over-charge or a short (about 3 A). <span class="tag te">TYPICAL</span></li>
+<li><b>Rocker switch.</b> Simply breaks the + line. It was chosen because it survives the modem’s 2 A bursts.</li>
+<li><b>VBAT rail</b> (bare wire along column 35). Two heavy users hang on it: the modem directly, and the boost converter.</li>
+<li><b>5 V rail</b> (row Y), buffered by C3 = 470 µF.</li>
+</ul>
+
+<h3>Why the modem gets the raw battery and nothing else does</h3>
+<p>The SIM868 is built to run from a single lithium cell (3.4–4.4 V). 5 V would destroy it, so header pins 39 and 40 on its board stay empty. Everything else wants a steady 5 V or 3.3 V, which a discharging cell cannot give, so a boost converter lifts the cell voltage to 5.0 V.</p>
+
+<h3>The boost converter</h3>
+<p>A switch connects an inductor across the cell for a fraction <i>D</i> of each cycle. Current builds in the inductor and stores energy in its magnetic field. When the switch opens, the inductor keeps the current flowing and pushes it through a diode into the output at a higher voltage.</p>
+<div class="eq"><i>V</i><sub>out</sub> = <i>V</i><sub>in</sub> / (1 − <i>D</i>) &nbsp;⟹&nbsp; <i>D</i> = 1 − <i>V</i><sub>in</sub>/<i>V</i><sub>out</sub> = 1 − 3.7/5.0 = 0.26<span class="c">the switch is on 26 % of the time at 3.7 V</span></div>
+<p>Energy is conserved, so a higher voltage out means a higher current in:</p>
+<div class="eq"><i>I</i><sub>in</sub> = <i>V</i><sub>out</sub> · <i>I</i><sub>out</sub> / (η · <i>V</i><sub>in</sub>) = 5.0 × 0.30 / (0.9 × 3.7) ≈ 0.45 A<span class="c">for 0.3 A on the 5 V rail, efficiency η ≈ 90 % (typical)</span></div>
+
+<h3>The modem’s 2 A bursts and capacitor C1</h3>
+<p>GSM is a time-shared radio: a phone transmits in one of eight time slots. During a call the modem’s transmitter switches on for 577 µs, then is off for seven slots, 217 times a second.</p>
+<figure>
+<svg viewBox="0 0 720 108">
+  <path class="w" d="M40 86 H60 V26 H79 V86 H210 V26 H229 V86 H360 V26 H379 V86 H510 V26 H529 V86 H700" stroke="#b3493a" stroke-width="1.8"/>
+  <text class="s" x="34" y="30" text-anchor="end">2 A</text><text class="s" x="34" y="89" text-anchor="end">≈0</text>
+  <path class="w" d="M60 98 H79" marker-start="url(#ah)" marker-end="url(#ah)" stroke-width=".8"/><text class="s" x="86" y="102">577 µs</text>
+  <path class="w" d="M229 56 H360" marker-start="url(#ah)" marker-end="url(#ah)" stroke-width=".8"/><text class="l" x="294" y="16" text-anchor="middle">4.615 ms from burst to burst  →  217 bursts per second</text>
+  <text class="s" x="600" y="50">average during a call:</text><text class="s" x="600" y="62">a few hundred mA</text>
+</svg>
+<figcaption>Figure 3. Supply current of the modem while it transmits. <span class="tag te">TYPICAL</span></figcaption></figure>
+<p>Every wire, the switch, the protection MOSFETs and the cell itself have a little resistance. If the whole path adds up to about 0.15 Ω, a 2 A burst drops the voltage at the modem by</p>
+<div class="eq">Δ<i>V</i> = <i>I</i> · <i>R</i> = 2 A × 0.15 Ω = 0.3 V<span class="c">0.15 Ω is my estimate, not a measurement</span></div>
+<p>If the cell is at 3.6 V, the modem sees 3.3 V for an instant, which is under its 3.4 V minimum, and it may reset in the middle of dialling. Three things protect us: <b>short, thick (0.5 mm²) leads</b> keep <i>R</i> low; a <b>well-charged cell</b> keeps the starting voltage high; and <b>C1 = 1000 µF</b> right at the take-off delivers the very first rush of each burst. C1 alone could not carry a burst (2 A for 577 µs would pull it down by Δ<i>V</i> = <i>I</i>·<i>t</i>/<i>C</i> = 1.15 V); its job is to take the sharp edge off, so the battery only has to follow more gently.</p>
+
+<h3>Who draws how much</h3>
+<table><thead><tr><th>Consumer</th><th>Rail</th><th>Current</th><th>Note</th></tr></thead><tbody>
+<tr><td>ESP32-S3 (radio off)</td><td>5 V → 3.3 V</td><td>about 40–80 mA</td><td>The on-board regulator turns the extra 1.7 V into heat <span class="tag te">TYPICAL</span></td></tr>
+<tr><td>ADC 15 Click</td><td>3.3 V</td><td>a few mA</td><td>ADC plus its clock chip <span class="tag te">TYPICAL</span></td></tr>
+<tr><td>PCM5102A DAC</td><td>5 V</td><td>about 20 mA</td><td><span class="tag te">TYPICAL</span></td></tr>
+<tr><td>PAM8403 + speaker</td><td>5 V</td><td>about 10 mA idle, up to about 240 mA at 1 W</td><td>Only loud while the question plays</td></tr>
+<tr><td>WS2812B pixel</td><td>4.3 V</td><td>1 mA dark, up to 60 mA full white</td><td>About 20 mA per colour at full brightness <span class="tag te">TYPICAL</span></td></tr>
+<tr><td>SIM868</td><td>VBAT</td><td>about 20 mA idle, bursts to 2 A in a call</td><td><span class="tag te">TYPICAL</span></td></tr>
+<tr><td>Battery divider</td><td>VBAT</td><td>21 µA</td><td>4.2 V / 200 kΩ</td></tr>
+<tr><td>Button pull-up</td><td>3.3 V</td><td>0.33 mA, only while pressed</td><td>3.3 V / 10 kΩ</td></tr>
+</tbody></table>
+<p><b>Battery life, rough estimate:</b> about 0.1 A on the 5 V rail is 0.5 W, or 0.57 W from the cell after the boost; add about 0.07 W for the idle modem. 12.6 Wh / 0.64 W ≈ <b>20 hours</b> of watching. This is an estimate from typical figures; we have not measured it.</p>
+
+<h3>Three small circuits on the power side</h3>
+<div class="cols">
+<div><p><b>Battery voltage divider (R4, R5).</b> An ESP32 pin must never see more than 3.3 V, and a full cell is 4.2 V. Two equal resistors in series split the voltage in half:</p>
+<div class="eq"><i>V</i><sub>GPIO1</sub> = <i>V</i><sub>BAT</sub> · R5/(R4+R5) = 4.2 × ½ = 2.1 V</div>
+<p>The ESP32’s analog input reads that and the code doubles it. The modem can also report its own supply with <code>AT+CBC</code> (it said 3.99 V in our test <span class="tag tm">MEASURED</span>).</p></div>
+<div><p><b>Diode in the LED supply (1N4001).</b> A WS2812B only accepts a “1” if the data voltage is above 0.7 × its supply. At 5 V that is 3.5 V, more than the ESP32’s 3.3 V. A silicon diode drops about 0.7 V, so the LED runs on 4.3 V and the limit becomes</p>
+<div class="eq">0.7 × 4.3 V = 3.0 V &lt; 3.3 V ✓</div>
+<p><b>100 nF capacitors</b> beside each module do for every chip what C1 does for the modem: a tiny local reservoir for fast switching currents.</p></div>
+</div>
+
+<h2><span class="n">3</span>The geophone: floor motion into voltage</h2>
+<p>The SM-24 has no electronics and needs no power. Inside the case a strong magnet is fixed to the housing; around it hangs a coil of fine wire on two soft springs. When the floor moves, the case and the magnet move with it. The coil, because of its inertia, tries to stay where it was. So the magnet moves <i>relative to the coil</i>, and a moving magnetic field induces a voltage in a coil.</p>
+
+<figure>
+<svg viewBox="0 0 720 222">
+  <rect x="40" y="18" width="150" height="172" rx="10" fill="#f4f2ee" stroke="#55595d" stroke-width="1.6"/>
+  <rect x="97" y="52" width="36" height="104" fill="#aeb4b9" stroke="#55595d"/><text x="115" y="100" text-anchor="middle" class="t" style="fill:#fff">N</text><text x="115" y="130" text-anchor="middle" class="t" style="fill:#fff">S</text>
+  <rect x="80" y="74" width="11" height="60" fill="#c88a4a" stroke="#8a5a26"/><rect x="139" y="74" width="11" height="60" fill="#c88a4a" stroke="#8a5a26"/>
+  <path d="M85 74 V66 H145 V74 M85 134 V142 H145 V134" stroke="#8a5a26" stroke-width="1.4" fill="none"/>
+  <path d="M62 19 l8 8 l-10 7 l10 7 l-10 7 l10 7 l-5 5 H85 M168 19 l-8 8 l10 7 l-10 7 l10 7 l-10 7 l5 5 H145" stroke="#2f8f8b" stroke-width="1.4" fill="none"/>
+  <path d="M65 189 l5 -8 l-10 -7 l10 -7 l-10 -7 l10 -7 l-5 -5 H85 M165 189 l-5 -8 l10 -7 l-10 -7 l10 -7 l-10 -7 l5 -5 H145" stroke="#2f8f8b" stroke-width="1.4" fill="none"/>
+  <path class="w" d="M134 96 H222" stroke-width=".8"/><text x="226" y="94">magnet, fixed to the case</text><text class="s" x="226" y="106">moves with the floor</text>
+  <path class="w" d="M151 126 H222" stroke-width=".8"/><text x="226" y="130">coil (11 g, 375 Ω of wire)</text><text class="s" x="226" y="142">hangs on springs, stays still</text>
+  <path class="w" d="M170 38 H222" stroke-width=".8"/><text x="226" y="42">springs</text><text class="s" x="226" y="54">mass + spring resonate at 10 Hz</text>
+  <path class="w" d="M20 150 V70" marker-start="url(#ah)" marker-end="url(#ah)"/><text class="l" x="16" y="114" text-anchor="middle" transform="rotate(-90 16 114)">floor velocity v</text>
+  <rect x="12" y="194" width="210" height="8" fill="#a87b4f"/><text class="s" x="117" y="216" text-anchor="middle">floor</text>
+  <!-- equivalent circuit -->
+  <circle cx="440" cy="110" r="22" class="bx"/><text x="440" y="107" text-anchor="middle" class="t">e</text><text x="440" y="120" text-anchor="middle" class="s">= G·v</text>
+  <path class="w" d="M440 88 V50 H480 M550 50 H620 V78 M620 142 V170 H440 V132"/>
+  <rect x="480" y="42" width="70" height="16" class="bx"/><text x="515" y="34" text-anchor="middle">coil wire Rc = 375 Ω</text>
+  <rect x="612" y="78" width="16" height="64" class="bx"/><text x="604" y="106" text-anchor="end">shunt Rs</text><text x="604" y="119" text-anchor="end">1 kΩ</text>
+  <path class="w" d="M620 50 H690 M620 170 H690"/><circle cx="693" cy="50" r="3" class="bx"/><circle cx="693" cy="170" r="3" class="bx"/>
+  <text x="700" y="40" text-anchor="end" class="l">CH1+</text><text x="700" y="190" text-anchor="end" class="l">CH1− and GND</text>
+  <text x="668" y="114" text-anchor="middle" class="t">Vout</text>
+  <path d="M480 150 q40 14 80 0" class="w" stroke="#2f8f8b" marker-end="url(#ah)"/><text x="520" y="148" text-anchor="middle" class="l">current i</text>
+  <text class="s" x="440" y="208" text-anchor="middle">the geophone</text><text class="s" x="655" y="208" text-anchor="middle">to the ADC</text>
+</svg>
+<figcaption>Figure 4. Left: inside the SM-24. Right: the same thing as a circuit: a voltage source with the coil’s own wire resistance, loaded by our 1 kΩ resistor.</figcaption></figure>
+
+<h3>Faraday’s law gives the voltage</h3>
+<div class="eq"><i>e</i> = <i>B</i> · <i>l</i> · <i>v</i> = <i>G</i> · <i>v</i>, &nbsp; <i>G</i> = 28.8 V per m/s<span class="c">B: magnetic field, l: length of wire in the field, v: coil-to-magnet velocity <span class="tag te">TYPICAL</span></span></div>
+<p>The output is proportional to <b>velocity</b>, not to position or acceleration. A floor moving at 1 mm/s gives 28.8 mV. No battery is involved: the energy comes from the floor’s motion.</p>
+
+<h3>The 1 kΩ resistor: a deliberate load</h3>
+<p>With the resistor across the terminals, current flows around the loop in Figure 4, and the ADC sees only the part of <i>e</i> that falls across the resistor (a voltage divider with the coil’s own 375 Ω):</p>
+<div class="eq"><i>i</i> = <i>e</i> / (<i>R</i><sub>c</sub> + <i>R</i><sub>s</sub>) &nbsp;&nbsp; <i>V</i><sub>out</sub> = <i>e</i> · <i>R</i><sub>s</sub>/(<i>R</i><sub>c</sub> + <i>R</i><sub>s</sub>) = <i>e</i> × 1000/1375</div>
+<div class="eq"><i>G</i><sub>loaded</sub> = 28.8 × 0.727 = <b>20.9 V per m/s</b> = 20.9 mV per mm/s<span class="c">the number in our software</span></div>
+<p>Why give away 27 % of the signal? Because of <b>damping</b>. A mass on a spring rings like a bell after every knock. The current <i>i</i> in the coil creates a force <i>F</i> = <i>G</i> · <i>i</i> that opposes the motion (Lenz’s law): an electromagnetic brake. More current, more braking. The damping ratio ζ tells how quickly the ringing dies (0 = rings forever, 1 = no overshoot at all):</p>
+<div class="eq">ζ = ζ<sub>open</sub> + <i>G</i>² / (2 · <i>m</i> · ω<sub>0</sub> · (<i>R</i><sub>c</sub> + <i>R</i><sub>s</sub>)) = 0.25 + 28.8² / (2 × 0.011 × 62.8 × 1375) = 0.25 + 0.44 ≈ <b>0.69</b></div>
+<p>With ζ ≈ 0.7 the coil settles almost at once and the response is flat above 10 Hz, so one footstep looks like one clean burst instead of a long wobble. <span class="tag te">TYPICAL</span> (computed from datasheet values: 11 g moving mass, ω<sub>0</sub> = 2π × 10 Hz.)</p>
+
+<h3>How it responds at each frequency</h3>
+<p>The coil on its springs is a second-order system. Its output for a floor vibrating at frequency <i>f</i> is</p>
+<div class="eq">|<i>H</i>(<i>f</i>)| = <i>r</i>² / √((1 − <i>r</i>²)² + (2ζ<i>r</i>)²), &nbsp; <i>r</i> = <i>f</i> / 10 Hz</div>
+<table><thead><tr><th>Frequency</th><th>5 Hz</th><th>10 Hz</th><th>15 Hz</th><th>20 Hz</th><th>40 Hz and above</th></tr></thead><tbody>
+<tr><td>Share of full sensitivity</td><td>25 %</td><td>73 %</td><td>93 %</td><td>98 %</td><td>100 %</td></tr></tbody></table>
+<p>Below 10 Hz the coil simply rides along with the case and the output falls away quickly. That is fine: footsteps and impacts live between about 10 and 60 Hz.</p>
+
+<h3>How small these motions are</h3>
+<p>For a vibration at frequency <i>f</i>, displacement = <i>v</i> / (2π<i>f</i>) and acceleration = 2π<i>f</i> · <i>v</i>.</p>
+<table><thead><tr><th>Event</th><th>Velocity</th><th>Geophone voltage</th><th>Floor displacement</th><th>Current in the coil</th></tr></thead><tbody>
+<tr><td>Smallest step we accept (threshold)</td><td>0.02 mm/s</td><td>0.42 mV</td><td>about 0.1 µm at 30 Hz</td><td>0.4 µA</td></tr>
+<tr><td>Normal footstep nearby <span class="tag tm">MEASURED</span></td><td>about 0.1 mm/s</td><td>2.1 mV</td><td>about 0.5 µm at 30 Hz</td><td>2 µA</td></tr>
+<tr><td>Impact threshold</td><td>0.3 mm/s</td><td>6.3 mV</td><td>about 3 µm at 15 Hz</td><td>6 µA</td></tr>
+<tr><td>Hardest hit in our recordings <span class="tag tm">MEASURED</span></td><td>3.9 mm/s</td><td>82 mV</td><td>about 42 µm at 15 Hz</td><td>82 µA</td></tr>
+</tbody></table>
+<p>A human hair is about 70 µm thick. The device notices floor movements several hundred times smaller than that.</p>
+
+<h3>The cable</h3>
+<p>The two geophone wires are <b>twisted together</b>. Any stray magnetic field (mains wiring, the modem’s bursts) induces a voltage in a loop of wire in proportion to the loop’s area. Twisting makes the loop area tiny and flips its direction every turn, so what one half-turn picks up the next one cancels. The ADC also measures the <i>difference</i> between CH1+ and CH1−, so anything that lands equally on both wires disappears.</p>
+
+<h2><span class="n">4</span>The ADC: voltage into numbers</h2>
+<p>The ADC 15 Click carries a Texas Instruments <b>ADS131M02</b>: two channels, 24 bits each, sampled at the same instant. Our geophone is on channel 1. Channel 2 is shorted, so whatever it reads is the electronics’ own noise: a built-in reference for “how quiet is quiet”.</p>
+
+<h3>Gain and full scale</h3>
+<p>The chip compares the input with an internal 1.2 V reference, after a built-in amplifier with a selectable gain. The range it can measure is ±1.2 V / gain.</p>
+<table><thead><tr><th>Gain</th><th>Voltage range</th><th>Velocity range (÷ 20.9 mV per mm/s)</th><th>Verdict</th></tr></thead><tbody>
+<tr><td>× 32</td><td>± 37.5 mV</td><td>± 1.8 mm/s</td><td>Clipped: our stomps reached 6.6 mm/s <span class="tag tm">MEASURED</span></td></tr>
+<tr><td><b>× 4</b></td><td><b>± 300 mV</b></td><td><b>± 14.3 mm/s</b></td><td>Current setting: room for the hardest fall</td></tr>
+</tbody></table>
+<p>The chip can read inputs slightly below ground, so the geophone’s swing around 0 V needs no bias circuit: CH1− is simply tied to GND. <span class="tag te">TYPICAL</span></p>
+
+<h3>From counts to millimetres per second</h3>
+<p>A 24-bit signed number runs from −8 388 608 to +8 388 607 (that is 2²³). One count is therefore</p>
+<div class="eq">1 count = 1.2 V / (gain × 2²³) = 1.2 / (4 × 8 388 608) = <b>35.8 nV</b></div>
+<div class="eq"><i>v</i> [mm/s] = counts × 35.8 nV / 20.9 mV per mm/s = counts × 1.71 × 10<sup>−6</sup><span class="c">one count = 1.7 nanometres per second</span></div>
+<p>So the smallest step we accept (0.02 mm/s) is about 11 700 counts and the impact threshold (0.3 mm/s) is about 176 000 counts. The resolution is far finer than we need; what limits us is the room’s own vibration, not the ADC.</p>
+
+<h3>How 24 bits are made: delta-sigma</h3>
+<p>Inside, the ADC is surprisingly crude: a 1-bit comparator running very fast (4.096 million decisions per second), wrapped in a feedback loop that makes the <i>average</i> of its 1s and 0s follow the input. A digital filter then averages 4096 of these decisions into each output sample. Averaging many coarse readings gives one fine one, and it removes everything above the wanted band, which is why no separate filter is needed in front of the ADC.</p>
+<div class="eq">8.192 MHz clock ÷ 2 = 4.096 MHz modulator &nbsp;→&nbsp; ÷ 4096 = <b>1000 samples per second</b></div>
+<p>With 1000 samples per second we can represent signals up to 500 Hz (the Nyquist limit: half the sample rate). We only use 10–60 Hz, so there is a wide safety margin.</p>
+
+<h3>The clock chip</h3>
+<p>The ADC has no clock of its own. A second chip on the Click, the <b>LTC6903</b>, is a programmable oscillator. At start-up the ESP32 sends it one 16-bit word (<code>0xCF62</code>) over the same SPI wires, using a second chip-select line:</p>
+<div class="eq"><i>f</i> = 2<sup>OCT</sup> × 2078 Hz / (2 − DAC/1024) = 2<sup>12</sup> × 2078 / (2 − 984/1024) = 8.1915 MHz</div>
+<p>Without this step the ADC stays silent, which is the first thing to check if no data arrives.</p>
+
+<h3>SPI: how the samples reach the ESP32</h3>
+<p>SPI is a conversation on four wires, always led by the ESP32:</p>
+<table><thead><tr><th>Wire</th><th>ESP32-S3 pin</th><th>Direction</th><th>Job</th></tr></thead><tbody>
+<tr><td>SCK</td><td>GPIO12</td><td>ESP32 → ADC</td><td>The clock: one tick per bit, 2 million ticks per second</td></tr>
+<tr><td>MOSI (SDI)</td><td>GPIO14</td><td>ESP32 → ADC</td><td>Commands and settings</td></tr>
+<tr><td>MISO (SDO)</td><td>GPIO13</td><td>ADC → ESP32</td><td>Samples and answers</td></tr>
+<tr><td>CS1</td><td>GPIO11</td><td>ESP32 → ADC</td><td>“I am talking to you”: low for the length of one frame</td></tr>
+<tr><td>CS2</td><td>GPIO9</td><td>ESP32 → clock chip</td><td>The same, for the LTC6903</td></tr>
+<tr><td>DRDY (INT)</td><td>GPIO10</td><td>ADC → ESP32</td><td>Drops low when a new sample is ready: triggers an interrupt</td></tr>
+<tr><td>RST</td><td>GPIO8</td><td>ESP32 → ADC</td><td>Pulled low for 2 ms at start-up to reset the ADC</td></tr>
+</tbody></table>
+<p>On every clock tick, one bit travels in <i>each</i> direction at the same time. The ADC changes its output on one clock edge and the ESP32 reads it on the other (SPI “mode 1”), so the data is always stable when it is read.</p>
+<figure>
+<svg viewBox="0 0 720 128">
+  <text class="s" x="8" y="22">DRDY</text><path class="w" d="M60 14 H96 V28 H130 V14 H700" stroke="#b3493a"/>
+  <text class="s" x="8" y="48">CS1</text><path class="w" d="M60 40 H110 V54 H650 V40 H700"/>
+  <text class="s" x="8" y="84">MISO</text>
+  <g><rect class="bx" x="110" y="66" width="135" height="28"/><rect class="bt" x="245" y="66" width="135" height="28"/><rect class="bx" x="380" y="66" width="135" height="28"/><rect class="bx" x="515" y="66" width="135" height="28"/></g>
+  <text x="177" y="84" text-anchor="middle">status · 24 bits</text><text x="312" y="84" text-anchor="middle" class="t">CH1 geophone · 24 bits</text><text x="447" y="84" text-anchor="middle">CH2 (shorted) · 24 bits</text><text x="582" y="84" text-anchor="middle">CRC-16 + 8 spare bits</text>
+  <path class="w" d="M110 108 H650" marker-start="url(#ah)" marker-end="url(#ah)" stroke-width=".8"/><text class="l" x="380" y="122" text-anchor="middle">96 clock ticks at 2 MHz = 48 µs · then nothing until the next DRDY, 1 ms later</text>
+</svg>
+<figcaption>Figure 5. One SPI frame. The ADC is busy talking for less than 5 % of the time.</figcaption></figure>
+<p><b>The CRC</b> is a 16-bit checksum the ADC computes over the first nine bytes. The ESP32 computes the same thing (polynomial 0x1021, start value 0xFFFF) and compares. One flipped bit anywhere in the frame gives a different result, so a glitch on the wires can never pass as a real vibration.</p>
+<p><b>Settings</b> go the other way in the first word of a frame: a write-register command followed by the value. For example, the clock register gets <code>0x0316</code> (both channels on, averaging 4096, high-resolution mode) and the gain register gets <code>0x0022</code> (× 4 on both channels). The ADC’s answer to a read arrives one frame later.</p>
+
+<h2><span class="n">5</span>The maths: from samples to “this is a fall”</h2>
+<p>All of this runs for every single sample, 1000 times a second. Each step is a few multiplications.</p>
+
+<h3>Step 1: remove the offset</h3>
+<p>The ADC has a small constant offset. A slow running average follows it, and we subtract that average:</p>
+<div class="eq">dc ← dc + 0.002 · (<i>x</i> − dc), &nbsp; <i>y</i> = <i>x</i> − dc<span class="c">a one-pole high-pass; corner ≈ 0.002 × 1000 / 2π ≈ 0.3 Hz</span></div>
+
+<h3>Step 2: two band-pass filters</h3>
+<p>The same signal goes down two paths, each keeping only the frequencies where its target is strongest:</p>
+<table><thead><tr><th>Path</th><th>Band</th><th>Why this band</th></tr></thead><tbody>
+<tr><td><b>Impact path</b></td><td>10–45 Hz</td><td>A body hitting the floor puts most of its energy below 20 Hz, and it is 20–50 times stronger than any background. Stops short of the 50 Hz mains hum.</td></tr>
+<tr><td><b>Step path</b></td><td>18–60 Hz + hum canceller</td><td>Our test building hums at 14–15.3 Hz. Several close tones “beat” into slow swells of 0.04–0.07 mm/s that look like footsteps. Starting at 18 Hz avoids most of it. <span class="tag tm">MEASURED</span></td></tr>
+</tbody></table>
+<p>Each filter is built from four “biquad” sections (two high-pass, two low-pass), giving a 4th-order Butterworth edge on each side: flat inside the band, falling by 24 dB per octave outside. One biquad computes each output from the current input, the two previous inputs and the two previous outputs:</p>
+<div class="eq"><i>y</i>[<i>n</i>] = <i>b</i><sub>0</sub><i>x</i>[<i>n</i>] + <i>b</i><sub>1</sub><i>x</i>[<i>n</i>−1] + <i>b</i><sub>2</sub><i>x</i>[<i>n</i>−2] − <i>a</i><sub>1</sub><i>y</i>[<i>n</i>−1] − <i>a</i><sub>2</sub><i>y</i>[<i>n</i>−2]</div>
+<p>The five coefficients come from the corner frequency <i>f</i><sub>0</sub> and a sharpness value <i>Q</i> (ω = 2π<i>f</i><sub>0</sub>/1000, α = sin ω / 2<i>Q</i>). The two <i>Q</i> values, 0.5412 and 1.3066, are what make a pair of biquads into a Butterworth filter.</p>
+
+<h3>Step 3: the hum canceller (step path only)</h3>
+<p>A steady tone is predictable: if you know the last 50 ms, you know the next sample. A footstep is not. So a small adaptive filter tries to <b>predict</b> each sample from 48 samples that are at least 25 ms old, and we keep only the part it <i>failed</i> to predict:</p>
+<div class="eq">prediction <i>p</i> = Σ <i>w</i><sub>i</sub> · <i>x</i>[<i>n</i> − 25 − <i>i</i>], &nbsp; error <i>e</i> = <i>x</i>[<i>n</i>] − <i>p</i>, &nbsp; <i>w</i><sub>i</sub> ← <i>w</i><sub>i</sub> + 0.004 · <i>e</i> · <i>x</i>[<i>n</i> − 25 − <i>i</i>] / (signal power)</div>
+<p>The weights <i>w</i> learn the hum by themselves and keep tracking it if it drifts. The error <i>e</i> is the output: hum removed, footsteps intact. In our recordings this lifted the weakest steps from 0.29× to 0.90× the size of the strongest hum swell. <span class="tag tm">MEASURED</span></p>
+
+<h3>Step 4: the envelope</h3>
+<p>A vibration swings positive and negative; we want its <i>size</i>. Squaring makes everything positive, a 15 ms running average smooths it, and the square root brings back the units:</p>
+<div class="eq"><i>m</i> ← <i>m</i> + (<i>y</i>² − <i>m</i>)/15, &nbsp; envelope = √(2<i>m</i>)<span class="c">√2 turns the RMS of a sine into its peak</span></div>
+
+<h3>Step 5: a threshold that adapts to the room</h3>
+<p>A fixed threshold fails as soon as the room gets noisier. So we track the <b>background level</b> with a follower that drops quickly but rises slowly (time constants 0.1 s down, 2 s up). It settles on the quiet moments between events and ignores the events themselves.</p>
+<div class="eq">step threshold = max(0.02 mm/s, 2 × background)</div>
+<p>A <b>hit</b> starts when the step envelope crosses this threshold (or the impact envelope gets near its own level), and ends when both envelopes fall to 60 % of their peak. Hits closer together than 0.25 s are merged.</p>
+
+<h3>Step 6: step, walking or impact?</h3>
+<ul>
+<li><b>Impact:</b> the hit’s peak in the 10–45 Hz path is at least <b>0.3 mm/s</b>.</li>
+<li><b>Step:</b> any smaller hit. Two hits less than 0.35 s apart count as one footfall (heel and toe).</li>
+<li><b>Walking:</b> three or more footfalls, each 0.3–1.6 s after the last. Cadence = 120 / (sum of the last two gaps) steps per minute.</li>
+<li><b>Rhythm tracking:</b> once the cadence is steady, the next step is <i>expected</i>. Within ±25 % of the expected moment the threshold drops to 60 %, so soft or distant steps are still caught.</li>
+</ul>
+
+<h3>Step 7: what makes it a fall</h3>
+<p>An impact alone proves nothing: a dropped bag makes one too. The difference is <b>what comes next</b>.</p>
+<figure>
+<svg viewBox="0 0 720 196">
+  <g>
+  <rect class="bx" x="10" y="14" width="124" height="40" rx="5"/><text x="72" y="31" text-anchor="middle">1000 samples/s</text><text class="s" x="72" y="44" text-anchor="middle">from the ADC</text>
+  <rect class="bx" x="154" y="14" width="124" height="40" rx="5"/><text x="216" y="31" text-anchor="middle">remove offset,</text><text x="216" y="44" text-anchor="middle">two band-passes</text>
+  <rect class="bx" x="298" y="14" width="124" height="40" rx="5"/><text x="360" y="31" text-anchor="middle">15 ms envelope,</text><text x="360" y="44" text-anchor="middle">adaptive threshold</text>
+  <rect class="bx" x="442" y="14" width="124" height="40" rx="5"/><text x="504" y="38" text-anchor="middle">hit detected</text>
+  <rect class="bt" x="586" y="14" width="124" height="40" rx="5"/><text x="648" y="31" text-anchor="middle" class="t">peak ≥ 0.3 mm/s</text><text x="648" y="44" text-anchor="middle">in 10–45 Hz?</text>
+  <g class="w"><path d="M134 34 H153" marker-end="url(#ah)"/><path d="M278 34 H297" marker-end="url(#ah)"/><path d="M422 34 H441" marker-end="url(#ah)"/><path d="M566 34 H585" marker-end="url(#ah)"/></g>
+  <path class="w" d="M648 54 V125" marker-end="url(#ah)"/><text class="l" x="654" y="92">yes: IMPACT</text>
+  <path class="w" d="M600 54 L560 80" marker-end="url(#ah)"/><text class="s" x="552" y="92" text-anchor="end">no: it is a step → count footfalls and cadence</text>
+  <rect class="bx" x="586" y="126" width="124" height="40" rx="5"/><text x="648" y="143" text-anchor="middle">start the clock,</text><text x="648" y="156" text-anchor="middle">ignore 1.2 s of ringing</text>
+  <rect class="bt" x="442" y="126" width="124" height="40" rx="5"/><text x="504" y="143" text-anchor="middle" class="t">4 steady footfalls</text><text x="504" y="156" text-anchor="middle">before time runs out?</text>
+  <rect x="298" y="126" width="124" height="40" rx="5" fill="#fbeeea" stroke="#b3493a" stroke-width="1.3"/><text x="360" y="143" text-anchor="middle" class="t">FALL-LIKE</text><text x="360" y="156" text-anchor="middle">speaker asks, LED amber</text>
+  <rect class="bt" x="154" y="126" width="124" height="40" rx="5"/><text x="216" y="143" text-anchor="middle" class="t">“I’m OK” pressed</text><text x="216" y="156" text-anchor="middle">in time?</text>
+  <rect x="10" y="126" width="124" height="40" rx="5" fill="#fbeeea" stroke="#b3493a" stroke-width="1.3"/><text x="72" y="143" text-anchor="middle" class="t">SIM868 dials</text><text x="72" y="156" text-anchor="middle">LED red</text>
+  <g class="w"><path d="M586 146 H567" marker-end="url(#ah)"/><path d="M442 146 H423" marker-end="url(#ah)"/><path d="M298 146 H279" marker-end="url(#ah)"/><path d="M154 146 H135" marker-end="url(#ah)"/></g>
+  <text class="s" x="432" y="140" text-anchor="middle">no</text><text class="s" x="144" y="140" text-anchor="middle">no</text>
+  <path class="w" d="M504 166 V180" marker-end="url(#ah)"/><text class="s" x="510" y="190">yes: got up and walking, all clear</text>
+  <path class="w" d="M216 166 V180" marker-end="url(#ah)"/><text class="s" x="222" y="190">yes: cancelled, LED green</text>
+  </g>
+</svg>
+<figcaption>Figure 6. The decision chain. Top row: signal processing. Bottom row: the logic after an impact.</figcaption></figure>
+<ul>
+<li>After an impact a clock starts. The first 1.2 s is ignored, because the floor is still ringing.</li>
+<li>The only thing that cancels the alarm is <b>walking</b>: 4 footfalls in a row, each 0.35–1.6 s apart. Shuffling, trying to push up, or other people far away do <i>not</i> cancel it.</li>
+<li>If the clock runs out first, it is <b>FALL-LIKE</b>. The tuning tool uses 5 s; the stage plan is to ask the question straight away and wait 3 s for the button. Both are single numbers in the code. <span class="tag td">DESIGN</span></li>
+</ul>
+<p>Tuned on our recordings of 12 Nov: about 97 % of steps found, about 0.2 false hits per second while lying still, and all 7 known falls flagged. <span class="tag tm">MEASURED</span></p>
+
+<!--PLOT-->
+
+<h2><span class="n">6</span>The alert chain: button, light, voice, phone call</h2>
+
+<h3>The “I’m OK” button</h3>
+<p>A 10 kΩ resistor (R1) connects GPIO7 to 3.3 V, so the pin normally reads “1”. The button connects the same pin to GND. Pressed, the pin reads “0”, and 3.3 V / 10 kΩ = 0.33 mA flows through the resistor. Without the pull-up resistor the open pin would float and read random values. Mechanical contacts bounce for a few milliseconds, so the code should only accept a press that stays low for 20–30 ms.</p>
+
+<h3>The status LED (WS2812B)</h3>
+<p>One data wire (GPIO15) carries all three colours. Each pixel has a tiny chip that reads 24 bits (8 each for green, red, blue) and drives its three LEDs with those brightness values. There is no clock wire, so a bit’s value is carried by <b>how long the pulse stays high</b> within a fixed 1.25 µs slot:</p>
+<div class="eq">“0” = high 0.4 µs, low 0.85 µs &nbsp;&nbsp;·&nbsp;&nbsp; “1” = high 0.8 µs, low 0.45 µs &nbsp;&nbsp;·&nbsp;&nbsp; 24 bits = 30 µs<span class="c"><span class="tag te">TYPICAL</span></span></div>
+<p>The pixel holds the colour until new data arrives. Green = watching, amber = asking, red = calling.</p>
+
+<h3>The voice: I²S → DAC → amplifier → speaker</h3>
+<p>The recorded question is stored in the ESP32’s flash as a list of numbers: 16-bit samples, tens of thousands per second. Getting it to your ear takes four conversions.</p>
+<ol>
+<li><b>I²S (digital, 3 wires).</b> BCK (GPIO4) ticks once per bit; LCK (GPIO5) flips between left and right channel, once per sample; DIN (GPIO6) carries the bits. For 44.1 kHz, 16-bit stereo: BCK = 44 100 × 16 × 2 = 1.41 MHz. The DAC’s fourth clock pin (SCK) is tied to GND, which tells it to generate its internal clock from BCK.</li>
+<li><b>PCM5102A (digital → analog).</b> Turns each number into a voltage and smooths the steps. Full scale is about 2.1 V RMS. Its solder jumpers select normal I²S format and “un-mute”. <span class="tag te">TYPICAL</span></li>
+<li><b>PAM8403 (small signal → power).</b> A class-D amplifier: instead of making a big copy of the signal, it switches the full 5 V supply on and off about 260 000 times a second and varies the on-time. The speaker coil’s inductance averages this back into smooth current. Switching wastes little power, so it stays cool. Its gain is fixed at 24 dB, which is × 15.8. <span class="tag te">TYPICAL</span></li>
+<li><b>Speaker (current → sound).</b> Current through the voice coil in a magnet’s field makes a force, the cone moves, air moves. It is a geophone run backwards.</li>
+</ol>
+<div class="box warm"><h4>Do not send full volume</h4>
+The speaker is rated 1 W into 8 Ω. That is <i>V</i> = √(<i>P</i>·<i>R</i>) = √8 = 2.83 V RMS and 0.35 A. The amplifier multiplies by 15.8, so the DAC should give at most 2.83 / 15.8 = <b>0.18 V RMS</b>, which is about <b>21 dB below digital full scale</b> (roughly 9 % amplitude). Full-scale audio would drive the amplifier into hard clipping and overload the speaker. Set the level in software.</div>
+<p><b>The speaker’s two wires are both live.</b> The amplifier drives them in opposite directions (“bridge” output), which doubles the voltage swing available from 5 V. Neither wire is ground; connecting one to GND would short an output.</p>
+
+<h3>The modem: UART and AT commands</h3>
+<p>UART uses one wire per direction and no clock. Both sides agree on the speed in advance (115 200 bits per second) and each byte is framed so the receiver can find it:</p>
+<div class="eq">idle high → 1 start bit (low) → 8 data bits → 1 stop bit (high) &nbsp;=&nbsp; 10 bits per character = 87 µs</div>
+<p>The ESP32’s transmit pin (GPIO17) goes to the modem’s receive pin and the modem’s transmit pin goes to the ESP32’s receive pin (GPIO18): <b>TX always goes to RX</b>. Swapping them is the classic mistake (it happened to us in the first test).</p>
+<p><b>Voltage levels.</b> The ESP32 speaks 3.3 V logic; the SIM868 chip speaks 2.8 V. The Waveshare board has a level-shifter chip between them. That chip needs 3.3 V from our side as a reference, which is why we feed ESP32 3.3 V into header pin 36. Without that wire the link is dead even if everything else is right.</p>
+<p><b>Switching on.</b> The modem has a power button input, PWRKEY, that must be held low for about a second. GPIO16 drives a transistor on the board that does this: GPIO16 high for 1.5 s, then the modem boots and prints <code>RDY</code>.</p>
+<p><b>The conversation</b> is plain text, one line at a time. Each command ends with a carriage return; the modem answers and finishes with <code>OK</code> or <code>ERROR</code>.</p>
+<table><thead><tr><th>ESP32 sends</th><th>Modem answers</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>AT</code></td><td><code>OK</code></td><td>Are you there? (Also lets the modem detect our speed.)</td></tr>
+<tr><td><code>AT+CPIN?</code></td><td><code>+CPIN: READY</code></td><td>SIM card is unlocked. <code>SIM PIN</code> means it still wants a PIN.</td></tr>
+<tr><td><code>AT+CSQ</code></td><td><code>+CSQ: 30,0</code></td><td>Signal strength, 0–31. In dBm: −113 + 2 × 30 = −53 dBm, very strong. <span class="tag tm">MEASURED</span></td></tr>
+<tr><td><code>AT+CREG?</code></td><td><code>+CREG: 0,1</code></td><td>Registered on the home network (5 = roaming, 2 = still searching).</td></tr>
+<tr><td><code>ATD+36…;</code></td><td><code>OK</code></td><td>Dial this number. The semicolon means “voice call”.</td></tr>
+<tr><td><code>ATH</code></td><td><code>OK</code></td><td>Hang up.</td></tr>
+<tr><td>–</td><td><code>NO CARRIER</code></td><td>Arrives unasked when the other side hangs up.</td></tr>
+</tbody></table>
+
+<h3>The radio link</h3>
+<ul>
+<li>The SIM868 is a <b>2G (GSM)</b> modem. It transmits around 900 or 1800 MHz. At 900 MHz the wavelength is λ = <i>c</i>/<i>f</i> = 3 × 10⁸ / 9 × 10⁸ = 33 cm, and antennas are sized to a fraction of that.</li>
+<li>It transmits with up to 2 W during its 577 µs bursts (Figure 3). That peak power is where the 2 A supply bursts come from.</li>
+<li><b>The antenna must be connected before power-on.</b> Without it the transmitter’s power has nowhere to go and reflects back into the chip.</li>
+<li>The 217 Hz burst rhythm is what causes the “dit-dit-dit” buzz near loudspeakers. Keep the antenna and the modem’s power leads away from the geophone cable and the DAC-to-amp wires.</li>
+<li>Both directions of a call worked on our bench on 12 Nov: outgoing, and incoming answered with <code>ATA</code>. <span class="tag tm">MEASURED</span></li>
+</ul>
+
+<h2><span class="n">7</span>One fall, start to finish</h2>
+<table><thead><tr><th>Time</th><th>What happens</th><th>Where</th></tr></thead><tbody>
+<tr><td>0 ms</td><td>A body hits the floor. The floor flexes and a wave spreads outward, mostly below 20 Hz.</td><td>floor</td></tr>
+<tr><td>a few ms</td><td>The wave reaches the geophone (waves in a floor travel at hundreds of m/s). The case moves, the coil lags, a voltage of some millivolts appears.</td><td>SM-24</td></tr>
+<tr><td>≤ 1 ms later</td><td>The ADC finishes its next sample, pulls DRDY low. The ESP32 clocks out 96 bits in 48 µs and checks the CRC.</td><td>ADC → SPI</td></tr>
+<tr><td>+ about 15–50 ms</td><td>Filters and envelope respond; the impact envelope passes 0.3 mm/s. A hit is open.</td><td>ESP32</td></tr>
+<tr><td>+ up to 0.4 s</td><td>The hit ends (envelope back under 60 % of peak). It is classed as an impact; the clock starts.</td><td>ESP32</td></tr>
+<tr><td>0–1.2 s</td><td>Floor ringing is ignored.</td><td>ESP32</td></tr>
+<tr><td>until the window ends</td><td>The step path keeps listening. Four steady footfalls would cancel. None come.</td><td>ESP32</td></tr>
+<tr><td>window ends</td><td>FALL-LIKE. LED turns amber (30 µs of data). The voice clip streams out over I²S; the amp draws its current from the 5 V rail.</td><td>LED, DAC, amp</td></tr>
+<tr><td>+ 3 s</td><td>No button press (GPIO7 stayed high). The ESP32 sends <code>ATD+36…;</code>, 17 characters, 1.5 ms on the wire. LED red.</td><td>UART</td></tr>
+<tr><td>+ a few s</td><td>The modem requests a channel and starts transmitting. Supply bursts of up to 2 A; C1 and the cell deliver them.</td><td>SIM868, battery</td></tr>
+<tr><td>+ about 5–10 s</td><td>The phone rings.</td><td>network</td></tr>
+</tbody></table>
+<p>The signal path itself is fast: from impact to “hit detected” is well under a tenth of a second. Nearly all the waiting is deliberate (the window that tells a fall from a stumble) or belongs to the phone network.</p>
+
+<h3>Checks that follow from the physics</h3>
+<div class="cols">
+<div class="box teal"><h4>Sensor</h4><ul>
+<li>Geophone <b>upright</b> and pressed <b>firmly</b> to the floor. It only measures vertical motion, and only what the floor passes into its case.</li>
+<li>Re-tune the two thresholds <b>on the real stage floor</b>. A stiff or heavy floor moves less for the same fall.</li>
+<li>Do a hard stomp and check the peak stays under ± 14 mm/s (no clipping).</li>
+<li>Keep the geophone cable twisted and away from the antenna.</li>
+</ul></div>
+<div class="box teal"><h4>Power and call</h4><ul>
+<li><b>Fully charged cell.</b> A low cell plus a 2 A burst is how modems reset mid-call.</li>
+<li>Antenna on the “GSM” socket <b>before</b> switching on.</li>
+<li><b>SIM PIN switched off</b> in a phone. In our test the PIN was still on, so the modem asked again after every power-up.</li>
+<li>Check <code>AT+CSQ</code> (want 10 or more) and <code>AT+CREG?</code> (want ,1 or ,5) at the venue.</li>
+</ul></div>
+</div>
+
+<h2><span class="n">8</span>Cheat sheets</h2>
+<div class="cols">
+<div>
+<h3 style="margin-top:2px">ESP32-S3 pin map (final build)</h3>
+<table><thead><tr><th>Pin</th><th>Job</th><th>Goes to</th></tr></thead><tbody>
+<tr><td>GPIO1</td><td>battery voltage ÷ 2</td><td>R4/R5 midpoint</td></tr>
+<tr><td>GPIO4</td><td>I²S bit clock</td><td>PCM5102A BCK</td></tr>
+<tr><td>GPIO5</td><td>I²S word clock</td><td>PCM5102A LCK</td></tr>
+<tr><td>GPIO6</td><td>I²S data</td><td>PCM5102A DIN</td></tr>
+<tr><td>GPIO7</td><td>button (low = pressed)</td><td>lid button, R1 pull-up</td></tr>
+<tr><td>GPIO8</td><td>ADC reset</td><td>Click RST</td></tr>
+<tr><td>GPIO9</td><td>clock-chip select</td><td>Click CS2</td></tr>
+<tr><td>GPIO10</td><td>data ready (interrupt)</td><td>Click INT</td></tr>
+<tr><td>GPIO11</td><td>ADC select</td><td>Click CS1</td></tr>
+<tr><td>GPIO12</td><td>SPI clock</td><td>Click SCK</td></tr>
+<tr><td>GPIO13</td><td>SPI data in</td><td>Click SDO</td></tr>
+<tr><td>GPIO14</td><td>SPI data out</td><td>Click SDI</td></tr>
+<tr><td>GPIO15</td><td>LED data</td><td>WS2812B DIN</td></tr>
+<tr><td>GPIO16</td><td>modem power key</td><td>SIM868 board pin 19</td></tr>
+<tr><td>GPIO17</td><td>UART transmit</td><td>SIM868 board pin 1 (RXD)</td></tr>
+<tr><td>GPIO18</td><td>UART receive</td><td>SIM868 board pin 2 (TXD)</td></tr>
+<tr><td>3V3</td><td>logic supply out</td><td>Click, SIM868 pin 36, R1</td></tr>
+<tr><td>5V</td><td>supply in</td><td>5 V rail</td></tr>
+</tbody></table>
+</div>
+<div>
+<h3 style="margin-top:2px">Numbers worth knowing by heart</h3>
+<table><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody>
+<tr><td>Geophone sensitivity, with 1 kΩ</td><td>20.9 mV per mm/s</td></tr>
+<tr><td>Geophone natural frequency</td><td>10 Hz</td></tr>
+<tr><td>Sample rate</td><td>1000 per second</td></tr>
+<tr><td>ADC resolution</td><td>24 bits, 35.8 nV per count</td></tr>
+<tr><td>Measuring range (gain 4)</td><td>± 300 mV = ± 14.3 mm/s</td></tr>
+<tr><td>Step band / impact band</td><td>18–60 Hz / 10–45 Hz</td></tr>
+<tr><td>Step threshold</td><td>max(0.02 mm/s, 2 × background)</td></tr>
+<tr><td>Impact threshold</td><td>0.3 mm/s</td></tr>
+<tr><td>Footfall spacing for “walking”</td><td>0.35–1.6 s</td></tr>
+<tr><td>Cancels a fall</td><td>4 steady footfalls</td></tr>
+<tr><td>SPI clock / frame</td><td>2 MHz / 96 bits, 48 µs</td></tr>
+<tr><td>UART to modem</td><td>115 200 bit/s, 8N1</td></tr>
+<tr><td>Modem supply</td><td>3.4–4.4 V, bursts to 2 A</td></tr>
+<tr><td>GSM burst</td><td>577 µs every 4.615 ms</td></tr>
+<tr><td>Cell</td><td>3.6 V × 3.5 Ah = 12.6 Wh</td></tr>
+<tr><td>Speaker limit</td><td>1 W = 2.83 V RMS into 8 Ω</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<h3>Five questions a jury might ask</h3>
+<table><tbody>
+<tr><td style="width:34%"><b>Why a geophone and not a microphone or camera?</b></td><td>It measures only how fast the floor moves, in a band of roughly 10–60 Hz. It cannot record speech or images, and nobody has to wear or charge anything.</td></tr>
+<tr><td><b>Why does it need no power?</b></td><td>It is a generator: a magnet moving past a coil. The floor’s motion supplies the microwatts.</td></tr>
+<tr><td><b>How do you tell a fall from a dropped object?</b></td><td>Not by the bang alone. An impact followed by normal walking is cancelled automatically. An impact followed by stillness triggers the spoken question, and the button cancels a false alarm before any call is made.</td></tr>
+<tr><td><b>What if the room is noisy?</b></td><td>The step threshold is always at least twice the measured background, and steady hum is learned and subtracted by the adaptive filter.</td></tr>
+<tr><td><b>2G is being switched off. Then what?</b></td><td>2G is still on air in Hungary. A product would use an LTE-M or NB-IoT modem; those take the same kind of AT commands over the same UART, so only the modem board changes.</td></tr>
+</tbody></table>
+
+</body></html>

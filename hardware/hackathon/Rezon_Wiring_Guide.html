@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rezon Wiring Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eeebe5; --panel: #f8f6f2; --card: #ffffff; --ink: #2a2c2e; --muted: #7b7f83; --faint: #a9aaa7;
+    --line: #e0dbd2; --line2: #d1cbc0; --teal: #5f8f8b; --teal-soft: #e4eeec; --amber: #a7783e; --amber-soft: #f6eddf;
+    --red: #a9655b; --red-soft: #f5e6e3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif; font-size: 13.5px; line-height: 1.45; }
+  .app { display: grid; grid-template-columns: 440px 1fr; height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  .brand { padding: 16px 20px 10px; border-bottom: 1px solid var(--line); }
+  .brand .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .brand h1 { margin: 0; font-size: 17px; letter-spacing: .2px; }
+  .brand h1 b { color: var(--teal); letter-spacing: 1.5px; }
+  .brand .count { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  .dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .dot { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--line2); background: var(--card);
+    font: 500 9.5px "IBM Plex Mono", monospace; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .dot.done { background: #e9e6df; color: var(--faint); }
+  .dot.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .dot.phase-start { margin-left: 6px; }
+  .card { flex: 1; overflow-y: auto; padding: 16px 20px 20px; min-height: 0; }
+  .phase { font: 600 10.5px "IBM Plex Mono", monospace; letter-spacing: 1.2px; text-transform: uppercase; color: var(--teal); }
+  .card h2 { margin: 3px 0 10px; font-size: 20px; line-height: 1.25; letter-spacing: -.2px; }
+  .stations { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .st { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px 4px 7px; border-radius: 999px;
+    border: 1px solid var(--line2); background: var(--card); font-size: 12px; font-weight: 500; }
+  .st svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .st.solder { color: var(--red); border-color: #e6c9c3; background: var(--red-soft); }
+  .st.meter { color: var(--amber); border-color: #ead7b8; background: var(--amber-soft); }
+  .st.cut, .st.screw, .st.laptop { color: #586a7a; border-color: #cfd8df; background: #eef2f5; }
+  .st.hands { color: var(--teal); border-color: #c6dbd8; background: var(--teal-soft); }
+  .lead { margin: 0 0 12px; color: #45484b; }
+  .sec { font: 600 10.5px "IBM Plex Mono", monospace; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 16px 0 6px; }
+  .op { display: grid; grid-template-columns: 26px 1fr; gap: 0 8px; padding: 7px 6px; border-bottom: 1px solid var(--line); border-radius: 4px; }
+  .op:hover { background: #f1eee8; }
+  .op .n { font: 600 11px "IBM Plex Mono", monospace; color: var(--muted); padding-top: 1px; }
+  .op .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+  .end { font-size: 12.5px; }
+  .end .h { display: inline-block; min-width: 34px; font: 600 11.5px "IBM Plex Mono", monospace; background: var(--ink); color: #fff; border-radius: 3px; padding: 0 4px; text-align: center; margin-right: 5px; }
+  .end .h.off { background: #8c8f93; }
+  .end .what { color: #3c3f42; }
+  .end .what b { font-weight: 600; }
+  .arrow { color: var(--faint); font-size: 11px; margin: 1px 0 1px 12px; }
+  .meta { font: 11px "IBM Plex Mono", monospace; color: var(--muted); margin-top: 3px; }
+  .meta .via { color: #4b5a66; }
+  .trim { display: inline-block; margin-top: 3px; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; padding: 1px 5px; border-radius: 3px; background: var(--amber-soft); color: var(--amber); border: 1px solid #ead7b8; }
+  ul.notes { margin: 0; padding-left: 17px; }
+  ul.notes li { margin: 3px 0; }
+  .warn { margin-top: 10px; border: 1px solid #e6c9c3; background: var(--red-soft); color: #7e4a42; border-radius: 6px; padding: 8px 10px; font-size: 12.5px; }
+  .tip { margin-top: 10px; border: 1px solid #c6dbd8; background: var(--teal-soft); color: #3f6663; border-radius: 6px; padding: 8px 10px; font-size: 12.5px; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+  .hint { font-size: 11.5px; color: var(--muted); margin-top: 12px; }
+  nav { display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--panel); }
+  nav button { flex: 1; height: 38px; border-radius: 7px; border: 1px solid var(--line2); background: var(--card); color: var(--ink);
+    font: 600 13px "IBM Plex Sans", sans-serif; cursor: pointer; }
+  nav button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  nav button:disabled { opacity: .35; cursor: default; }
+  main { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #f6f4f0 0%, #ebe7e0 75%); }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  #gl:active { cursor: grabbing; }
+  #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .lbl { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font: 500 11px "IBM Plex Mono", monospace;
+    color: var(--ink); background: rgba(255,255,255,.92); border: 1px solid var(--line2); border-radius: 4px; padding: 1px 6px; margin-top: -6px; }
+  .lbl.part { font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 11.5px; }
+  .lbl.pin { font-size: 10.5px; padding: 0 5px; background: rgba(42,44,46,.9); color: #fff; border-color: transparent; }
+  .lbl.pin b { color: #f2d49b; font-weight: 600; margin-right: 4px; }
+  .lbl.call { background: rgba(255,255,255,.95); border-color: var(--teal); color: #35514e; font-family: "IBM Plex Sans", sans-serif; font-size: 11.5px; padding: 3px 8px; }
+  .lbl.call::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 1px; height: 6px; background: var(--teal); }
+  .toolbar { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .toolbar button { height: 30px; padding: 0 11px; border-radius: 6px; border: 1px solid var(--line2); background: rgba(255,255,255,.92);
+    font: 500 12px "IBM Plex Sans", sans-serif; color: var(--ink); cursor: pointer; }
+  .toolbar button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .viewtag { position: absolute; top: 16px; left: 16px; font: 600 11px "IBM Plex Mono", monospace; letter-spacing: 1px; text-transform: uppercase;
+    background: rgba(255,255,255,.9); border: 1px solid var(--line2); border-radius: 5px; padding: 4px 8px; color: #4b4e51; }
+  .viewtag.solder { background: #2a2c2e; color: #fff; border-color: #2a2c2e; }
+  .legend { position: absolute; left: 14px; bottom: 14px; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px; display: grid; grid-template-columns: repeat(2, auto); gap: 3px 14px; font-size: 11px; color: #4b4e51; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+  .help { position: absolute; right: 14px; bottom: 14px; font-size: 11px; color: var(--muted); background: rgba(255,255,255,.8); padding: 4px 8px; border-radius: 6px; }
+  #err { position: absolute; top: 60px; left: 14px; right: 14px; color: #8c4a40; font: 12px monospace; white-space: pre-wrap; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: 52vh 1fr; height: auto; min-height: 100vh; }
+    main { order: 1; height: 52vh; }
+    aside { order: 2; border-right: 0; border-top: 1px solid var(--line); }
+    .legend, .help { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="row"><h1><b>REZON</b> &nbsp;wiring guide</h1><span class="count" id="count"></span></div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="card" id="card"></div>
+    <nav>
+      <button id="prev">← Back</button>
+      <button id="next" class="primary">Next →</button>
+    </nav>
+  </aside>
+  <main>
+    <canvas id="gl"></canvas>
+    <div id="labels"></div>
+    <div class="viewtag" id="viewtag">Component side</div>
+    <div class="toolbar">
+      <button id="bLabels" class="on">Labels</button>
+      <button id="bXray" class="on">X-ray</button>
+      <button id="bFlip">Solder side</button>
+      <button id="bSpin">Spin</button>
+      <button id="bReset">Reset view</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="help">drag = rotate · right-drag = pan · scroll = zoom · ← → = steps</div>
+    <div id="err"></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+window.addEventListener('error', e => { document.getElementById('err').textContent += (e.message || e) + '\n'; });
+const DATA = {"P": 2.54, "BX0": -55.18, "BZ0": -53.02, "COLS": 35, "ROWS": 27, "RN": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA"], "LX0": 6.03, "LZ0": -8.89, "LCOLS": 12, "LROWS": 8, "pins": {"K23": ["ESP32-S3", "J1-1 3V3"], "K22": ["ESP32-S3", "J1-2 3V3"], "K21": ["ESP32-S3", "J1-3 EN"], "K20": ["ESP32-S3", "J1-4 GPIO4"], "K19": ["ESP32-S3", "J1-5 GPIO5"], "K18": ["ESP32-S3", "J1-6 GPIO6"], "K17": ["ESP32-S3", "J1-7 GPIO7"], "K16": ["ESP32-S3", "J1-8 GPIO15"], "K15": ["ESP32-S3", "J1-9 GPIO16"], "K14": ["ESP32-S3", "J1-10 GPIO17"], "K13": ["ESP32-S3", "J1-11 GPIO18"], "K12": ["ESP32-S3", "J1-12 GPIO8"], "K11": ["ESP32-S3", "J1-13 GPIO3"], "K10": ["ESP32-S3", "J1-14 GPIO46"], "K9": ["ESP32-S3", "J1-15 GPIO9"], "K8": ["ESP32-S3", "J1-16 GPIO10"], "K7": ["ESP32-S3", "J1-17 GPIO11"], "K6": ["ESP32-S3", "J1-18 GPIO12"], "K5": ["ESP32-S3", "J1-19 GPIO13"], "K4": ["ESP32-S3", "J1-20 GPIO14"], "K3": ["ESP32-S3", "J1-21 5V"], "K2": ["ESP32-S3", "J1-22 GND"], "B23": ["ESP32-S3", "J3-1 GND"], "B22": ["ESP32-S3", "J3-2 TX"], "B21": ["ESP32-S3", "J3-3 RX"], "B20": ["ESP32-S3", "J3-4 GPIO1"], "B19": ["ESP32-S3", "J3-5 GPIO2"], "B18": ["ESP32-S3", "J3-6 GPIO42"], "B17": ["ESP32-S3", "J3-7 GPIO41"], "B16": ["ESP32-S3", "J3-8 GPIO40"], "B15": ["ESP32-S3", "J3-9 GPIO39"], "B14": ["ESP32-S3", "J3-10 GPIO38"], "B13": ["ESP32-S3", "J3-11 GPIO37"], "B12": ["ESP32-S3", "J3-12 GPIO36"], "B11": ["ESP32-S3", "J3-13 GPIO35"], "B10": ["ESP32-S3", "J3-14 GPIO0"], "B9": ["ESP32-S3", "J3-15 GPIO45"], "B8": ["ESP32-S3", "J3-16 GPIO48"], "B7": ["ESP32-S3", "J3-17 GPIO47"], "B6": ["ESP32-S3", "J3-18 GPIO21"], "B5": ["ESP32-S3", "J3-19 GPIO20"], "B4": ["ESP32-S3", "J3-20 GPIO19"], "B3": ["ESP32-S3", "J3-21 GND"], "B2": ["ESP32-S3", "J3-22 GND"], "N9": ["Click", "CS2"], "N8": ["Click", "INT (DRDY)"], "N7": ["Click", "NC"], "N6": ["Click", "NC"], "N5": ["Click", "NC"], "N4": ["Click", "NC"], "N3": ["Click", "NC"], "N2": ["Click", "GND"], "W9": ["Click", "NC"], "W8": ["Click", "RST"], "W7": ["Click", "CS1"], "W6": ["Click", "SCK"], "W5": ["Click", "SDO (MISO)"], "W4": ["Click", "SDI (MOSI)"], "W3": ["Click", "3V3"], "W2": ["Click", "GND"], "N20": ["PCM5102A", "VIN"], "N21": ["PCM5102A", "GND"], "N22": ["PCM5102A", "LCK"], "N23": ["PCM5102A", "DIN"], "N24": ["PCM5102A", "BCK"], "N25": ["PCM5102A", "SCK"], "J29": ["H2", "3V3 → SIM868 pin 36"], "J30": ["H2", "PWRKEY → SIM868 pin 19"], "J31": ["H2", "SIM RXD → SIM868 pin 1"], "J32": ["H2", "SIM TXD → SIM868 pin 2"], "J33": ["H2", "GND → SIM868 pin 3"], "Q28": ["PAM8403", "L in"], "Q29": ["PAM8403", "⏚ in"], "Q30": ["PAM8403", "R in"], "Q31": ["PAM8403", "+5V"], "Q32": ["PAM8403", "GND"], "Y28": ["PAM8403", "L+ out"], "Y29": ["PAM8403", "L− out"], "Y31": ["PAM8403", "R− out"], "Y32": ["PAM8403", "R+ out"], "Z19": ["H1", "5V"], "Z20": ["H1", "GND"], "Z21": ["H1", "LED"], "Z22": ["H1", "BTN"], "Z23": ["H1", "SPK+"], "Z24": ["H1", "SPK−"]}, "lidpins": {"C1": ["Lid header", "5V"], "D1": ["Lid header", "GND"], "E1": ["Lid header", "DIN"], "F1": ["Lid header", "BTN"], "C3": ["Button", "leg 1"], "C6": ["Button", "leg 2 (same side)"], "E3": ["Button", "leg 3"], "E6": ["Button", "leg 4"], "A5": ["1N4001", "anode"], "A9": ["1N4001", "cathode (stripe)"], "C10": ["WS2812B", "+5V stub"], "E10": ["WS2812B", "DIN stub"], "G10": ["WS2812B", "GND stub"]}, "comps": {"C3": {"val": "470 µF", "legs": {"Y15": "+", "AA15": "−"}, "note": "electrolytic, stripe = −", "step": 3}, "C1": {"val": "1000 µF", "legs": {"M35": "+", "M33": "−"}, "note": "electrolytic, stripe = −, burst reserve at the SIM868 power take-off", "step": 7}, "R1": {"val": "10 kΩ", "legs": {"J17": "a", "J22": "b"}, "note": "button pull-up", "step": 8}, "R4": {"val": "100 kΩ", "legs": {"D34": "a", "D29": "b"}, "note": "battery divider, top", "step": 8}, "R5": {"val": "100 kΩ", "legs": {"F29": "a", "F34": "b"}, "note": "battery divider, bottom", "step": 8}}, "wires": [{"step": 3, "kind": "bus", "net": "gnd", "a": "AA1", "b": "AA35", "route": ["AA1", "AA35"], "name": "GND rail", "note": "GND rail (bare wire along row AA)", "len": 86.4, "cut": "bare 20 AWG · cut 100 mm", "taps": ["AA15"], "side": "under", "id": 0}, {"step": 3, "kind": "bus", "net": "v5", "a": "Y1", "b": "Y20", "route": ["Y1", "Y20"], "name": "5V rail", "note": "5 V rail (bare wire along row Y)", "len": 48.3, "cut": "bare 20 AWG · cut 60 mm", "taps": ["Y15"], "side": "under", "id": 1}, {"step": 3, "kind": "bus", "net": "gnd", "a": "B2", "b": "W2", "route": ["B2", "W2"], "name": "GND bus col 2", "note": "GND bus col 2: ESP32 GND ↔ Click GND (bare)", "len": 53.3, "cut": "bare 20 AWG · cut 65 mm", "taps": ["B2", "K2", "N2", "W2"], "side": "under", "id": 2}, {"step": 3, "kind": "bus", "net": "gnd", "a": "F33", "b": "AA33", "route": ["F33", "AA33"], "name": "GND bus col 33", "note": "GND bus col 33: H2 GND, C1−, SIM868 GND lead, PAM GND → rail (bare)", "len": 53.3, "cut": "bare 20 AWG · cut 65 mm", "taps": ["J33", "M33"], "side": "under", "id": 3}, {"step": 3, "kind": "bus", "net": "vbat", "a": "D35", "b": "X35", "route": ["D35", "X35"], "name": "VBAT rail", "note": "VBAT rail (bare wire along col 35)", "len": 50.8, "cut": "bare 20 AWG · cut 65 mm", "taps": ["M35"], "side": "under", "id": 4}, {"step": 3, "kind": "bridge", "net": "gnd", "a": "Z19", "b": "Y19", "route": ["Z19", "Y19"], "note": "H1 5V → 5 V rail", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 5}, {"step": 3, "kind": "bridge", "net": "gnd", "a": "Z20", "b": "AA20", "route": ["Z20", "AA20"], "note": "H1 GND → GND rail", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 6}, {"step": 3, "kind": "bridge", "net": "gnd", "a": "Q32", "b": "Q33", "route": ["Q32", "Q33"], "note": "PAM8403 GND → GND bus", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 7}, {"step": 8, "kind": "bridge", "net": "gnd", "a": "J17", "b": "K17", "route": ["J17", "K17"], "note": "R1 leg → GPIO7", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 8}, {"step": 8, "kind": "bridge", "net": "gnd", "a": "J22", "b": "K22", "route": ["J22", "K22"], "note": "R1 leg → 3V3 (J1-2)", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 9}, {"step": 8, "kind": "bridge", "net": "gnd", "a": "D34", "b": "D35", "route": ["D34", "D35"], "note": "R4 leg → VBAT rail", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 10}, {"step": 8, "kind": "bridge", "net": "gnd", "a": "F34", "b": "F33", "route": ["F34", "F33"], "note": "R5 leg → GND bus col 33", "len": 2.5, "cut": "solder bridge / bent leg", "side": "under", "id": 11}, {"step": 4, "kind": "link", "net": "spi", "a": "K6", "b": "W6", "route": ["K6", "W6"], "full": ["K6", "L6", "M6", "N6", "O6", "P6", "Q6", "R6", "S6", "T6", "U6", "V6", "W6"], "note": "SCK", "len": 30.5, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 12}, {"step": 4, "kind": "link", "net": "spi", "a": "K5", "b": "W5", "route": ["K5", "W5"], "full": ["K5", "L5", "M5", "N5", "O5", "P5", "Q5", "R5", "S5", "T5", "U5", "V5", "W5"], "note": "MISO", "len": 30.5, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 13}, {"step": 4, "kind": "link", "net": "spi", "a": "K4", "b": "W4", "route": ["K4", "W4"], "full": ["K4", "L4", "M4", "N4", "O4", "P4", "Q4", "R4", "S4", "T4", "U4", "V4", "W4"], "note": "MOSI", "len": 30.5, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 14}, {"step": 4, "kind": "link", "net": "spi", "a": "K7", "b": "W7", "route": ["K7", "W7"], "full": ["K7", "L7", "M7", "N7", "O7", "P7", "Q7", "R7", "S7", "T7", "U7", "V7", "W7"], "note": "ADC chip-select", "len": 30.5, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 15}, {"step": 4, "kind": "link", "net": "spi", "a": "K9", "b": "N9", "route": ["K9", "N9"], "full": ["K9", "L9", "M9", "N9"], "note": "clock-chip select", "len": 7.6, "cut": "insulated core · cut 20 mm, strip 3 mm both ends", "side": "under", "id": 16}, {"step": 4, "kind": "link", "net": "spi", "a": "K8", "b": "N8", "route": ["K8", "N8"], "full": ["K8", "L8", "M8", "N8"], "note": "DRDY, active low", "len": 7.6, "cut": "insulated core · cut 20 mm, strip 3 mm both ends", "side": "under", "id": 17}, {"step": 4, "kind": "link", "net": "spi", "a": "K12", "b": "W8", "route": ["K12", "W12", "W8"], "full": ["K12", "L12", "M12", "N12", "O12", "P12", "Q12", "R12", "S12", "T12", "U12", "V12", "W12", "W11", "W10", "W9", "W8"], "note": "ADC reset", "len": 40.6, "cut": "insulated core · cut 50 mm, strip 3 mm both ends", "side": "under", "id": 18}, {"step": 8, "kind": "link", "net": "io", "a": "K17", "b": "Z22", "route": ["K17", "X17", "X22", "Z22"], "full": ["K17", "L17", "M17", "N17", "O17", "P17", "Q17", "R17", "S17", "T17", "U17", "V17", "W17", "X17", "X18", "X19", "X20", "X21", "X22", "Y22", "Z22"], "note": "button line", "len": 50.8, "cut": "insulated core · cut 60 mm, strip 3 mm both ends", "side": "under", "id": 19}, {"step": 8, "kind": "link", "net": "io", "a": "K16", "b": "Z21", "route": ["K16", "V16", "V21", "Z21"], "full": ["K16", "L16", "M16", "N16", "O16", "P16", "Q16", "R16", "S16", "T16", "U16", "V16", "V17", "V18", "V19", "V20", "V21", "W21", "X21", "Y21", "Z21"], "note": "LED data", "len": 50.8, "cut": "insulated core · cut 60 mm, strip 3 mm both ends", "side": "under", "id": 20}, {"step": 6, "kind": "link", "net": "audio", "a": "Y28", "b": "Z23", "route": ["Y28", "Y23", "Z23"], "full": ["Y28", "Y27", "Y26", "Y25", "Y24", "Y23", "Z23"], "note": "speaker +", "len": 15.2, "cut": "insulated core · cut 25 mm, strip 3 mm both ends", "side": "under", "id": 21}, {"step": 6, "kind": "link", "net": "audio", "a": "Y29", "b": "Z24", "route": ["Y29", "Z29", "Z24"], "full": ["Y29", "Z29", "Z28", "Z27", "Z26", "Z25", "Z24"], "note": "speaker −, NOT ground", "len": 15.2, "cut": "insulated core · cut 25 mm, strip 3 mm both ends", "side": "under", "id": 22}, {"step": 3, "kind": "link", "net": "gnd", "a": "W2", "b": "AA2", "route": ["W2", "AA2"], "full": ["W2", "X2", "Y2", "Z2", "AA2"], "note": "GND bus col 2 → GND rail", "len": 10.2, "cut": "insulated core · cut 20 mm, strip 3 mm both ends", "side": "under", "id": 23}, {"step": 3, "kind": "link", "net": "v5", "a": "Y3", "b": "K3", "route": ["Y3", "X3", "X1", "L1", "L3", "K3"], "full": ["Y3", "X3", "X2", "X1", "W1", "V1", "U1", "T1", "S1", "R1", "Q1", "P1", "O1", "N1", "M1", "L1", "L2", "L3", "K3"], "note": "5 V rail → ESP32 5V", "len": 45.7, "cut": "insulated core · cut 55 mm, strip 3 mm both ends", "side": "under", "id": 24}, {"step": 3, "kind": "link", "net": "v5", "a": "Y20", "b": "N20", "route": ["Y20", "N20"], "full": ["Y20", "X20", "W20", "V20", "U20", "T20", "S20", "R20", "Q20", "P20", "O20", "N20"], "note": "5 V rail → PCM VIN", "len": 27.9, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 25}, {"step": 3, "kind": "link", "net": "v5", "a": "N20", "b": "Q31", "route": ["N20", "M20", "M31", "Q31"], "full": ["N20", "M20", "M21", "M22", "M23", "M24", "M25", "M26", "M27", "M28", "M29", "M30", "M31", "N31", "O31", "P31", "Q31"], "note": "PCM VIN → PAM8403 +5V", "len": 40.6, "cut": "insulated core · cut 50 mm, strip 3 mm both ends", "side": "under", "id": 26}, {"step": 3, "kind": "link", "net": "gnd", "a": "N21", "b": "AA26", "route": ["N21", "U21", "U26", "AA26"], "full": ["N21", "O21", "P21", "Q21", "R21", "S21", "T21", "U21", "U22", "U23", "U24", "U25", "U26", "V26", "W26", "X26", "Y26", "Z26", "AA26"], "note": "PCM GND → GND rail", "len": 45.7, "cut": "insulated core · cut 55 mm, strip 3 mm both ends", "side": "under", "id": 27}, {"step": 3, "kind": "link", "net": "v33", "a": "K23", "b": "W3", "route": ["K23", "L23", "L10", "V10", "V3", "W3"], "full": ["K23", "L23", "L22", "L21", "L20", "L19", "L18", "L17", "L16", "L15", "L14", "L13", "L12", "L11", "L10", "M10", "N10", "O10", "P10", "Q10", "R10", "S10", "T10", "U10", "V10", "V9", "V8", "V7", "V6", "V5", "V4", "V3", "W3"], "note": "ESP32 3V3 → Click 3V3", "len": 81.3, "cut": "insulated core · cut 90 mm, strip 3 mm both ends", "side": "under", "id": 28}, {"step": 6, "kind": "link", "net": "i2s", "a": "K20", "b": "N24", "route": ["K20", "I20", "I24", "N24"], "full": ["K20", "J20", "I20", "I21", "I22", "I23", "I24", "J24", "K24", "L24", "M24", "N24"], "note": "bit clock", "len": 27.9, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 29}, {"step": 6, "kind": "link", "net": "i2s", "a": "K19", "b": "N22", "route": ["K19", "O19", "O22", "N22"], "full": ["K19", "L19", "M19", "N19", "O19", "O20", "O21", "O22", "N22"], "note": "word clock", "len": 20.3, "cut": "insulated core · cut 30 mm, strip 3 mm both ends", "side": "under", "id": 30}, {"step": 6, "kind": "link", "net": "i2s", "a": "K18", "b": "N23", "route": ["K18", "P18", "P23", "N23"], "full": ["K18", "L18", "M18", "N18", "O18", "P18", "P19", "P20", "P21", "P22", "P23", "O23", "N23"], "note": "data", "len": 30.5, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "under", "id": 31}, {"step": 6, "kind": "link", "net": "gnd", "a": "N25", "b": "AA25", "route": ["N25", "AA25"], "full": ["N25", "O25", "P25", "Q25", "R25", "S25", "T25", "U25", "V25", "W25", "X25", "Y25", "Z25", "AA25"], "note": "SCK → GND rail (SCK must be grounded)", "len": 33.0, "cut": "insulated core · cut 45 mm, strip 3 mm both ends", "side": "under", "id": 32}, {"step": 7, "kind": "link", "net": "v33", "a": "K23", "b": "J29", "route": ["K23", "J23", "J29"], "full": ["K23", "J23", "J24", "J25", "J26", "J27", "J28", "J29"], "note": "ESP32 3V3 (J1-1) → H2 3V3 (feeds the SIM868 level shifter)", "len": 17.8, "cut": "insulated core · cut 30 mm, strip 3 mm both ends", "side": "under", "id": 33}, {"step": 7, "kind": "link", "net": "uart", "a": "K15", "b": "J30", "route": ["K15", "H15", "H30", "J30"], "full": ["K15", "J15", "I15", "H15", "H16", "H17", "H18", "H19", "H20", "H21", "H22", "H23", "H24", "H25", "H26", "H27", "H28", "H29", "H30", "I30", "J30"], "note": "GPIO16 → H2 PWRKEY (HIGH 1.5 s = power on/off)", "len": 50.8, "cut": "insulated core · cut 60 mm, strip 3 mm both ends", "side": "under", "id": 34}, {"step": 7, "kind": "link", "net": "uart", "a": "K14", "b": "J31", "route": ["K14", "G14", "G31", "J31"], "full": ["K14", "J14", "I14", "H14", "G14", "G15", "G16", "G17", "G18", "G19", "G20", "G21", "G22", "G23", "G24", "G25", "G26", "G27", "G28", "G29", "G30", "G31", "H31", "I31", "J31"], "note": "GPIO17 (ESP TX) → H2 SIM RXD", "len": 61.0, "cut": "insulated core · cut 70 mm, strip 3 mm both ends", "side": "under", "id": 35}, {"step": 7, "kind": "link", "net": "uart", "a": "J32", "b": "K13", "route": ["J32", "E32", "E13", "K13"], "full": ["J32", "I32", "H32", "G32", "F32", "E32", "E31", "E30", "E29", "E28", "E27", "E26", "E25", "E24", "E23", "E22", "E21", "E20", "E19", "E18", "E17", "E16", "E15", "E14", "E13", "F13", "G13", "H13", "I13", "J13", "K13"], "note": "H2 SIM TXD → GPIO18 (ESP RX)", "len": 76.2, "cut": "insulated core · cut 85 mm, strip 3 mm both ends", "side": "under", "id": 36}, {"step": 8, "kind": "link", "net": "sense", "a": "D29", "b": "F29", "route": ["D29", "F29"], "full": ["D29", "E29", "F29"], "note": "divider node R4–R5", "len": 5.1, "cut": "insulated core · cut 15 mm, strip 3 mm both ends", "side": "under", "id": 37}, {"step": 8, "kind": "link", "net": "sense", "a": "F29", "b": "B20", "route": ["F29", "F20", "B20"], "full": ["F29", "F28", "F27", "F26", "F25", "F24", "F23", "F22", "F21", "F20", "E20", "D20", "C20", "B20"], "note": "VBAT ÷ 2 → GPIO1", "len": 33.0, "cut": "insulated core · cut 45 mm, strip 3 mm both ends", "side": "under", "id": 38}, {"step": 11, "kind": "lid", "net": "v5", "a": "C1", "b": "A5", "route": ["C1", "A1", "A5"], "full": ["C1", "B1", "A1", "A2", "A3", "A4", "A5"], "note": "header 5V → diode anode", "len": 15.2, "cut": "insulated core · cut 25 mm, strip 3 mm both ends", "side": "lid", "id": 39}, {"step": 11, "kind": "lid", "net": "v5", "a": "A9", "b": "C10", "route": ["A9", "A10", "C10"], "full": ["A9", "A10", "B10", "C10"], "note": "diode cathode → pixel +5V", "len": 7.6, "cut": "insulated core · cut 20 mm, strip 3 mm both ends", "side": "lid", "id": 40}, {"step": 11, "kind": "lid", "net": "io", "a": "E1", "b": "E10", "route": ["E1", "E2", "F2", "F10", "E10"], "full": ["E1", "E2", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "E10"], "note": "header DIN → pixel DIN", "len": 27.9, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "lid", "id": 41}, {"step": 11, "kind": "lid", "net": "gnd", "a": "D1", "b": "C3", "route": ["D1", "D3", "C3"], "full": ["D1", "D2", "D3", "C3"], "note": "header GND → button leg 1", "len": 7.6, "cut": "insulated core · cut 20 mm, strip 3 mm both ends", "side": "lid", "id": 42}, {"step": 11, "kind": "lid", "net": "gnd", "a": "C3", "b": "G10", "route": ["C3", "C5", "G5", "G10"], "full": ["C3", "C4", "C5", "D5", "E5", "F5", "G5", "G6", "G7", "G8", "G9", "G10"], "note": "button leg 1 → pixel GND", "len": 27.9, "cut": "insulated core · cut 40 mm, strip 3 mm both ends", "side": "lid", "id": 43}, {"step": 11, "kind": "lid", "net": "io", "a": "F1", "b": "E6", "route": ["F1", "H1", "H6", "E6"], "full": ["F1", "G1", "H1", "H2", "H3", "H4", "H5", "H6", "G6", "F6", "E6"], "note": "header BTN → button leg 4 (diagonal)", "len": 25.4, "cut": "insulated core · cut 35 mm, strip 3 mm both ends", "side": "lid", "id": 44}, {"step": 5, "kind": "pair", "net": "geoP", "a": "SM-24 + tab", "b": "Click CH1+ screw terminal", "pts": [[59, 35.5, -30], [59, 34.2, -30], [45, 34.2, -14], [18, 26.5, -11.3], [-6, 26.5, -11.3], [-11, 21, -11.3], [-14.5, 21, -11.3]], "note": "", "len": 85.7, "twin": 0, "cut": "6×0.22 cable core · cut 115 mm, twist the two cores ~1 turn/cm", "L": 115, "side": "off", "id": 45}, {"step": 5, "kind": "pair", "net": "geoN", "a": "SM-24 − tab", "b": "Click CH1− screw terminal", "pts": [[51, 35.5, -30], [51, 34.2, -30], [43, 34.2, -17], [18, 25.5, -15.3], [-6, 25.5, -15.3], [-11, 21, -15.3], [-14.5, 21, -15.3]], "note": "", "len": 77.3, "twin": 1, "cut": "6×0.22 cable core · cut 105 mm, twist the two cores ~1 turn/cm", "L": 105, "side": "off", "id": 46}, {"step": 5, "kind": "top", "net": "gnd", "a": "AA18 (GND rail)", "b": "Click CH1− screw terminal", "pts": [[-12.0, 7.6, 13.02], [-12.0, 12, 13.02], [-12.0, 22, 6], [-11.5, 22, -15.3], [-14.5, 21, -15.3]], "note": "2nd wire in CH1−: ties it to ground", "len": 41.1, "cut": "insulated core · cut 55 mm, strip 5 mm (screw end) / 3 mm", "L": 55, "side": "off", "id": 47}, {"step": 5, "kind": "top", "net": "gnd", "a": "AA19 (GND rail)", "b": "Click CH2− screw terminal", "pts": [[-9.46, 7.6, 13.02], [-9.46, 12, 13.02], [-9.46, 23, 6], [-11.0, 23, -0.3], [-14.5, 21, -0.3]], "note": "grounds the unused channel", "len": 28.0, "cut": "insulated core · cut 40 mm, strip 5 mm (screw end) / 3 mm", "L": 40, "side": "off", "id": 48}, {"step": 5, "kind": "top", "net": "gnd", "a": "Click CH2+ screw terminal", "b": "Click CH2− screw terminal", "pts": [[-14.5, 21, -4.3], [-12, 21.6, -4.3], [-12, 21.6, -0.3], [-14.5, 21, -0.3]], "note": "short loop: CH2 shorted", "len": 9.1, "cut": "insulated core · cut 20 mm, strip 5 mm (screw end) / 3 mm", "L": 20, "side": "off", "id": 49}, {"step": 6, "kind": "top", "net": "audio", "a": "PCM5102A pad L (top)", "b": "PAM8403 pad L in (top, above Q28)", "pts": [[-2.5, 11.7, -3.5], [-2.5, 13.4, -3.5], [13.4, 13.4, -3.5], [13.4, 11.6, -12.38]], "note": "", "len": 26.7, "cut": "insulated core · cut 40 mm, strip 5 mm (screw end) / 3 mm", "L": 40, "side": "off", "id": 50}, {"step": 6, "kind": "top", "net": "gnd", "a": "PCM5102A pad AGND (top)", "b": "PAM8403 pad ⏚ in (top, above Q29)", "pts": [[0, 11.7, -3.5], [0, 12.6, -2.6], [15.94, 12.6, -2.6], [15.94, 11.6, -12.38]], "note": "", "len": 27.0, "cut": "insulated core · cut 40 mm, strip 5 mm (screw end) / 3 mm", "L": 40, "side": "off", "id": 51}, {"step": 7, "kind": "w05", "net": "vbat", "a": "L35 (VBAT rail, next to C1+)", "b": "SIM868 battery socket + (PH2.0 plug, red lead)", "pts": [[31.18, 7.6, -25.08], [31.18, 12.5, -25.08], [31.18, 12.5, -57.5], [17.0, 24.0, -57.5], [17.0, 24.0, -63.0]], "note": "SIM868 power: straight from the switched 18650, never 5 V", "len": 61.1, "cut": "0.5 mm² red · cut 80 mm, strip 4 mm, tin", "L": 80, "side": "off", "id": 52}, {"step": 7, "kind": "w05", "net": "gnd", "a": "L33 (GND bus col 33, next to C1−)", "b": "SIM868 battery socket − (PH2.0 plug, black lead)", "pts": [[26.1, 7.6, -25.08], [26.1, 11.5, -25.08], [26.1, 11.5, -56.5], [15.0, 23.5, -56.5], [15.0, 23.5, -63.0]], "note": "", "len": 58.2, "cut": "0.5 mm² black · cut 75 mm, strip 4 mm, tin", "L": 75, "side": "off", "id": 53}, {"step": 7, "kind": "mf", "net": "v33", "a": "J29 (H2 3V3)", "b": "SIM868 header pin 36 (3V3(OUT))", "pts": [[15.94, 30, -30.16], [15.94, 34.0, -30.16], [15.94, 34.0, -40], [24.24, 34.0, -40], [24.24, 12.1, -44], [24.24, 12.1, -45.5]], "note": "female end on H2, male end straight into the SIM868 socket (Pico removed)", "len": 45.9, "plug": "z", "cut": "M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket", "L": 70, "side": "off", "id": 54}, {"step": 7, "kind": "mf", "net": "uart", "a": "J30 (H2 PWRKEY)", "b": "SIM868 header pin 19 (GP14 / PWR_EN)", "pts": [[18.48, 30, -30.16], [18.48, 33.5, -30.16], [18.48, 33.5, -41], [-11.32, 33.5, -41], [-11.32, 29.9, -44], [-11.32, 29.9, -45.5]], "note": "female end on H2, male end straight into the SIM868 socket (Pico removed)", "len": 50.3, "plug": "z", "cut": "M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket", "L": 75, "side": "off", "id": 55}, {"step": 7, "kind": "mf", "net": "uart", "a": "J31 (H2 SIM RXD)", "b": "SIM868 header pin 1 (GP0 / RXD)", "pts": [[21.02, 30, -30.16], [21.02, 33.0, -30.16], [21.02, 33.0, -42], [34.4, 33.0, -42], [34.4, 29.9, -44], [34.4, 29.9, -45.5]], "note": "female end on H2, male end straight into the SIM868 socket (Pico removed)", "len": 33.4, "plug": "z", "cut": "M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket", "L": 55, "side": "off", "id": 56}, {"step": 7, "kind": "mf", "net": "uart", "a": "J32 (H2 SIM TXD)", "b": "SIM868 header pin 2 (GP1 / TXD)", "pts": [[23.56, 30, -30.16], [23.56, 32.5, -30.16], [23.56, 32.5, -43], [31.86, 32.5, -43], [31.86, 29.9, -44], [31.86, 29.9, -45.5]], "note": "female end on H2, male end straight into the SIM868 socket (Pico removed)", "len": 27.9, "plug": "z", "cut": "M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket", "L": 50, "side": "off", "id": 57}, {"step": 7, "kind": "mf", "net": "gnd", "a": "J33 (H2 GND)", "b": "SIM868 header pin 3 (GND)", "pts": [[26.1, 30, -30.16], [26.1, 32.0, -30.16], [26.1, 32.0, -44], [29.32, 32.0, -44], [29.32, 29.9, -44], [29.32, 29.9, -45.5]], "note": "female end on H2, male end straight into the SIM868 socket (Pico removed)", "len": 22.7, "plug": "z", "cut": "M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket", "L": 45, "side": "off", "id": 58}, {"step": 9, "kind": "usb", "net": "v5", "a": "USB cable red (from the power bank, through the grommet)", "b": "Rocker pin 1", "pts": [[-73.0, 6.5, 39.6], [-62, 5, 52], [-40, 8, 70], [30, 8, 70], [45, 8, 40], [45, 8, 20.5], [45, 11.7, 10], [58, 11.7, 4.5], [65, 11.7, 4.5]], "note": "power bank 5 V into the main switch", "len": 200.5, "cut": "USB-A cable, red core · 220 mm past the grommet, strip 4 mm, tin (white + green cut short, taped)", "L": 220, "side": "off", "id": 59}, {"step": 9, "kind": "w05", "net": "v5", "a": "Rocker pin 2", "b": "Y1 (5 V rail start)", "pts": [[65, 18.7, 8.5], [50, 18.7, 8.5], [47, 4, 20], [47, 2, 52], [-55.9, 2, 52], [-55.9, 2, 17], [-55.9, 9.4, 15.5], [-55.18, 9.4, 7.94], [-55.18, 7.6, 7.94]], "note": "switched 5 V → 5 V rail", "len": 220.8, "cut": "0.5 mm² red · cut 240 mm, strip 4 mm, tin", "L": 240, "side": "off", "id": 60}, {"step": 9, "kind": "usb", "net": "gnd", "a": "USB cable black (from the power bank, through the grommet)", "b": "AA1 (GND rail start)", "pts": [[-74.0, 5.5, 41.4], [-63.5, 5.5, 41.4], [-57.6, 5.5, 30], [-57.6, 5.5, 17], [-57.6, 9.8, 15.5], [-55.18, 9.8, 13.02], [-55.18, 7.6, 13.02]], "note": "power bank GND → GND rail", "len": 46.6, "cut": "USB-A cable, black core · 65 mm past the grommet, strip 4 mm, tin (white + green cut short, taped)", "L": 65, "side": "off", "id": 61}, {"step": 10, "kind": "w05", "net": "v5", "a": "Y13 (5 V rail)", "b": "Step-down IN+", "pts": [[-24.7, 7.6, 7.94], [-24.7, 11.5, 7.94], [-24.7, 11.5, 20], [-30, 10, 30], [-30, 4.6, 32]], "note": "5 V into the step-down", "len": 33.1, "cut": "0.5 mm² red · cut 50 mm, strip 4 mm, tin", "L": 50, "side": "off", "id": 62}, {"step": 10, "kind": "w05", "net": "gnd", "a": "AA14 (GND rail)", "b": "Step-down IN−", "pts": [[-22.16, 7.6, 13.02], [-22.16, 10.5, 13.02], [-22.16, 10.5, 22], [-33, 9, 39], [-30, 4.6, 39]], "note": "ground into the step-down", "len": 37.4, "cut": "0.5 mm² black · cut 55 mm, strip 4 mm, tin", "L": 55, "side": "off", "id": 63}, {"step": 10, "kind": "w05", "net": "vbat", "a": "Step-down OUT+ (4.0 V)", "b": "X35 (VBAT rail end)", "pts": [[17, 4.6, 32], [17, 11, 30], [33.5, 11, 16], [33.5, 11, 5.4], [31.18, 11, 5.4], [31.18, 7.6, 5.4]], "note": "4.0 V → VBAT rail → SIM868", "len": 44.7, "cut": "0.5 mm² red · cut 60 mm, strip 4 mm, tin", "L": 60, "side": "off", "id": 64}, {"step": 10, "kind": "w05", "net": "gnd", "a": "Step-down OUT−", "b": "AA35 (GND rail end)", "pts": [[17, 4.6, 39], [17, 10, 41], [31.18, 10, 22], [31.18, 10, 13.02], [31.18, 7.6, 13.02]], "note": "step-down output ground", "len": 40.8, "cut": "0.5 mm² black · cut 60 mm, strip 4 mm, tin", "L": 60, "side": "off", "id": 65}, {"step": 12, "kind": "ff", "net": "v5", "a": "H1 5V (Z19)", "b": "Lid header 5V", "pts": [[-9.46, 30, 10.48], [-9.46, 32.6, 10.48], [-9.46, 32.6, -3.81], [-19, 32.6, -3.81], [-15, 27.3, -3.81]], "note": "", "len": 33.1, "harness": true, "cut": "F-F jumper → 60 mm: cut 40 mm out of the middle, splice + heat-shrink", "L": 60, "side": "off", "id": 66}, {"step": 12, "kind": "ff", "net": "gnd", "a": "H1 GND (Z20)", "b": "Lid header GND", "pts": [[-6.92, 30, 10.48], [-6.92, 32.6, 10.48], [-6.92, 32.6, -1.27], [-19, 32.6, -1.27], [-15, 27.3, -1.27]], "note": "", "len": 33.1, "harness": true, "cut": "F-F jumper → 60 mm: cut 40 mm out of the middle, splice + heat-shrink", "L": 60, "side": "off", "id": 67}, {"step": 12, "kind": "ff", "net": "io", "a": "H1 LED (Z21)", "b": "Lid header DIN", "pts": [[-4.38, 30, 10.48], [-4.38, 32.6, 10.48], [-4.38, 32.6, 1.27], [-19, 32.6, 1.27], [-15, 27.3, 1.27]], "note": "", "len": 33.1, "harness": true, "cut": "F-F jumper → 60 mm: cut 40 mm out of the middle, splice + heat-shrink", "L": 60, "side": "off", "id": 68}, {"step": 12, "kind": "ff", "net": "io", "a": "H1 BTN (Z22)", "b": "Lid header BTN", "pts": [[-1.84, 30, 10.48], [-1.84, 32.6, 10.48], [-1.84, 32.6, 3.81], [-19, 32.6, 3.81], [-15, 27.3, 3.81]], "note": "", "len": 33.1, "harness": true, "cut": "F-F jumper → 60 mm: cut 40 mm out of the middle, splice + heat-shrink", "L": 60, "side": "off", "id": 69}, {"step": 12, "kind": "ffcut", "net": "audio", "a": "H1 SPK+ (Z23)", "b": "Speaker + tab", "pts": [[0.7, 30, 10.48], [0.7, 33.2, 10.48], [0.7, 33.2, 31], [-24.5, 32, 31]], "note": "", "len": 48.9, "harness": true, "cut": "F-F jumper → 75 mm: keep one female end, cut 25 mm off, solder to the speaker tab", "L": 75, "side": "off", "id": 70}, {"step": 12, "kind": "ffcut", "net": "audio", "a": "H1 SPK− (Z24)", "b": "Speaker − tab", "pts": [[3.24, 30, 10.48], [3.24, 33.8, 10.48], [3.24, 33.8, 39], [-24.5, 32, 39]], "note": "", "len": 60.1, "harness": true, "cut": "F-F jumper → 90 mm: keep one female end, cut 10 mm off, solder to the speaker tab", "L": 90, "side": "off", "id": 71}], "netcol": {"gnd": "#3d4044", "v5": "#c58c5c", "vbat": "#b3665b", "v33": "#c7ab5f", "spi": "#6c8dae", "i2s": "#8a7fae", "uart": "#5d9a8b", "audio": "#a6799a", "io": "#7c9a62", "sense": "#9b8e76", "geoP": "#b07a6a", "geoN": "#a7a49d"}};
+
+/* ======================= palette ======================= */
+const C = {
+  board: '#c8bd99', boardEdge: '#b3a882', socket: '#2f3133', pin: '#c9b37a',
+  esp: '#6f8299', espCan: '#b9bdc1', click: '#8ea38a', sim: '#ad8279', pcm: '#8e86a3', pam: '#9b9a72',
+  boost: '#73998f', holder: '#47494c', cell: '#c9b48f', geo: '#ad8a68', geoTop: '#7a6450',
+  spk: '#8b8884', spkCone: '#5d5b58', rocker: '#55585b', cap: '#5b6670', capTop: '#9aa3ab', res: '#d6c7a6',
+  term: '#6d8796', usb: '#9aa0a4', chip: '#3a3d40', bare: '#c3c7ca',
+  base: '#e8e3d9', lid: '#ddd6ca', band: '#6f9894', slot: '#8a857c', collar: '#86a39f'
+};
+const W = DATA.netcol;
+const LEGEND = [['GND', W.gnd], ['5 V', W.v5], ['VBAT (4.0 V, SIM868)', W.vbat], ['3V3', W.v33], ['SPI (ADC)', W.spi],
+  ['I²S (audio)', W.i2s], ['UART (SIM868)', W.uart], ['Speaker', W.audio], ['LED / button', W.io], ['VBAT sense', W.sense], ['Geophone', W.geoP], ['Bare rail / bus', C.bare]];
+
+/* ======================= three setup ======================= */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 1, 5000);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d2c6, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(-160, 320, 200); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -320, right: 320, top: 260, bottom: -260, near: 50, far: 900 });
+sun.shadow.bias = -0.0006; scene.add(sun);
+const under = new THREE.DirectionalLight(0xffffff, 0.35); under.position.set(60, -300, 80); scene.add(under);
+const FLOOR_Y = -4.4;
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.ShadowMaterial({ opacity: 0.10 }));
+ground.rotation.x = -Math.PI / 2; ground.position.y = FLOOR_Y; ground.receiveShadow = true; scene.add(ground);
+const grid = new THREE.GridHelper(1200, 120, 0xd6d0c5, 0xe2ddd4); grid.position.y = FLOOR_Y - 0.05;
+grid.material.transparent = true; grid.material.opacity = 0.55; scene.add(grid);
+
+const v = (x, y, z) => new THREE.Vector3(x, y, z);
+const toLin = hex => new THREE.Color(hex).convertSRGBToLinear();
+function mat(color, extra = {}) { return new THREE.MeshStandardMaterial(Object.assign({ color: toLin(color), roughness: 0.82, metalness: 0.02, transparent: true, opacity: 1 }, extra)); }
+function mesh(geo, color, extra) { const m = new THREE.Mesh(geo, mat(color, extra)); m.castShadow = true; m.receiveShadow = true; return m; }
+function box(w, h, d, color, x, y, z, extra) { const m = mesh(new THREE.BoxGeometry(w, h, d), color, extra); m.position.set(x, y, z); return m; }
+function boxB(w, h, d, color, x, yb, z, extra) { return box(w, h, d, color, x, yb + h / 2, z, extra); }
+function cyl(r, h, color, x, yb, z, seg = 28, extra) { const m = mesh(new THREE.CylinderGeometry(r, r, h, seg), color, extra); m.position.set(x, yb + h / 2, z); return m; }
+function cylX(r, x1, x2, color, y, z) { const m = mesh(new THREE.CylinderGeometry(r, r, Math.abs(x2 - x1), 16), color); m.rotation.z = Math.PI / 2; m.position.set((x1 + x2) / 2, y, z); return m; }
+
+/* ======================= holes ======================= */
+const P = DATA.P, YB = 7.6, YBOT = 6.0;
+function parse(h) { const m = /^([A-Z]+)(\d+)$/.exec(h); return [+m[2], DATA.RN.indexOf(m[1]) + 1]; }
+function hx(h) { const [c, r] = parse(h); return [DATA.BX0 + (c - 1) * P, DATA.BZ0 + (r - 1) * P]; }
+function lx(h) { const [c, r] = parse(h); return [DATA.LX0 + (c - 1) * P, DATA.LZ0 + (r - 1) * P]; }
+const PINS = DATA.pins, LPINS = DATA.lidpins;
+function what(h, lid) {
+  const p = (lid ? LPINS : PINS)[h]; if (p) return `<b>${p[0]}</b> ${p[1]}`;
+  for (const [id, c] of Object.entries(DATA.comps)) if (!lid && c.legs[h]) return `<b>${id}</b> ${c.val} leg`;
+  if (!lid) { const [c, r] = parse(h); const row = DATA.RN[r - 1];
+    if (row === 'AA') return '<b>GND rail</b>'; if (row === 'Y' && c <= 20) return '<b>5 V rail</b>'; if (c === 35 && r >= 4 && r <= 24) return '<b>VBAT rail</b>';
+    if (c === 2 && r >= 2 && r <= 23) return '<b>GND bus</b> col 2'; if (c === 33 && r >= 6) return '<b>GND bus</b> col 33'; }
+  return 'free hole';
+}
+
+/* ======================= parts registry ======================= */
+const parts = {};
+function part(id, appear, label, labelAt, parent) { const g = new THREE.Group(); g.name = id; (parent || scene).add(g); parts[id] = { id, group: g, appear, label, labelAt }; return g; }
+
+function perfTexture(wmm, dmm) {
+  const s = 8, cw = Math.round(wmm * s), ch = Math.round(dmm * s);
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch; const g = cv.getContext('2d');
+  g.fillStyle = C.board; g.fillRect(0, 0, cw, ch);
+  const p = 2.54 * s, off = ((wmm - (Math.floor(wmm / 2.54) - 1) * 2.54) / 2) * s, offz = ((dmm - (Math.floor(dmm / 2.54) - 1) * 2.54) / 2) * s;
+  for (let x = off; x < cw; x += p) for (let y = offz; y < ch; y += p) {
+    g.fillStyle = '#d8c48f'; g.beginPath(); g.arc(x, y, p * 0.33, 0, 7); g.fill();
+    g.fillStyle = '#8f8467'; g.beginPath(); g.arc(x, y, p * 0.14, 0, 7); g.fill();
+  }
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t;
+}
+function perfboard(w, d, x, yb, z, parent) {
+  const top = new THREE.MeshStandardMaterial({ map: perfTexture(w, d), roughness: 0.85, transparent: true });
+  const bot = new THREE.MeshStandardMaterial({ map: perfTexture(w, d), roughness: 0.85, transparent: true });
+  const side = mat(C.boardEdge);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1.6, d), [side, side, top, bot, side, side]);
+  m.position.set(x, yb + 0.8, z); m.castShadow = m.receiveShadow = true; m.userData.isBoard = true; parent.add(m); return m;
+}
+// text strip helper (row letters / column numbers around the board)
+function textPlane(text, wmm, hmm, size, color, bold) {
+  const s = 12, cv = document.createElement('canvas'); cv.width = Math.round(wmm * s); cv.height = Math.round(hmm * s);
+  const g = cv.getContext('2d'); g.fillStyle = color; g.font = `${bold ? 600 : 500} ${size * s}px "IBM Plex Mono", monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, cv.width / 2, cv.height / 2);
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+  return new THREE.Mesh(new THREE.PlaneGeometry(wmm, hmm), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+}
+const gridLabels = new THREE.Group(); scene.add(gridLabels);
+const gridSide = [new THREE.Group(), new THREE.Group()]; gridLabels.add(gridSide[0], gridSide[1]);
+function addGridLabels() {
+  for (let side = 0; side < 2; side++) {
+    const y = side ? YBOT - 0.05 : YB + 0.05;
+    const flip = side === 1, gl = gridSide[side];
+    for (let c = 1; c <= DATA.COLS; c++) {
+      const x = DATA.BX0 + (c - 1) * P;
+      [[-57.6], [17.6]].forEach(([z]) => { const t = textPlane(String(c), 3.2, 3.2, 1.55, '#55585b', c % 5 === 0); t.rotation.x = flip ? Math.PI / 2 : -Math.PI / 2; if (flip) t.rotation.z = Math.PI; t.position.set(x, y, z); gl.add(t); });
+    }
+    for (let r = 1; r <= DATA.ROWS; r++) {
+      const z = DATA.BZ0 + (r - 1) * P;
+      [[-59.6], [35.6]].forEach(([x]) => { const t = textPlane(DATA.RN[r - 1], 3.8, 3, 1.6, '#55585b', true); t.rotation.x = flip ? Math.PI / 2 : -Math.PI / 2; if (flip) t.rotation.z = Math.PI; t.position.set(x, y, z); gl.add(t); });
+    }
+  }
+}
+addGridLabels();
+
+/* ---- main board ---- */
+{ const g = part('board', 1, 'Main perfboard (35 × 27 holes)', v(-12, 9, 18)); perfboard(90, 70, -12, 6, -20, g); }
+/* ---- sockets ---- */
+{
+  const g = part('sockets', 2, null, null);
+  const row = (h1, h2, h = 8.5) => { const [x1, z1] = hx(h1), [x2, z2] = hx(h2); g.add(boxB(Math.abs(x2 - x1) + 2.54, h, Math.abs(z2 - z1) + 2.5, C.socket, (x1 + x2) / 2, YB, (z1 + z2) / 2)); };
+  row('B2', 'B23'); row('K2', 'K23'); row('N2', 'N9'); row('W2', 'W9'); row('N20', 'N25', 2.5);
+}
+/* ---- modules ---- */
+{ const g = part('esp', 2, 'ESP32-S3 (J3 row B · J1 row K)', v(-26, 24, -39)); const yb = 16.1;
+  g.add(boxB(63, 1.6, 26, C.esp, -25.97, yb, -39.05));
+  g.add(boxB(25.5, 3.2, 18, C.espCan, -7.2, yb + 1.6, -39.05, { metalness: 0.35, roughness: 0.45 }));
+  g.add(boxB(5, 0.8, 18, '#41566a', 2.6, yb + 4.8, -39.05));
+  g.add(boxB(7.5, 3.2, 9, C.usb, -54, yb + 1.6, -44, { metalness: 0.5, roughness: 0.4 })); g.add(boxB(7.5, 3.2, 9, C.usb, -54, yb + 1.6, -34, { metalness: 0.5, roughness: 0.4 }));
+  g.add(boxB(5, 1.5, 3.5, '#d8d6d0', -45, yb + 1.6, -49.5)); g.add(boxB(5, 1.5, 3.5, '#d8d6d0', -45, yb + 1.6, -28.6));
+  g.add(boxB(5, 1.2, 5, C.chip, -34, yb + 1.6, -39)); }
+{ const g = part('click', 2, 'ADC 15 Click (rows N + W)', v(-35, 31, -8.6)); const yb = 16.1;
+  g.add(boxB(42.9, 1.6, 25.4, C.click, -35.05, yb, -8.57));
+  g.add(boxB(6.5, 1.2, 4.5, C.chip, -30, yb + 1.6, -8.5)); g.add(boxB(3, 1.2, 3, C.chip, -24, yb + 1.6, -14));
+  g.add(boxB(7, 10, 9, C.term, -18, yb + 1.6, -13.3)); g.add(boxB(7, 10, 9, C.term, -18, yb + 1.6, -2.3));
+  [-15.3, -11.3, -4.3, -0.3].forEach(z => g.add(cyl(1.3, 0.6, '#c3c6c9', -18, yb + 11.6, z, 10))); }
+{ const g = part('pcm', 2, 'PCM5102A (header N20–N25)', v(-0.6, 23, -6.5)); const yb = 10.1;
+  g.add(boxB(20, 1.6, 30, C.pcm, -0.57, yb, -6.5)); g.add(boxB(6, 1.2, 5, C.chip, -0.5, yb + 1.6, -11));
+  g.add(boxB(7, 5.5, 10, '#2f3133', -0.5, yb + 1.6, 3.3));
+  [-2.5, 0, 2.5].forEach(x => g.add(cyl(0.7, 0.2, '#c9cdd0', x, yb + 1.6, -3.5, 10))); }
+{ const g = part('pam', 2, 'PAM8403 (pins Q28–Q32, Y28–Y32)', v(18.5, 19, -2.2)); const yb = 10;
+  g.add(boxB(18, 1.6, 22, C.pam, 18.48, yb, -2.22)); g.add(boxB(5, 1.2, 4, C.chip, 18.5, yb + 1.6, -2));
+  g.add(boxB(3, 2.5, 3, '#8a8f93', 13.5, yb + 1.6, -6)); }
+/* SIM868 (Waveshare Pico-SIM868, Pico removed): stands on its long edge in a cradle at the back wall,
+   component side toward the main board, antenna edge (header pins 1-20) up. PCB front face z = -68, y 9 … 33. */
+const SIMZ = -68, SIMY0 = 9, SIMY1 = 33, ROWT = 29.9, ROWB = 12.1;
+{ const g = part('sim', 7, 'SIM868 board (Waveshare, Pico removed) · back wall', v(-2, 44, -70)); const yc = (SIMY0 + SIMY1) / 2;
+  g.add(box(76.15, SIMY1 - SIMY0, 1.6, C.sim, -1.7, yc, SIMZ - 0.8));
+  [ROWT, ROWB].forEach(y => g.add(box(50.8, 2.5, 8.5, C.socket, 10.27, y, SIMZ + 4.25)));
+  g.add(box(15.8, 17.8, 2.4, '#e9e6df', -29.5, 22.5, SIMZ + 1.2, { metalness: 0.25, roughness: 0.5 }));
+  g.add(box(4.5, 14, 0.2, '#c0443b', -35.2, 22.5, SIMZ + 2.45));
+  [[-33.5, 30.6], [-27.5, 30.6], [-37.5, 11.4]].forEach(([x, y]) => { const u = mesh(new THREE.CylinderGeometry(1.25, 1.25, 1.2, 16), '#c9b37a', { metalness: 0.6, roughness: 0.35 }); u.rotation.x = Math.PI / 2; u.position.set(x, y, SIMZ + 0.6); g.add(u); });
+  g.add(box(6, 4.6, 6, '#ece8df', 16, 24, SIMZ + 3));
+  g.add(box(1.6, 1, 0.8, '#d9e6c9', -22.5, 32, SIMZ + 0.4)); g.add(box(1.6, 1, 0.8, '#f0d7a8', -18.5, 32, SIMZ + 0.4));
+  // GSM antenna (flexible, stuck to the inner wall at the back left) and its u.FL lead
+  const ant = box(40, 10, 0.5, '#3a3d40', -62, 22, -57.1); ant.rotation.y = 0.826; g.add(ant);
+  g.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([v(-33.5, 30.6, SIMZ + 1.2), v(-34, 34, -64), v(-44, 34, -67), v(-48.5, 27, -71.2)]), 40, 0.5, 6, false), '#2f3133'));
+  // printed cradle clips in the base
+  [-30, 26].forEach(x => { g.add(boxB(10, SIMY0, 7, '#d6d0c4', x, 0, SIMZ - 0.8));
+    g.add(boxB(10, 4, 1.4, '#c9c2b4', x, SIMY0, SIMZ + 0.7)); g.add(boxB(10, 4, 1.4, '#c9c2b4', x, SIMY0, SIMZ - 2.3)); }); }
+{ const g = part('h2', 2, 'H2 SIM868 header (J29–J33)', v(21, 21, -26)); const [x0] = hx('J29'), [x1] = hx('J33'), [, z] = hx('J29');
+  g.add(boxB(x1 - x0 + 2.54, 2.5, 2.5, C.socket, (x0 + x1) / 2, YB, z));
+  for (let c = 29; c <= 33; c++) g.add(boxB(0.64, 6, 0.64, C.pin, hx('J' + c)[0], YB + 2.5, z, { metalness: 0.6, roughness: 0.35 })); }
+{ const g = part('h1', 2, 'H1 lid header (Z19–Z24)', v(-3.1, 21, 12)); const [x0] = hx('Z19'), [x1] = hx('Z24'), [, z] = hx('Z19');
+  g.add(boxB(x1 - x0 + 2.54, 2.5, 2.5, C.socket, (x0 + x1) / 2, YB, z));
+  for (let c = 19; c <= 24; c++) g.add(boxB(0.64, 6, 0.64, C.pin, hx('Z' + c)[0], YB + 2.5, z, { metalness: 0.6, roughness: 0.35 })); }
+{ const g = part('pamhdr', 2, null, null);
+  ['Q28', 'Q29', 'Q30', 'Q31', 'Q32', 'Y28', 'Y29', 'Y31', 'Y32'].forEach(h => { const [x, z] = hx(h); g.add(boxB(0.64, 2.4, 0.64, C.pin, x, YB, z, { metalness: 0.6, roughness: 0.35 })); }); }
+
+/* ---- components from DATA.comps ---- */
+function legsXZ(c) { return Object.keys(c.legs).map(h => hx(h)); }
+for (const [id, c] of Object.entries(DATA.comps)) {
+  const [[x1, z1], [x2, z2]] = legsXZ(c);
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const g = part(id, c.step, `${id} ${c.val}`, v(cx, id === 'C1' ? 31 : id === 'C3' ? 23 : 12, cz));
+  if (id === 'C1' || id === 'C3') {
+    const r = id === 'C1' ? 5 : 4, h = id === 'C1' ? 20 : 12;
+    g.add(cyl(r, h, C.cap, cx, YB, cz)); g.add(cyl(r + 0.02, 0.3, C.capTop, cx, YB + h, cz));
+    // stripe on the − side
+    const neg = Object.entries(c.legs).find(([, l]) => l === '−')[0]; const [nx, nz] = hx(neg);
+    const dx = nx - cx, dz = nz - cz, dl = Math.hypot(dx, dz) || 1;
+    g.add(boxB(1.4, h - 1, 0.6, '#d5d9dc', cx + dx / dl * r, YB + 0.5, cz + dz / dl * r));
+  } else if (id === 'C2') {
+    g.add(boxB(4.5, 3.5, 2.2, '#c99f58', cx, YB, cz));
+  } else {
+    const dx = x2 - x1, dz = z2 - z1, len = Math.hypot(dx, dz);
+    const body = mesh(new THREE.CylinderGeometry(1.1, 1.1, 6.3, 14), C.res);
+    body.position.set(cx, YB + 1.4, cz); body.rotation.z = Math.PI / 2; body.rotation.y = -Math.atan2(dz, dx); g.add(body);
+    const leg = mesh(new THREE.CylinderGeometry(0.25, 0.25, len, 6), '#b9bec2'); leg.position.set(cx, YB + 1.4, cz); leg.rotation.copy(body.rotation); g.add(leg);
+  }
+  // legs down into the holes
+  [[x1, z1], [x2, z2]].forEach(([x, z]) => g.add(boxB(0.5, 1.6, 0.5, '#b9bec2', x, YB - 0.2, z)));
+}
+
+/* ---- geophone ---- */
+{ const g = part('geo', 5, 'SM-24 geophone', v(55, 42, -30));
+  g.add(cyl(12.7, 30, C.geo, 55, 0, -30, 40, { metalness: 0.35, roughness: 0.45 })); g.add(cyl(12.9, 3, C.geoTop, 55, 30, -30, 40));
+  g.add(cyl(13.2, 1.4, '#e7e2d6', 55, 0, -30, 40));
+  g.add(boxB(1.6, 2.5, 3, '#c9cdd0', 51, 33, -30)); g.add(boxB(1.6, 2.5, 3, '#c9cdd0', 59, 33, -30));
+  const r = mesh(new THREE.CylinderGeometry(0.9, 0.9, 4.5, 12), C.res); r.rotation.z = Math.PI / 2; r.position.set(55, 35.6, -27.5); g.add(r); }
+/* ---- battery, rocker, boost ---- */
+/* ---- STP28UD-3A step-down (5 V → 4.0 V for the SIM868), where the 18650 holder used to be ---- */
+{ const g = part('buck', 10, 'Step-down STP28UD-3A → 4.0 V (SIM868)', v(-6, 22, 36));
+  g.add(boxB(50, 1.6, 24, C.boost, -6.5, 3, 35.5));
+  g.add(boxB(11, 6, 11, '#3c3f42', -17, 4.6, 35.5)); g.add(boxB(11, 6, 11, '#3c3f42', 2, 4.6, 35.5));
+  g.add(cyl(3.2, 8, C.cap, -26, 4.6, 26)); g.add(cyl(3.2, 8, C.cap, 13, 4.6, 26)); g.add(boxB(4.5, 1.6, 9.5, '#5f7f9e', -7.5, 4.6, 44));
+  g.add(boxB(5, 1.2, 4, C.chip, -7.5, 4.6, 27)); g.add(boxB(5, 1.2, 4, C.chip, 10, 4.6, 44));
+  [[-30, 32], [-30, 39], [17, 32], [17, 39]].forEach(([x, z]) => g.add(cyl(1, 0.2, '#c9cdd0', x, 4.6, z, 10))); }
+{ const g = part('rocker', 9, 'Power rocker', v(76, 30, 7));
+  g.add(boxB(20, 17, 12, C.rocker, 76, 6, 6.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 10.5, 4.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 17.5, 8.5));
+  g.add(boxB(2.4, 21, 15, C.rocker, 89.2, 4, 6.5)); const pad = box(2.2, 16, 11, '#6a8f8b', 90.8, 14.5, 6.5); pad.rotation.z = 0.12; g.add(pad); }
+/* ---- power bank OUTSIDE the case (size unknown: generic box), its USB-A cable through a grommet in the left wall ---- */
+{ const g = part('pbank', 9, 'Power bank (outside the case) · USB OUT → 5 V', v(-150, 30, 58));
+  g.add(boxB(62, 22, 92, C.boost, -150, -4.4, 58)); g.add(boxB(1, 6, 13, '#2f3133', -118.6, 4, 58));
+  g.add(cyl(1.6, 0.6, '#9fd1c9', -135, 17.6, 20, 12)); g.add(cyl(1.6, 0.6, '#9fd1c9', -140, 17.6, 20, 12));
+  const plug = boxB(14, 4.6, 12, '#d8d6d0', -111.5, 4.7, 58); g.add(plug);
+  const cab = new THREE.CatmullRomCurve3([v(-104.5, 7, 58), v(-95, 6.5, 52), v(-84, 6, 45)]);
+  g.add(mesh(new THREE.TubeGeometry(cab, 30, 1.6, 10, false), '#2f3133'));
+  const gr = mesh(new THREE.TorusGeometry(2.4, 0.9, 8, 20), '#3a3c3e'); gr.position.set(-75.9, 6, 42.0); gr.rotation.y = Math.atan2(-0.875, 0.484); g.add(gr);
+  g.add(mesh(new THREE.TubeGeometry(new THREE.LineCurve3(v(-84, 6, 45), v(-73.5, 6, 40.6)), 4, 1.6, 10, false), '#2f3133')); }
+
+/* ======================= case ======================= */
+const caseMeshes = [], lidMeshes = [];
+function regCase(m, list) { m.userData.caseBase = true; list.push(m); return m; }
+const baseG = new THREE.Group(); scene.add(baseG);
+{
+  const prof = [[0, -2.4], [85.5, -2.4], [88, 0.2], [88, 34], [85.5, 34], [85.5, 0], [0, 0]].map(p => new THREE.Vector2(p[0], p[1]));
+  baseG.add(regCase(mesh(new THREE.LatheGeometry(prof, 128), C.base, { side: THREE.DoubleSide }), caseMeshes));
+  [90, 210, 330].forEach(a => { const r = a * Math.PI / 180; baseG.add(regCase(cyl(7, 2, '#cfc8bb', 62 * Math.cos(r), -4.4, 62 * Math.sin(r)), caseMeshes)); });
+  [60, 180, 300].forEach(a0 => {
+    const t0 = a0 * Math.PI / 180;
+    const vert = mesh(new THREE.CylinderGeometry(88.08, 88.08, 6, 8, 1, true, t0, 7 / 88), C.slot, { side: THREE.DoubleSide }); vert.position.y = 31; baseG.add(regCase(vert, caseMeshes));
+    const run = mesh(new THREE.CylinderGeometry(88.08, 88.08, 3.4, 24, 1, true, t0 - 25 * Math.PI / 180, 25 * Math.PI / 180 + 7 / 88), C.slot, { side: THREE.DoubleSide }); run.position.y = 29.5; baseG.add(regCase(run, caseMeshes));
+    const tb = t0 - 25 * Math.PI / 180 + 0.8 / 88; const bump = mesh(new THREE.SphereGeometry(0.9, 10, 8), '#6e6a63'); bump.position.set(88.3 * Math.sin(tb), 29.5, 88.3 * Math.cos(tb)); baseG.add(regCase(bump, caseMeshes));
+  });
+  baseG.add(regCase(box(1.2, 4, 4, C.band, 0, 30, 88.3), caseMeshes));
+  [[-53, -51], [29, -51], [-53, 11], [29, 11]].forEach(([x, z]) => baseG.add(regCase(cyl(3, 6, '#d6d0c4', x, 0, z), caseMeshes)));
+  const hook = (x, z, nx, nz) => { const along = nx !== 0;
+    baseG.add(regCase(boxB(along ? 1.6 : 8, 11, along ? 8 : 1.6, '#d6d0c4', x, 0, z), caseMeshes));
+    baseG.add(regCase(boxB(along ? 2.6 : 8, 1.4, along ? 8 : 2.6, '#c9c2b4', x + nx * 1.1, 7.8, z + nz * 1.1), caseMeshes)); };
+  hook(-58.6, -20, 1, 0); hook(34.6, -6, -1, 0); hook(-12, -56.6, 0, 1); hook(-30, 16.6, 0, -1);
+  // step-down pocket (replaces the 18650 holder tabs): low walls around a 50 × 24 mm module
+  baseG.add(regCase(boxB(53.2, 4, 1.6, '#d6d0c4', -6.5, 0, 22.7), caseMeshes)); baseG.add(regCase(boxB(53.2, 4, 1.6, '#d6d0c4', -6.5, 0, 48.3), caseMeshes));
+  baseG.add(regCase(boxB(1.6, 4, 24, '#d6d0c4', -32.8, 0, 35.5), caseMeshes)); baseG.add(regCase(boxB(1.6, 4, 24, '#d6d0c4', 19.8, 0, 35.5), caseMeshes));
+  const cup = mesh(new THREE.LatheGeometry([[15.6, 0], [19, 0], [19, 9], [15.6, 9]].map(p => new THREE.Vector2(p[0], p[1])), 64), '#d6d0c4', { side: THREE.DoubleSide });
+  cup.position.set(55, 0, -30); baseG.add(regCase(cup, caseMeshes));
+  [0, 120, 240].forEach(a => { const t = a * Math.PI / 180; const s = mesh(new THREE.CylinderGeometry(19.05, 19.05, 2.2, 12, 1, true, t, 0.55), C.slot, { side: THREE.DoubleSide }); s.position.set(55, 6.5, -30); baseG.add(regCase(s, caseMeshes)); });
+}
+{ const g = parts.geo.group;
+  const col = mesh(new THREE.LatheGeometry([[12.8, 0], [15.2, 0], [15.2, 10], [12.8, 10]].map(p => new THREE.Vector2(p[0], p[1])), 48), C.collar, { side: THREE.DoubleSide }); col.position.set(55, 0, -30); g.add(col);
+  [30, 150, 270].forEach(a => { const t = a * Math.PI / 180; g.add(boxB(3, 2, 3, C.collar, 55 + 16 * Math.sin(t), 5.5, -30 + 16 * Math.cos(t))); }); }
+const lidG = new THREE.Group(); scene.add(lidG);
+const LED_X = 31, LED_Z = 1.27, BTN_X = 14.92, BTN_Z = -1.27;
+{
+  const prof = [[0, 38.4], [88.6, 38.4], [90.8, 36.4], [90.8, 26], [88.4, 26], [88.4, 36], [0, 36]].map(p => new THREE.Vector2(p[0], p[1]));
+  lidG.add(regCase(mesh(new THREE.LatheGeometry(prof, 128), C.lid, { side: THREE.DoubleSide }), lidMeshes));
+  const band = mesh(new THREE.CylinderGeometry(90.86, 90.86, 5, 128, 1, true), C.band, { side: THREE.DoubleSide }); band.position.y = 30.5; lidG.add(regCase(band, lidMeshes));
+  [60, 180, 300].forEach(a0 => { const t = (a0 - 25) * Math.PI / 180 + 3.5 / 88; const lug = box(2.2, 2.4, 6, '#c9c1b2', 87.4 * Math.sin(t), 29.5, 87.4 * Math.cos(t)); lug.rotation.y = t; lidG.add(regCase(lug, lidMeshes)); });
+  { const ta = -25 * Math.PI / 180; const ar = box(5, 1.2, 1.4, '#3e5a57', 90.95 * Math.sin(ta), 34, 90.95 * Math.cos(ta)); ar.rotation.y = ta; lidG.add(regCase(ar, lidMeshes)); }
+  for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) { const x = -5 + i * 4 + (j % 2 ? 2 : 0), z = 35 + j * 3.5; if (Math.hypot(x + 5, z - 35) < 16.5) lidG.add(regCase(cyl(1.15, 0.25, '#7d776d', x, 38.4, z, 10), lidMeshes)); }
+  lidG.add(regCase(cyl(3.2, 0.3, '#cfe0c8', LED_X, 38.4, LED_Z, 24, { emissive: toLin('#8fbf86'), emissiveIntensity: 0.35 }), lidMeshes));
+  lidG.add(regCase(cyl(6.5, 0.6, '#d3ccbe', BTN_X, 38.4, BTN_Z, 32), lidMeshes));
+  const gro = mesh(new THREE.TorusGeometry(8.2, 0.45, 6, 40, Math.PI * 1.7), '#8e877b'); gro.rotation.x = Math.PI / 2; gro.rotation.z = Math.PI * 1.15; gro.position.set(BTN_X, 38.55, BTN_Z); lidG.add(regCase(gro, lidMeshes));
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const x2 = cv.getContext('2d');
+  x2.font = '700 92px "IBM Plex Sans", Arial'; x2.textAlign = 'center'; x2.textBaseline = 'middle'; x2.fillStyle = '#9d9587'; x2.fillText('R E Z O N', 256, 68);
+  const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding;
+  const word = new THREE.Mesh(new THREE.PlaneGeometry(64, 16), new THREE.MeshStandardMaterial({ map: tx, transparent: true, roughness: 0.9, depthWrite: false }));
+  word.rotation.x = -Math.PI / 2; word.position.set(-14, 38.47, -40); lidG.add(word); word.userData.caseBase = 'word'; lidMeshes.push(word);
+  [90, 210, 330].forEach(a => { const t = a * Math.PI / 180; lidG.add(regCase(boxB(4, 7, 4, '#d0c8b9', -5 + 21.6 * Math.sin(t), 29, 35 + 21.6 * Math.cos(t)), lidMeshes)); });
+  [[3.6, 0], [36.4, 0]].forEach(([x, z]) => lidG.add(regCase(boxB(1.6, 11, 8, '#d0c8b9', x, 25, z), lidMeshes)));
+}
+{ const g = part('lidpcb', 1, 'Lid board (12 × 8 holes)', v(20, 34, -8), lidG); perfboard(30, 20, 20, 26.5, 0, g); }
+{ const g = part('lidparts', 11, 'Button · LED · diode', v(22, 36, 8), lidG);
+  g.add(boxB(6, 3.5, 6, '#3a3c3e', BTN_X, 28.1, BTN_Z)); g.add(cyl(1.8, 1.6, '#55585b', BTN_X, 31.6, BTN_Z, 16));
+  g.add(boxB(8, 0.3, 10, '#ece8df', LED_X, 28.1, LED_Z)); g.add(boxB(5, 1.6, 5, '#f4f2ec', LED_X, 28.4, LED_Z));
+  const [dax, daz] = lx('A5'), [dcx] = lx('A9');
+  g.add(cylX(1.3, (dax + dcx) / 2 - 2.6, (dax + dcx) / 2 + 2.6, '#2f3133', 29.4, daz)); g.add(cylX(1.32, (dax + dcx) / 2 + 1.6, (dax + dcx) / 2 + 2.4, '#d8d6d0', 29.4, daz));
+  g.add(boxB(2.5, 2.5, 10.2, C.socket, 4.5, 26.05, -1.27));
+  ['C1', 'D1', 'E1', 'F1'].forEach(h => { const [, z] = lx(h); g.add(box(6, 0.64, 0.64, C.pin, 3, 27.3, z, { metalness: 0.6, roughness: 0.35 })); }); }
+{ const g = part('spk', 12, 'Speaker 1 W 8 Ω', v(-5, 44, 35), lidG);
+  const fr = mesh(new THREE.CylinderGeometry(20, 20, 5, 48, 1, true), C.spk, { side: THREE.DoubleSide }); fr.position.set(-5, 33.5, 35); g.add(fr);
+  g.add(cyl(19.5, 0.6, C.spkCone, -5, 35.3, 35, 48)); g.add(cyl(11, 10, '#77746f', -5, 21, 35, 32)); g.add(cyl(8, 2, '#5f5d59', -5, 31, 35, 32));
+  g.add(boxB(2, 1, 3, '#c9cdd0', -24.5, 31.5, 31)); g.add(boxB(2, 1, 3, '#c9cdd0', -24.5, 31.5, 39)); }
+
+/* ======================= wires ======================= */
+function clean(pts) { const o = [pts[0]]; for (let i = 1; i < pts.length; i++) if (pts[i].distanceTo(o[o.length - 1]) > 0.05) o.push(pts[i]); return o; }
+function polyCurve(pts, rad) {
+  pts = clean(pts); const path = new THREE.CurvePath(); let prev = pts[0].clone();
+  for (let i = 1; i < pts.length; i++) { const p = pts[i];
+    if (i < pts.length - 1) { const n = pts[i + 1];
+      const d1 = p.clone().sub(prev), l1 = d1.length(), d2 = n.clone().sub(p), l2 = d2.length(); const r = Math.min(rad, l1 / 2, l2 / 2);
+      if (r < 0.05) { if (l1 > 1e-6) path.add(new THREE.LineCurve3(prev.clone(), p.clone())); prev = p.clone(); continue; }
+      const a = p.clone().sub(d1.normalize().multiplyScalar(r)), b = p.clone().add(d2.normalize().multiplyScalar(r));
+      if (prev.distanceTo(a) > 1e-6) path.add(new THREE.LineCurve3(prev.clone(), a)); path.add(new THREE.QuadraticBezierCurve3(a, p.clone(), b)); prev = b;
+    } else if (prev.distanceTo(p) > 1e-6) path.add(new THREE.LineCurve3(prev.clone(), p.clone())); }
+  return path;
+}
+const wireRoot = new THREE.Group(); scene.add(wireRoot);
+const lidWireRoot = new THREE.Group(); lidG.add(lidWireRoot);
+const markRoot = new THREE.Group(); scene.add(markRoot);
+const RAD = { bus: 0.42, bridge: 0.5, link: 0.36, lid: 0.34, top: 0.42, w05: 0.85, usb: 0.75, lead: 0.6, pair: 0.38, ff: 0.62, ffcut: 0.62, mf: 0.62 };
+const wires = DATA.wires;
+wires.forEach((w, i) => {
+  const g = new THREE.Group(); let pts, color = w.kind === 'bus' || w.kind === 'bridge' ? C.bare : W[w.net];
+  const k = w.kind;
+  if (w.side === 'under') {
+    const yl = YBOT - 0.55 - (i % 3) * 0.4;
+    const hs = w.full || w.route;
+    if (k === 'bus' || k === 'bridge') { pts = hs.map(h => { const [x, z] = hx(h); return v(x, YBOT - 0.45, z); }); }
+    else { pts = []; const [ax, az] = hx(hs[0]); pts.push(v(ax, YBOT - 0.1, az));
+      w.route.forEach(h => { const [x, z] = hx(h); pts.push(v(x, yl, z)); });
+      const [bx, bz] = hx(hs[hs.length - 1]); pts.push(v(bx, YBOT - 0.1, bz)); }
+  } else if (w.side === 'lid') {
+    const yl = 26.5 - 0.6 - (i % 2) * 0.35; pts = []; const [ax, az] = lx(w.route[0]); pts.push(v(ax, 26.4, az));
+    w.route.forEach(h => { const [x, z] = lx(h); pts.push(v(x, yl, z)); }); const [bx, bz] = lx(w.route[w.route.length - 1]); pts.push(v(bx, 26.4, bz));
+  } else pts = w.pts.map(p => v(p[0], p[1], p[2]));
+  const curve = polyCurve(pts, k === 'link' || k === 'lid' ? 0.9 : (k === 'bus' || k === 'bridge' ? 0.2 : 3.5));
+  let geo;
+  if (k === 'pair') {
+    const N = Math.max(40, Math.round(w.len * 2)); const fr = curve.computeFrenetFrames(N, false); const q = [];
+    for (let j = 0; j <= N; j++) { const t = j / N, p = curve.getPointAt(t), ph = (t * w.len) / 9 * Math.PI * 2 + (w.twin ? Math.PI : 0), amp = (j < 3 || j > N - 3) ? 0 : 0.55;
+      p.add(fr.normals[j].clone().multiplyScalar(Math.cos(ph) * amp)).add(fr.binormals[j].clone().multiplyScalar(Math.sin(ph) * amp)); q.push(p); }
+    geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(q), N * 2, RAD[k], 6, false);
+  } else geo = new THREE.TubeGeometry(curve, Math.max(8, Math.round(curve.getLength() / 1)), RAD[k], 7, false);
+  const m = new THREE.Mesh(geo, mat(color, { roughness: k === 'bus' || k === 'bridge' ? 0.35 : 0.55, metalness: k === 'bus' || k === 'bridge' ? 0.6 : 0.02 }));
+  m.castShadow = true; g.add(m);
+  // solder joints
+  const joint = p => { const s = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.7, RAD[k] * 1.4), 12, 8), mat('#b9bec2', { metalness: 0.55, roughness: 0.3 })); s.position.copy(p); s.scale.y = 0.55; g.add(s); };
+  if (w.side === 'under') { const hs = w.full || w.route; (k === 'bus' ? (w.taps.concat([w.a, w.b])) : [hs[0], hs[hs.length - 1]]).forEach(h => { const [x, z] = hx(h); joint(v(x, YBOT - 0.25, z)); }); }
+  else if (w.side === 'lid') { [w.route[0], w.route[w.route.length - 1]].forEach(h => { const [x, z] = lx(h); joint(v(x, 26.3, z)); }); }
+  else { joint(pts[0]); joint(pts[pts.length - 1]); }
+  if (k === 'mf') { const a = pts[0], b = pts[pts.length - 1]; g.add(box(2.5, 14, 2.5, '#2b2d2f', a.x, a.y - 7, a.z)); g.add(box(2.5, 2.5, 14, '#2b2d2f', b.x, b.y, b.z - 7)); }
+  if (k === 'ff' || k === 'ffcut') { const a = pts[0]; g.add(box(2.5, 14, 2.5, '#2b2d2f', a.x, a.y - 7, a.z));
+    const b = pts[pts.length - 1]; if (k === 'ff') g.add(box(14, 2.5, 2.5, '#2b2d2f', b.x + 7, b.y, b.z)); else g.add(cyl(1.4, 3, '#e3dfd6', b.x, b.y - 1.5, b.z, 10)); }
+  (w.side === 'lid' ? lidWireRoot : wireRoot).add(g);
+  w.group = g; w.color = color;
+  w.ends = w.side === 'under' ? [w.a, w.b].map(h => { const [x, z] = hx(h); return { h, top: v(x, YB + 0.4, z), bot: v(x, YBOT - 0.6, z), lid: false }; })
+    : w.side === 'lid' ? [w.a, w.b].map(h => { const [x, z] = lx(h); return { h, top: v(x, 28.4, z), bot: v(x, 25.6, z), lid: true }; })
+    : [{ h: null, top: pts[0], bot: pts[0] }, { h: null, top: pts[pts.length - 1], bot: pts[pts.length - 1] }];
+});
+// hole markers (rings) for the current step's ends
+const ringGeo = new THREE.RingGeometry(0.9, 1.35, 20);
+function holeRing(x, y, z, color, parent, down) { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: toLin(color), side: THREE.DoubleSide, transparent: true, depthWrite: false }));
+  m.rotation.x = down ? Math.PI / 2 : -Math.PI / 2; m.position.set(x, y, z); parent.add(m); return m; }
+
+/* ======================= steps ======================= */
+const I = {
+  solder: '<svg viewBox="0 0 24 24"><path d="M14 4l6 6-8.5 8.5-6-6z"/><path d="M5.5 12.5L3 21l8.5-2.5"/><path d="M17 7l3-3"/></svg>',
+  cut: '<svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M8.6 7.6L20 18M8.6 16.4L20 6"/></svg>',
+  screw: '<svg viewBox="0 0 24 24"><path d="M14 10l7-7"/><path d="M10.5 9.5l4 4-6.5 6.5-4-4z"/><path d="M4 20l1.5-1.5"/></svg>',
+  meter: '<svg viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><rect x="8" y="5.5" width="8" height="5" rx="1"/><circle cx="12" cy="15.5" r="2.5"/></svg>',
+  hands: '<svg viewBox="0 0 24 24"><path d="M7 11V6a1.5 1.5 0 013 0v4M10 10V4.5a1.5 1.5 0 013 0V10M13 10V5.5a1.5 1.5 0 013 0V12M16 12V8.5a1.5 1.5 0 013 0V14a7 7 0 01-7 7h-1a6 6 0 01-5-2.7L3.5 14a1.6 1.6 0 012.6-1.8L7 13.5"/></svg>',
+  laptop: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="10" rx="1.5"/><path d="M2 19h20"/></svg>'
+};
+const ST = { solder: ['solder', 'Soldering station'], cut: ['cut', 'Cutting bench'], screw: ['screw', 'Small flat screwdriver'], meter: ['meter', 'Multimeter'], hands: ['hands', 'Hands only'], laptop: ['laptop', 'Laptop + USB-C'] };
+const VIEW = {
+  overview: { t: [0, 8, 0], r: 360, th: 28, ph: 52 }, cut: { t: [-12, 8, -18], r: 210, th: 0, ph: 30 },
+  sockets: { t: [-12, 10, -20], r: 200, th: 12, ph: 38 }, board: { t: [-12, 6, -20], r: 175, th: 0, ph: 12 },
+  geo: { t: [18, 18, -18], r: 185, th: 32, ph: 48 }, power: { t: [-30, 8, 30], r: 380, th: 8, ph: 50 },
+  boost: { t: [-4, 6, 22], r: 190, th: 12, ph: 48 }, lidboard: { t: [214, 6, 0], r: 120, th: 0, ph: 20 },
+  harness: { t: [-8, 22, 10], r: 150, th: -38, ph: 58 }, sim: { t: [-4, 14, -44], r: 250, th: 18, ph: 42 }, check: { t: [0, 10, -5], r: 330, th: 20, ph: 46 },
+  base: { t: [0, 10, 0], r: 340, th: 18, ph: 44 }, lid: { t: [0, 22, 0], r: 360, th: 22, ph: 55 },
+  layflat: { t: [98, 0, 0], r: 480, th: 0, ph: 38 }, closed: { t: [0, 16, 0], r: 330, th: 30, ph: 60 }
+};
+const steps = [
+  { phase: 'Start', title: 'What we are building', view: 'overview', st: [], all: true, caseMode: 'ghost', lid: 'ghost',
+    lead: 'The finished fall detector inside its printed case (ghost). Each step adds one group of connections. Every connection names the <b>exact hole</b> on the perfboard and the <b>exact pin</b> it lands on.',
+    notes: ['<b>Hole names:</b> rows <b>A–AA</b> from the back edge to the front edge, columns <b>1–35</b> from left to right, seen from the component side with H1 and the rails at the front. Example: <span class="mono">K6</span> = row K, column 6.',
+      '<b>All board links are on the solder side</b>, soldered straight onto the pin legs. Use <b>Solder side</b> (top right) to see the board flipped: column 1 is then on the right.',
+      '<b>Bare rails</b> (silver): GND along row AA, 5 V along row Y (cols 1–20), VBAT (4.0 V from the step-down, SIM868 only) along column 35, two GND buses (cols 2 and 33).',
+      '<b>X-ray</b> makes boards and modules see-through so the solder-side wires show from the top.'],
+    tip: 'Hover any connection in the list to isolate it in 3D with its hole and pin names.' },
+  { phase: 'Prep', title: 'Cut the perfboard', view: 'cut', st: ['cut'], focus: ['board', 'lidpcb'], caseMode: 'ghost', lid: 'ghost',
+    lead: 'Cut the 9 × 15 cm perfboard (stock row 101) into a main board and a lid board.',
+    notes: ['<b>Main board:</b> 35 columns × 27 rows of holes (≈ 90 × 70 mm). Mark row A (back) and column 1 (left) with a pen on both sides.', '<b>Lid board:</b> 12 × 8 holes (≈ 30 × 20 mm) from the offcut. Rows A–H, columns 1–12.',
+      'Score both sides along a hole row, snap over a table edge, sand flat, knock 1 mm off each corner so it clears the case wall.'] },
+  { phase: 'Prep', title: 'Sockets, headers & module pins', view: 'sockets', st: ['solder', 'cut'], focus: ['sockets', 'esp', 'click', 'h2', 'pcm', 'pam', 'h1', 'pamhdr'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'Solder every socket and header first, while the board is empty. Plug each module in while soldering so the rows stay parallel.',
+    holes: [['B2–B23', 'ESP32-S3 J3 socket (22). B23 = J3-1 (GND), B2 = J3-22 (GND)'], ['K2–K23', 'ESP32-S3 J1 socket (22). K23 = J1-1 (3V3), K2 = J1-22 (GND)'],
+      ['N2–N9', 'Click back header socket (8). N9 = CS2, N8 = INT, N2 = GND'], ['W2–W9', 'Click front header socket (8). W8 = RST … W2 = GND'],
+      ['J29–J33', 'H2 male header (5 pins up): 3V3 · PWRKEY · SIM RXD · SIM TXD · GND (jumpers to the SIM868 board)'],
+      ['N20–N25', 'PCM5102A own header, soldered direct: VIN GND LCK DIN BCK SCK'], ['Q28–Q32', 'PAM8403 pins: L in, ⏚ in, R in, +5V, GND'],
+      ['Y28 Y29 Y31 Y32', 'PAM8403 pins: L+ out, L− out, R− out, R+ out'], ['Z19–Z24', 'H1 male header: 5V GND LED BTN SPK+ SPK−']],
+    notes: ['<b>Socket strip A (40):</b> 22 + 8 + 8. <b>Strip B (40):</b> 22. Each cut sacrifices one contact: pull that pin out first.', '<b>ESP32-S3:</b> USB-C end to the LEFT (column 2 side), antenna to the right.',
+      '<b>Click:</b> screw terminals to the RIGHT. <b>H2:</b> 5 pins cut from the male header strip, J29 (3V3) … J33 (GND).', '<b>The SIM868 board is not on the perfboard</b>: it stands at the back wall and gets its jumpers in step 8.'],
+    warn: '<b>Check your module first.</b> If your ESP32-S3 rows are not 9 holes apart (B→K), shift the second row and every hole that refers to it.' },
+  { phase: 'Wiring', title: 'Rails, buses & power distribution', view: 'board', st: ['solder', 'cut'], caseMode: 'ghost', lid: 'hidden', flip: true,
+    lead: 'Board turned over (solder side). First the bare rails, then the short power and ground links. Each link: cut, strip 3 mm both ends, solder each end onto the named pin leg.',
+    notes: ['Bare 20 AWG for rails/buses: lay it across the hole pads and solder at <b>every</b> hole it passes that has a pin or leg, plus every 4th hole.', 'Insulated links: one core from the 6×0.22 cable.'] },
+  { phase: 'Wiring', title: 'ADC 15 Click ↔ ESP32-S3 (SPI)', view: 'board', st: ['solder'], focus: ['click', 'esp'], caseMode: 'ghost', lid: 'hidden', flip: true,
+    lead: 'Seven signal links. Six of them are straight drops in the same column; they pass the Click’s unused NC pins without touching them.',
+    notes: ['Pin map: SCK = GPIO12, MISO = GPIO13, MOSI = GPIO14, ADC CS = GPIO11, clock-chip CS = GPIO9, DRDY = GPIO10, RST = GPIO8. <b>Update the firmware pin map to match.</b>'],
+    tip: 'Keep each straight link flat over the NC pin joints (N3–N7, W9) with the insulation intact.' },
+  { phase: 'Wiring', title: 'Geophone → Click CH1', view: 'geo', st: ['solder', 'screw'], focus: ['geo', 'click'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'Solder the 1 kΩ across the SM-24 tabs, run the twisted pair to CH1, and ground CH1− and the unused CH2 with wires from the GND rail.',
+    notes: ['Each screw terminal takes at most two conductors: CH1− = geophone − + GND wire; CH2− = GND wire + loop; CH2+ = loop.', 'Gain 32 in firmware (±37.5 mV).'] },
+  { phase: 'Wiring', title: 'Audio: I²S, DAC → amp → H1', view: 'board', st: ['solder'], focus: ['pcm', 'pam', 'esp', 'h1'], caseMode: 'ghost', lid: 'hidden', flip: true,
+    lead: 'Three I²S links, SCK to ground, the DAC line-out to the amp input (top side, pad to pad), and the amp’s left output to H1.',
+    notes: ['PCM5102A back jumpers: <b>1 FLT = L, 2 DEMP = L, 3 XSMT = H, 4 FMT = L</b>.', 'Only the left channel is used. Start with low volume in firmware.'],
+    warn: 'The PAM8403 outputs are bridged: <b>L− (Y29) is not ground.</b>' },
+  { phase: 'Wiring', title: 'SIM868: power leads, UART, jumpers', view: 'sim', st: ['solder', 'cut'], focus: ['sim', 'h2', 'C1', 'esp'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The Waveshare SIM868 board is used as a modem only: <b>pull the Pico H off it</b>. C1 goes in, four links run on the solder side to H2, two 0.5 mm² leads take VBAT to the board’s battery socket, and five M-F jumpers go from H2 into the board’s Pico sockets.',
+    holes: [['pin 1', 'GP0 → SIM868 RXD (through the board’s 3.3 V level shifter) ← H2 J31 ← GPIO17'], ['pin 2', 'GP1 ← SIM868 TXD → H2 J32 → GPIO18'], ['pin 3', 'GND ← H2 J33'],
+      ['pin 19', 'GP14 / PWR_EN: HIGH 1.5 s switches the SIM868 on or off ← H2 J30 ← GPIO16'], ['pin 36', '3V3(OUT): powers the board’s level shifter and mic ← H2 J29 ← ESP32 3V3'],
+      ['BAT', 'PH2.0 2-pin battery socket ← 4.0 V VBAT (L35) and GND (L33)'], ['GSM', 'u.FL socket: GSM antenna, always connected before power-on']],
+    notes: ['Pin numbers are the Pico pin numbers (pin 1 = GP0, at the end where the Pico’s USB sat). Pins 1–20 run along the antenna edge (GSM, BT): keep that edge <b>up</b>.',
+      '<b>Battery lead:</b> splice the 0.5 mm² wires to a PH2.0 plug pigtail. Check polarity against the plug of the Li-po that came in the box (red = +) before plugging in.',
+      '<b>Power switch on the SIM868 board:</b> slide it to the <b>battery</b> side (the other side takes power from the Pico’s USB, which is gone).',
+      'Nano SIM (PIN off) into the board’s slot before it goes into the cradle. GNSS and BT antennas are not needed.',
+      'Firmware: UART1 TX 17 / RX 18 at 115200; at boot drive GPIO16 HIGH for 1.5 s, then LOW, then wait for <span class="mono">RDY</span> / send <span class="mono">AT</span>.'],
+    warn: '<b>SIM868 power is VBAT only</b> (4.0 V from the step-down, allowed 3.4–4.4 V). Never 5 V, and nothing on header pin 39 (VSYS) or 40 (VBUS). Never let it transmit without the GSM antenna.' },
+  { phase: 'Wiring', title: 'VBAT sense, button & LED lines', view: 'board', st: ['solder'], focus: ['R1', 'R4', 'R5', 'esp', 'h1'], caseMode: 'ghost', lid: 'hidden', flip: true,
+    lead: 'R4/R5 halve VBAT (the 4.0 V SIM868 supply) for GPIO1; R1 pulls GPIO7 up to 3V3; two links carry LED data and the button line to H1.',
+    notes: ['R4 and R5 lie in the free area at the back right (rows D and F); R1 lies under the ESP32-S3 (sockets give 8 mm of clearance).'] },
+  { phase: 'Power', title: 'Power bank → rocker → 5 V rail', view: 'power', st: ['cut', 'solder', 'meter'], focus: ['pbank', 'rocker'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The power bank is the <b>only</b> power source. It sits <b>outside</b> the case; a cut USB-A cable comes in through the grommet in the left wall. Red core → rocker pin 1, rocker pin 2 → 5 V rail at Y1, black core → GND rail at AA1.',
+    notes: ['Strip about 60 mm of the cable jacket inside the case. Red = 5 V, black = GND. Cut the white and green data cores short and tape them. Check with the meter first: power bank on, red to black ≈ 5.0 V.',
+      'Push the rocker into the base cutout from outside first, then solder its pins. The lamp pin stays empty. The rocker is the main switch for everything.',
+      'Rail-end holes (Y1, AA1): push the tinned wire through from the top and solder it to the rail underneath. Cable tie on the jacket just inside the grommet as strain relief.',
+      '<b>Auto-off test first:</b> many power banks switch off below ~50–100 mA. Run the ESP32 alone from it for 2–3 minutes; if it turns off, look for an always-on / low-current mode (often a double press of its button).'],
+    warn: 'A 5 W power bank gives about <b>1 A in total</b>. The SIM868 pulls 2 A bursts while it transmits: C1 and C3 cover them, and the firmware must not play the voice line while the call is connecting.' },
+  { phase: 'Power', title: 'Step-down 4.0 V for the SIM868', view: 'boost', st: ['meter', 'solder'], focus: ['buck'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The SIM868 must not see 5 V. The STP28UD-3A (stock row 291) turns the 5 V rail into <b>4.0 V</b> on the VBAT rail, which feeds C1 and the SIM868’s PH2.0 lead as before. IN from Y13 / AA14, OUT to X35 / AA35.',
+    notes: ['<b>Set it first:</b> 5 V on IN only, nothing on OUT, turn the trimmer until OUT reads <b>4.00 V</b> (±0.05 V). Then wire the output.',
+      'It lies flat in the pocket where the 18650 holder was. Pad names as printed on the module (IN+ IN− OUT+ OUT−); swap the drawing if your module is laid out differently.',
+      'R4/R5 on GPIO1 now read the fixed 4.0 V, not a battery. The power bank’s charge level cannot be measured: watch its own LEDs.'],
+    warn: 'Measure before the output touches the board: these trimmers can start near the maximum, and anything above 4.4 V damages the SIM868.' },
+  { phase: 'Lid', title: 'Lid board: button, LED, diode', view: 'lidboard', st: ['solder', 'cut'], focus: ['lidpcb', 'lidparts'], caseMode: 'ghost', lid: 'ghost', lidPose: 'flat', lidflat: true,
+    lead: 'Shown flipped next to the base: you are looking at the link side. Holes are named rows A–H, columns 1–12 seen from the component side (parts up).',
+    holes: [['C1–F1', '4-pin header (5V, GND, DIN, BTN), pins bent 90° outward over the edge'], ['C3 C6 E3 E6', 'tact switch (C3 + C6 are one side, E3 + E6 the other)'],
+      ['A5 → A9', '1N4001: anode A5, cathode (stripe) A9'], ['C10 E10 G10', 'WS2812B pixel: +5V, DIN, GND (short leg offcuts as stubs to the strip pads)']],
+    notes: ['Cut one pixel from the strip at the copper pads; DIN arrow pointing away from the header.'] },
+  { phase: 'Lid', title: 'Lid harness & speaker leads', view: 'harness', st: ['cut', 'solder'], focus: ['h1', 'lidpcb', 'spk'], caseMode: 'ghost', lid: 'ghost',
+    lead: 'Four shortened F-F jumpers from H1 to the lid header, two cut jumpers to the speaker. Lengths include 25 mm slack for lifting and twisting the lid.',
+    notes: ['Shorten a jumper: cut the stated length out of the middle, strip 4 mm, twist, solder, heat-shrink.', 'Bundle the six wires with one cable tie at H1.'] },
+  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'pbank', 'buck', 'sim', 'h2'], caseMode: 'ghost', lid: 'ghost',
+    lead: 'Test on the bench before anything goes into the case.',
+    notes: ['<b>Power bank unplugged, modules unplugged:</b> beep AA1–Y1 (GND–5V), AA1–X35 (GND–VBAT), Y1–X35 (5V–VBAT), K23–AA1 (3V3–GND): none may beep.', '<b>Beep each link</b> end to end with the list in hand.',
+      '<b>Modules in, power bank on, rocker on:</b> 5.0 V at Z19, 3.3 V at W3 and at J29 (H2), 4.0 V between L35 and L33 (SIM868 battery lead).', '<b>Flash:</b> rocker off, then USB-C into the ESP32-S3.', 'Then: LED colours, button, voice line, PWRKEY pulse → SIM868 <b>NET</b> LED blinks fast, then slowly (about every 3 s = registered) → <span class="mono">AT</span> → <span class="mono">AT+CPIN?</span> → <span class="mono">AT+CREG?</span> (0,1) → call.'] },
+  { phase: 'Case', title: 'Everything clicks into the base', view: 'base', st: ['hands'], all: true, focus: [], caseMode: 'solid', lid: 'hidden', calls: 'base',
+    lead: 'No screws anywhere. Each part has a snap or twist feature printed into the base.',
+    notes: ['<b>Geophone:</b> into its collar, into the floor cup, turn 30° clockwise until it clicks.', '<b>Step-down:</b> lies flat in its pocket (where the 18650 holder was).', '<b>Power bank cable:</b> through the grommet in the left wall; the power bank stays outside.', '<b>SIM868 board:</b> antenna edge up, slide it down into the two cradle clips at the back wall; antenna flat against the wall at the back left.', '<b>Main board:</b> push down onto the 4 posts until all 4 hooks click.'] },
+  { phase: 'Case', title: 'Close the lid (twist-lock)', view: 'lid', st: ['hands'], all: true, focus: ['h1', 'spk', 'lidpcb', 'lidparts'], caseMode: 'solid', lid: 'glass', calls: 'lid',
+    lead: 'Plug the harness onto H1, line up the marks, push down, twist.',
+    notes: ['Harness: 5V plug on Z19 (left end of H1), then GND, LED, BTN; speaker plugs on Z23 (+) and Z24 (−).', 'Line up the teal marks, press down, turn 25° clockwise until the detent clicks. Open: turn back and lift.'] },
+  { phase: 'Finish', title: 'Lay-flat view', view: 'layflat', st: [], all: true, focus: [], caseMode: 'solid', lid: 'solid', lidPose: 'flat', cutlist: true,
+    lead: 'Base and lid side by side. Below: every wire you cut to length.' },
+  { phase: 'Finish', title: 'Casing mockup', view: 'closed', st: [], all: true, focus: [], caseMode: 'solid', lid: 'solid', calls: 'closed', spin: true,
+    lead: 'Ø 176 × 43 mm puck, two printed parts, zero screws.',
+    notes: ['<b>Lid ↔ base:</b> 3-lug bayonet, 25° turn, detent bump; 0.4 mm clearance.', '<b>Button:</b> printed flexure tab presses the tact switch.', '<b>LED:</b> 0.6 mm skin over the pixel glows through.', '<b>Print:</b> PETG, 0.2 mm layers, 2.5 mm walls, flat side down, no supports.'] }
+];
+const CALLS = {
+  base: [['Board snap hooks ×4', v(-58.6, 14, -20)], ['Geophone twist-lock cup', v(55, 40, -48)], ['Step-down pocket', v(19.8, 10, 23)], ['USB cable grommet', v(-76, 12, 42)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)]],
+  lid: [['Lugs ride in L-slots', v(44, 34, 76)], ['Turn 25° → click', v(-76, 34, 44)]],
+  closed: [['Twist-lock lid (25°)', v(76, 33, 44)], ['LED window', v(LED_X, 40, LED_Z)], ['Flexure button', v(BTN_X, 40, BTN_Z)], ['Speaker grille', v(-5, 40, 35)], ['Power rocker', v(91, 25, 6.5)], ['Feet ×3', v(0, -4, 62)]]
+};
+
+/* ======================= state & apply ======================= */
+let cur = 0, hoverWire = null, showLabels = true, xray = true, flip = false, spin = false;
+const labelsEl = document.getElementById('labels'); let labelItems = [];
+function addLabel(html, pos, cls, parent) { const el = document.createElement('div'); el.className = 'lbl ' + cls; el.innerHTML = html; labelsEl.appendChild(el); labelItems.push({ el, pos, parent }); }
+function setOpacity(obj, o) {
+  obj.traverse(m => { if (m.isMesh && m.material) { (Array.isArray(m.material) ? m.material : [m.material]).forEach(mt => { mt.opacity = o; mt.transparent = o < 1; mt.depthWrite = o > 0.5; mt.needsUpdate = true; }); m.castShadow = o > 0.6; } });
+}
+function setCase(list, mode) {
+  list.forEach(m => { const mt = m.material;
+    if (mode === 'hidden') { m.visible = false; return; } m.visible = true;
+    let o = 1;
+    if (mode === 'ghost') o = xray ? 0.07 : 0.16; else if (mode === 'glass') o = 0.35; else o = xray ? 0.32 : 1;
+    mt.opacity = o; mt.transparent = o < 1 || m.userData.caseBase === 'word'; mt.depthWrite = o === 1; m.castShadow = o === 1; mt.needsUpdate = true; });
+}
+const LID_ON = { p: v(0, 0, 0), q: new THREE.Quaternion() };
+const LID_FLAT = { p: v(196, 36, 0), q: new THREE.Quaternion().setFromAxisAngle(v(1, 0, 0), Math.PI) };
+let lidGoal = LID_ON;
+const stepWires = i => wires.filter(w => w.step === i);
+
+function apply() {
+  const s = steps[cur];
+  const wiring = !s.all && stepWires(cur).length > 0;
+  Object.values(parts).forEach(p => {
+    const vis = (s.all || cur >= p.appear) && !(p.group.parent === lidG && s.lid === 'hidden');
+    p.group.visible = vis; if (!vis) return;
+    const foc = !s.focus || s.focus.length === 0 || s.focus.includes(p.id);
+    let o;
+    if (p.id === 'board' || p.id === 'lidpcb') o = xray && wiring ? 0.55 : 1;
+    else if (xray && wiring) o = foc ? 0.62 : 0.3;
+    else o = foc ? 1 : (wiring ? 0.5 : 0.35);
+    if (hoverWire != null) o = Math.min(o, p.id === 'board' ? 0.5 : 0.25);
+    setOpacity(p.group, o);
+  });
+  wires.forEach(w => {
+    let vis = s.all || w.step <= cur;
+    if (s.lidPose === 'flat' && w.harness) vis = false;
+    if (s.lid === 'hidden' && (w.harness || w.side === 'lid')) vis = false;
+    w.group.visible = vis; if (!vis) return;
+    let o = hoverWire != null ? (w.id === hoverWire ? 1 : 0.08) : (s.all ? 1 : (w.step === cur ? 1 : 0.3));
+    setOpacity(w.group, o);
+  });
+  setCase(caseMeshes, s.caseMode); setCase(lidMeshes, s.lid);
+  gridLabels.visible = !s.all || cur === 0;
+  lidGoal = s.lidPose === 'flat' ? LID_FLAT : LID_ON;
+  // markers
+  markRoot.clear(); lidWireRoot.children.filter(c => c.userData.mark).forEach(c => lidWireRoot.remove(c));
+  const marks = hoverWire != null ? [wires[hoverWire]] : stepWires(cur);
+  marks.forEach(w => { if (w.side === 'off') return; w.ends.forEach(e => {
+    const par = e.lid ? lidWireRoot : markRoot;
+    const [x, z] = e.lid ? lx(e.h) : hx(e.h);
+    const yt = e.lid ? 28.15 : YB + 0.06, yb = e.lid ? 26.45 : YBOT - 0.06;
+    const a = holeRing(x, yt, z, w.color, par, false), b = holeRing(x, yb, z, w.color, par, true); a.userData.mark = b.userData.mark = true; }); });
+  // labels
+  labelsEl.innerHTML = ''; labelItems = [];
+  if (!showLabels) return;
+  if (s.calls) CALLS[s.calls].forEach(([t, p]) => addLabel(t, p, 'call', baseG));
+  else if (!s.cutlist && (!wiring || hoverWire == null)) Object.values(parts).forEach(p => {
+    if (!p.label || !p.group.visible) return;
+    const foc = s.focus && s.focus.length ? s.focus.includes(p.id) : !s.all;
+    if ((foc || cur === 0) && !(wiring && marks.length > 8)) addLabel(p.label, p.labelAt, 'part', p.group.parent);
+  });
+  const lw = hoverWire != null ? [wires[hoverWire]] : (marks.length <= 12 ? marks : []);
+  const seen = new Set();
+  lw.forEach(w => w.ends.forEach((e, i) => {
+    if (w.kind === 'bus' && hoverWire == null) return;
+    const key = (e.h || '') + (e.lid ? 'L' : '') + i + w.id; if (e.h && seen.has(e.h + e.lid)) return; if (e.h) seen.add(e.h + e.lid);
+    const name = e.h ? (e.lid ? LPINS[e.h] : PINS[e.h]) : null;
+    const txt = e.h ? `<b>${e.h}</b>${name ? name[1] : what(e.h, e.lid).replace(/<[^>]+>/g, '')}` : (i === 0 ? w.a : w.b);
+    const pos = flip ? e.bot : e.top;
+    addLabel(txt, pos, 'pin', e.lid ? lidG : scene);
+  }));
+}
+
+/* ======================= panel ======================= */
+const card = document.getElementById('card');
+function endHTML(h, lid, fallback) {
+  if (!h) {
+    const m = /(?:^|\()([A-Z]{1,2}\d{1,2})(?=[ )])/.exec(fallback);
+    if (m && DATA.RN.includes(m[1].replace(/\d+/, '')) && +m[1].replace(/\D+/, '') <= DATA.COLS) {
+      const txt = fallback.replace('(' + m[1] + ')', '').replace(new RegExp('^' + m[1] + ' '), '').replace(/[()]/g, '').trim();
+      return `<span class="h">${m[1]}</span><span class="what">${txt}</span>`;
+    }
+    return `<span class="h off">↗</span><span class="what">${fallback}</span>`;
+  }
+  return `<span class="h">${h}</span><span class="what">${what(h, lid)}</span>`;
+}
+const ORDER = { bus: 0, bridge: 2, link: 3, lid: 3, top: 4, pair: 1, lead: 1, w05: 2, usb: 2, ff: 1, ffcut: 2, mf: 5 };
+function render() {
+  const s = steps[cur];
+  document.getElementById('count').textContent = `step ${cur + 1} / ${steps.length}`;
+  const dots = document.getElementById('dots'); dots.innerHTML = '';
+  steps.forEach((st, i) => { const b = document.createElement('button');
+    b.className = 'dot' + (i === cur ? ' on' : i < cur ? ' done' : '') + (i > 0 && st.phase !== steps[i - 1].phase ? ' phase-start' : '');
+    b.textContent = i + 1; b.title = st.title; b.onclick = () => go(i); dots.appendChild(b); });
+  let h = `<div class="phase">${s.phase}</div><h2>${s.title}</h2>`;
+  h += `<div class="stations">${s.st.length ? s.st.map(k => `<span class="st ${ST[k][0]}">${I[k]}${ST[k][1]}</span>`).join('') : `<span class="st hands">${I.hands}No tools</span>`}</div>`;
+  h += `<p class="lead">${s.lead}</p>`;
+  if (s.holes) { h += `<div class="sec">Hole positions</div>` + s.holes.map(([a, b]) => `<div class="op"><span class="n">·</span><div class="end"><span class="h">${a}</span><span class="what">${b}</span></div></div>`).join(''); }
+  const comps = Object.entries(DATA.comps).filter(([, c]) => c.step === cur);
+  const ws = stepWires(cur).slice().sort((a, b) => (ORDER[a.kind] - ORDER[b.kind]) || (a.id - b.id));
+  let n = 0;
+  if (comps.length) { h += `<div class="sec">Parts into holes (component side)</div>`;
+    comps.forEach(([id, c]) => { n++; const legs = Object.entries(c.legs).map(([hh, l]) => `<span class="h">${hh}</span>${l === 'a' || l === 'b' ? '' : `<span class="what">${l}</span> `}`).join(' ');
+      h += `<div class="op"><span class="n">${cur + 1}.${n}</span><div><div class="end"><b>${id}</b> ${c.val} <span class="what">· ${c.note}</span></div><div class="end" style="margin-top:3px">${legs}</div></div></div>`; }); }
+  if (ws.length) {
+    const groups = [['bus', 'Bare rails & buses (solder side)'], ['bridge', 'Solder bridges (bend the leg onto the neighbour pin)'], ['link', 'Links (solder side)'], ['lid', 'Links (lid board, link side)'], ['top', 'Wires on the component side'], ['pair', 'Twisted pair'], ['lead', 'Off-board wires'], ['ff', 'Jumpers']];
+    const kindGroup = k => (k === 'w05' || k === 'usb') ? 'lead' : (k === 'ffcut' || k === 'mf') ? 'ff' : k;
+    groups.forEach(([g, title]) => {
+      const list = ws.filter(w => kindGroup(w.kind) === g); if (!list.length) return;
+      h += `<div class="sec">${title}</div>`;
+      list.forEach(w => { n++;
+        const lid = w.side === 'lid';
+        const a = w.side === 'off' ? endHTML(null, false, w.a) : endHTML(w.a, lid), b = w.side === 'off' ? endHTML(null, false, w.b) : endHTML(w.b, lid);
+        const via = (w.side === 'under' || lid) && w.kind !== 'bus' && w.kind !== 'bridge' && w.route.length > 2 ? `<span class="via">via ${w.route.slice(1, -1).join(' → ')}</span> · ` : '';
+        const span = w.kind === 'bus' ? `<span class="via">${w.a} → ${w.b}${w.taps && w.taps.length ? ' · solder at ' + w.taps.join(', ') : ''}</span><br>` : '';
+        h += `<div class="op" data-w="${w.id}"><span class="n">${cur + 1}.${n}</span><div>
+          <div class="end"><span class="sw" style="background:${w.color}"></span>${a}</div><div class="arrow">↓ ${w.note || ''}</div><div class="end">${b}</div>
+          <div class="meta">${span}${via}${['ff', 'ffcut', 'mf', 'pair'].includes(w.kind) ? '' : w.cut}</div>
+          ${['ff', 'ffcut', 'mf', 'pair'].includes(w.kind) ? `<span class="trim">${w.cut}</span>` : ''}</div></div>`; });
+    });
+  }
+  if (s.notes) h += `<div class="sec">Notes</div><ul class="notes">${s.notes.map(x => `<li>${x}</li>`).join('')}</ul>`;
+  if (s.warn) h += `<div class="warn">${s.warn}</div>`;
+  if (s.tip) h += `<div class="tip">${s.tip}</div>`;
+  if (s.cutlist) {
+    h += `<div class="sec">Cut list</div>`;
+    wires.filter(w => !['bridge'].includes(w.kind)).forEach(w => { const m = /(\d+) mm/.exec(w.cut); if (!m) return;
+      h += `<div class="op" data-w="${w.id}"><span class="n">${w.step + 1}</span><div><div class="end"><span class="sw" style="background:${w.color}"></span><b>${m[1]} mm</b> <span class="what">${w.kind === 'bus' ? w.name : (w.side === 'off' ? w.a + ' → ' + w.b : w.a + ' → ' + w.b)}</span></div><div class="meta">${w.cut}</div></div></div>`; });
+  }
+  h += `<p class="hint">Module outlines are approximate; the hole map is exact. Check each module’s silkscreen before soldering.</p>`;
+  card.innerHTML = h; card.scrollTop = 0;
+  card.querySelectorAll('[data-w]').forEach(el => { el.onmouseenter = () => { hoverWire = +el.dataset.w; apply(); }; el.onmouseleave = () => { hoverWire = null; apply(); }; });
+  document.getElementById('prev').disabled = cur === 0;
+  const nx = document.getElementById('next'); nx.disabled = cur === steps.length - 1; nx.textContent = cur === steps.length - 2 ? 'Mockup →' : 'Next →';
+}
+function setFlip(f) { flip = f; document.getElementById('bFlip').classList.toggle('on', flip);
+  const t = document.getElementById('viewtag'); t.textContent = flip ? 'Solder side (board flipped · col 1 on the right)' : 'Component side'; t.classList.toggle('solder', flip); }
+function go(i) {
+  cur = Math.max(0, Math.min(steps.length - 1, i)); hoverWire = null;
+  history.replaceState(null, '', '#s=' + (cur + 1));
+  setFlip(!!steps[cur].flip);
+  xray = steps[cur].caseMode !== 'solid'; document.getElementById('bXray').classList.toggle('on', xray);
+  render(); apply(); flyTo(steps[cur].view);
+  spin = !!steps[cur].spin; document.getElementById('bSpin').classList.toggle('on', spin);
+}
+document.getElementById('prev').onclick = () => go(cur - 1);
+document.getElementById('next').onclick = () => go(cur + 1);
+window.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(cur + 1); if (e.key === 'ArrowLeft') go(cur - 1); });
+document.getElementById('bLabels').onclick = e => { showLabels = !showLabels; e.currentTarget.classList.toggle('on', showLabels); apply(); };
+document.getElementById('bXray').onclick = e => { xray = !xray; e.currentTarget.classList.toggle('on', xray); apply(); };
+document.getElementById('bFlip').onclick = () => { setFlip(!flip); apply(); flyTo(steps[cur].view); };
+document.getElementById('bSpin').onclick = e => { spin = !spin; e.currentTarget.classList.toggle('on', spin); };
+document.getElementById('bReset').onclick = () => flyTo(steps[cur].view);
+document.getElementById('legend').innerHTML = LEGEND.map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
+
+/* ======================= camera ======================= */
+const camS = { t: v(0, 8, 0), r: 360, th: 0.5, ph: 0.9 }; let camGoal = null; const D = Math.PI / 180;
+function flyTo(name) { const p = VIEW[name]; let ph = p.ph * D, th = p.th * D;
+  if (flip) { ph = Math.PI - Math.max(ph, 8 * D); }
+  camGoal = { t: v(...p.t), r: p.r, th, ph }; }
+function camApply() {
+  const s = Math.sin(camS.ph);
+  camera.position.set(camS.t.x + camS.r * s * Math.sin(camS.th), camS.t.y + camS.r * Math.cos(camS.ph), camS.t.z + camS.r * s * Math.cos(camS.th));
+  // row A (back edge) stays at the top of the screen; seen from below, column 1 lands on the right like a flipped board
+  camera.up.set(0, camS.ph > Math.PI / 2 ? -1 : 1, 0);
+  camera.lookAt(camS.t);
+}
+let drag = null;
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey }; camGoal = null; });
+canvas.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+  if (drag.pan) { const k = camS.r / canvas.clientHeight * 0.9; const right = v(Math.cos(camS.th), 0, -Math.sin(camS.th)), fwd = v(Math.sin(camS.th), 0, Math.cos(camS.th));
+    camS.t.addScaledVector(right, -dx * k).addScaledVector(fwd, -dy * k * (flip ? -1 : 1)); }
+  else { camS.th -= dx * 0.006; camS.ph = Math.max(0.03, Math.min(3.11, camS.ph - dy * 0.006)); } });
+canvas.addEventListener('pointerup', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); camGoal = null; camS.r = Math.max(30, Math.min(1400, camS.r * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
+
+/* ======================= loop ======================= */
+function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; const pr = renderer.getPixelRatio();
+  if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); } }
+const tmp = new THREE.Vector3(); let last = performance.now();
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
+  if (camGoal) { const k = 1 - Math.pow(0.0015, dt);
+    camS.t.lerp(camGoal.t, k); camS.r += (camGoal.r - camS.r) * k;
+    let dth = camGoal.th - camS.th; dth = Math.atan2(Math.sin(dth), Math.cos(dth)); camS.th += dth * k; camS.ph += (camGoal.ph - camS.ph) * k;
+    if (Math.abs(camGoal.r - camS.r) < 0.3 && Math.abs(dth) < 0.001 && camS.t.distanceTo(camGoal.t) < 0.1 && Math.abs(camGoal.ph - camS.ph) < 0.001) camGoal = null; }
+  if (spin && !drag) camS.th += dt * 0.18;
+  camApply();
+  const kl = 1 - Math.pow(0.002, dt); lidG.position.lerp(lidGoal.p, kl); lidG.quaternion.slerp(lidGoal.q, kl);
+  renderer.render(scene, camera);
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  gridSide[0].visible = camS.ph <= Math.PI / 2; gridSide[1].visible = camS.ph > Math.PI / 2;
+  const placed = [];
+  labelItems.forEach(it => { tmp.copy(it.pos); if (it.parent === lidG) tmp.applyMatrix4(lidG.matrixWorld); tmp.project(camera);
+    if (tmp.z > 1 || tmp.z < -1) { it.el.style.display = 'none'; return; } it.el.style.display = '';
+    if (!it.w) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; }
+    let x = (tmp.x + 1) / 2 * w, y = (1 - tmp.y) / 2 * h, dy = 0;
+    for (let k = 0; k < 12; k++) { const top = y - it.h - 6 - dy, l = x - it.w / 2;
+      const hit = placed.find(r => l < r.r && l + it.w > r.l && top < r.b && top + it.h > r.t); if (!hit) break; dy += it.h + 2; }
+    placed.push({ l: x - it.w / 2, r: x + it.w / 2, t: y - it.h - 6 - dy, b: y - 6 - dy });
+    it.el.style.left = x + 'px'; it.el.style.top = (y - dy) + 'px';
+    it.el.style.borderBottom = dy ? '2px solid #f2d49b' : ''; });
+  requestAnimationFrame(tick);
+}
+const m0 = /s=(\d+)/.exec(location.hash);
+go(m0 ? +m0[1] - 1 : 0);
+if (/flip=0/.test(location.hash)) { setFlip(false); apply(); flyTo(steps[cur].view); }
+{ const g = camGoal; if (g) { camS.t.copy(g.t); camS.r = g.r; camS.th = g.th; camS.ph = g.ph; } }
+if (steps[cur].lidPose === 'flat') { lidG.position.copy(LID_FLAT.p); lidG.quaternion.copy(LID_FLAT.q); }
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
