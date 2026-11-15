@@ -1,6 +1,6 @@
 ---
 name: vault-conventions
-description: Exact frontmatter for every Rezonating vault note type (work, part, order, build, pack, experiment, research, decision, daily, weekly, inbox, proposal, retro, study) and the rules for editing notes. Use before creating or changing any note in the numbered vault folders.
+description: Vault playbook. Exact frontmatter for every Rezonating vault note type (work, part, order, build, pack, experiment, research, decision, daily, weekly, inbox, proposal, retro, study) and the rules for editing notes. Use before creating or changing any note in the numbered vault folders.
 ---
 
 # Vault conventions
@@ -130,7 +130,7 @@ daily note's body and change the dates. Claude writes only under `## Claude`.
 **inbox** — `00 Inbox/<anything>.md`: `type: inbox`, `created: YYYY-MM-DD`. Tag `#ask-claude` in the body.
 
 **proposal** — `90 Meta/Agents/Proposals/P-### <name>.md`: `type: proposal`, `id: P-###`,
-`status: proposed | accepted | rejected | applied`, `target: .claude/agents/x.md`, `date:`, `applied:`, `flags: []`.
+`status: proposed | accepted | rejected | applied`, `target: .claude/skills/x/SKILL.md`, `date:`, `applied:`, `flags: []`.
 
 **retro** — `90 Meta/Agents/Retros/YYYY-Www.md`: `type: retro`, `week: YYYY-Www`, `date: YYYY-MM-DD`.
 
@@ -140,7 +140,13 @@ never by hand. `type: study`, `person: kaszti|viktor`, `updated: YYYY-MM-DD`, nu
 The body ends with a `## State` JSON block the site reads back. The Base is `90 Meta/Bases/Study.base`.
 
 ## Editing rules
-- Work done: `status: done` and `done: <date>` together; tick the "Done when" boxes; add a Log line.
+- Work done is four edits, all of them: `status: done` · `done: <date>` · tick each met "Done when"
+  box · a `## Log` line `- <date> done` (plus anything worth knowing).
+- Decisions: new ones are `status: proposed`, `decided_by: []`. Never set `accepted` and never edit an
+  accepted decision: a change is a new proposal with `supersedes:`.
+- Daily notes: write only under `## Claude`; never touch `## Kaszti` or `## Viktor`, not even a typo
+  (mention it instead).
+- After each note the edit hook checks it; fix reported errors before anything else.
 - Changing a due date or owner that isn't yours: add a `## Log` line saying who changed what and why.
 - Never delete notes; move doubtful ones to `00 Inbox`.
 - Session log (`90 Meta/Claude/Session log.md`): append `## YYYY-MM-DD` with **Did / Decided with

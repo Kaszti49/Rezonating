@@ -2,7 +2,7 @@
 """SessionStart: give the main session the facts it would otherwise have to look up.
 
 Date and work-day status, which machine this is, local-model availability, git state, today's
-daily note, open agent-ledger flags, and the current Handoff. Fast (< 1 s) and read-only, apart
+daily note, open ledger flags, whether a retro is due, and the current Handoff. Fast (< 1 s) and read-only, apart
 from deleting hook state older than 14 days.
 """
 
@@ -106,13 +106,19 @@ def main() -> int:
 
     fl = ledger.open_flags()
     if fl:
-        lines.append(f"Agent ledger: {len(fl)} open flag(s), newest first:")
+        lines.append(f"Ledger: {len(fl)} open flag(s), newest first:")
         for f in sorted(fl, key=lambda f: f.get("ts", ""), reverse=True)[:6]:
             lines.append(
                 f"  - {f['id']} {f.get('agent')} {f.get('kind')}/{f.get('severity')}: {f.get('summary', '')[:160]}"
             )
     else:
-        lines.append("Agent ledger: no open flags.")
+        lines.append("Ledger: no open flags.")
+    due, why = ledger.retro_due(today)
+    if due:
+        lines.append(
+            f"Retro due ({why}). At the first natural break, run the retro playbook (/retro): it proposes, "
+            "a person approves."
+        )
 
     handoff = rzlib.read_text(rzlib.ROOT / "90 Meta" / "Claude" / "Handoff.md") or ""
     _, body = rzlib.split_frontmatter(handoff)

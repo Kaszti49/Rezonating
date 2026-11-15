@@ -1,7 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
-    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
     "PYTHONUTF8": "1"
   },
   "permissions": {
@@ -142,35 +141,6 @@
             "timeout": 90
           }
         ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python",
-            "args": [
-              "${CLAUDE_PROJECT_DIR}/.claude/hooks/agent_report.py"
-            ],
-            "timeout": 15
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "firmware-dev|ml-dev|deep-engineer|researcher|writer|vault-keeper|curator|verifier",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python",
-            "args": [
-              "${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent_gate.py"
-            ],
-            "timeout": 600,
-            "statusMessage": "Rezonating gate: checking the agent's work"
-          }
-        ]
       }
     ],
     "Stop": [
@@ -182,7 +152,8 @@
             "args": [
               "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop_gate.py"
             ],
-            "timeout": 60
+            "timeout": 600,
+            "statusMessage": "Rezonating gate: checking what changed"
           }
         ]
       }

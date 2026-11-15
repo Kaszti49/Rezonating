@@ -1,9 +1,23 @@
 ---
 name: ml-training
-description: How Rezonating trains and evaluates pack models (datasets and splits, segmentation, features shared with firmware, test vectors, experiment logging, TFLite Micro export). Use when working in ml/, designing an experiment, or reporting a model result.
+description: Playbook for ml/, tools/ and data/ manifests (Python signal processing, dataset loaders, segmentation, features shared with firmware, test vectors, training, evaluation, export, experiment logging). Load before writing Python in ml/ or tools/, designing an experiment, or reporting a model result.
 ---
 
-# ML training for packs
+# Playbook: ML and tools
+
+## Working rules
+1. Write the task's **Done when** first. Shared feature code is Tier 1: name the accepted `D-###`,
+   otherwise stop and propose the decision.
+2. Test first when the behaviour is clear (`ml/tests/`, pytest), with synthetic signals that have
+   known answers (impulse train for steps, sine for spectral features).
+3. Reproducible maths: fixed seeds, float32 where firmware uses float32, units in names (`fs_hz`,
+   `win_s`), no hidden global state, no notebooks under `src/`.
+4. A feature change regenerates its test vectors and says firmware must follow (two languages, one
+   implementation). The fall features' reference is the C++ core in `firmware/hackathon-rezon/`
+   (`tools/replay` prints them per event).
+5. Never read or write `data/raw/`, `data/private/` or WAV contents into notes or git.
+6. Finish with `ruff check` and `python -m pytest -q ml/tests` (the stop gate repeats them), then
+   the `verify` playbook. Report dataset, split, metric, baseline and what the number doesn't show.
 
 Code lives in `ml/` (package `rezonating_ml`). Each pack (`packs/<id>/pack.json`) names its head,
 sample rate, trigger and model; the training code reads the same file, so firmware and Python can't drift.

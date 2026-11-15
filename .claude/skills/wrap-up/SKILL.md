@@ -6,7 +6,7 @@ description: End-of-session protocol for Rezonating (daily note line, Session lo
 # Wrap up a session
 
 Claude remembers nothing between sessions; this is how the next session continues cold. Do the
-steps in order. Steps 1–3 can go to `vault-keeper` as one task if the session was long.
+steps in order, following the `vault-conventions` playbook for every note.
 
 1. **Daily note** `70 Journal/Daily/<today>.md` (create from the vault-conventions frontmatter if
    missing; `off_day: true` unless it's Monday or Tuesday): one line under `## Claude` saying what
@@ -15,7 +15,7 @@ steps in order. Steps 1–3 can go to `vault-keeper` as one task if the session 
    ```
    ## YYYY-MM-DD
    - **Did:** …
-   - **Agents:** which ran, gate/verifier outcomes, escalations (ledger ids)
+   - **Playbooks:** which were used, gate/verify outcomes, escalations (ledger ids)
    - **Decided with the team:** … (only what Kaszti or Viktor decided)
    - **Left open:** …
    - **Next session should:** …
@@ -24,7 +24,9 @@ steps in order. Steps 1–3 can go to `vault-keeper` as one task if the session 
 3. **Handoff** `90 Meta/Claude/Handoff.md`: rewrite whole, under a page, `updated: <today>`:
    where we are, next up per person (table), open questions, watch-outs.
 4. **Ledger**: `python .claude/scripts/ledger.py list --open`. Resolve flags this session actually
-   fixed (`ledger.py resolve <id> --how "…"`); leave the rest open with a line in the Handoff.
+   fixed (`ledger.py resolve <id> --how "…"`); leave the rest open with a line in the Handoff. Did a
+   person correct you this session? Make sure it's logged as `--kind note`. If `ledger.py retro-due`
+   says due, offer the `retro` playbook now or put it first in the Handoff.
 5. **Git**: `git status`. Tell the person what changed, split into a vault commit and a code
    commit, with a suggested message for each. Commit only if they ask (the commit guard refuses
    mixed commits). Remind them to push and that Obsidian Git pulls on the next start.

@@ -1,4 +1,4 @@
-"""Tests for the agent system's hooks and scripts (Tier 1: they run unattended on every machine).
+"""Tests for the playbook system's hooks and scripts (Tier 1: they run unattended on every machine).
 
 Run: python -m unittest discover -s .claude/tests -v
 Each test builds a throwaway git repo with a copy of .claude/ and a few vault notes, then feeds the
@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -120,30 +121,6 @@ class TestHooks(unittest.TestCase):
 
     def tearDown(self):
         self.sb.close()
-
-    def test_scope_denies_outside_folder(self):
-        _, out, _ = self.sb.hook(
-            "pre_edit",
-            {
-                "agent_type": "researcher",
-                "agent_id": "a",
-                "tool_name": "Write",
-                "tool_input": {"file_path": str(self.sb.dir / "firmware/main/x.c"), "content": "x"},
-            },
-        )
-        self.assertEqual("deny", decision_of(out))
-
-    def test_scope_allows_inside_folder(self):
-        _, out, _ = self.sb.hook(
-            "pre_edit",
-            {
-                "agent_type": "vault-keeper",
-                "agent_id": "a",
-                "tool_name": "Write",
-                "tool_input": {"file_path": str(self.sb.dir / "20 Work/New.md"), "content": WORK_OK},
-            },
-        )
-        self.assertIsNone(decision_of(out))
 
     def test_never_accepts_decision(self):
         new = DECISION.replace("D-001", "D-002").replace("[kaszti]", "[]")
@@ -254,91 +231,82 @@ class TestHooks(unittest.TestCase):
 
     def test_gate_retries_then_flags(self):
         f = self.sb.write("20 Work/Bad.md", WORK_BAD)
-        self.sb.hook(
-            "post_edit",
-            {"agent_type": "vault-keeper", "agent_id": "a1", "tool_name": "Write", "tool_input": {"file_path": f}},
-        )
-        stop = {
-            "hook_event_name": "SubagentStop",
-            "agent_type": "vault-keeper",
-            "agent_id": "a1",
-            "stop_hook_active": False,
-        }
+        self.sb.hook("post_edit", {"tool_name": "Write", "tool_input": {"file_path": f}})
+        stop = {"hook_event_name": "Stop", "stop_hook_active": False}
         for _ in range(2):
-            _, out, _ = self.sb.hook("subagent_gate", stop)
+            _, out, _ = self.sb.hook("stop_gate", stop)
             self.assertEqual("block", (out or {}).get("decision"))
-        _, out, _ = self.sb.hook("subagent_gate", stop)
+        _, out, _ = self.sb.hook("stop_gate", stop)
         self.assertNotEqual("block", (out or {}).get("decision"))
+        self.assertIn("systemMessage", out)
         flags = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/flags.jsonl")
-        self.assertEqual(["gate-fail"], [x["kind"] for x in flags])
-        _, out, _ = self.sb.hook(
-            "agent_report",
-            {
-                "tool_name": "Agent",
-                "tool_input": {"subagent_type": "vault-keeper"},
-                "tool_response": {"status": "completed", "agentId": "a1"},
-            },
-        )
-        self.assertIn("gate: fail", out["hookSpecificOutput"]["additionalContext"])
+        self.assertEqual([("gate-fail", "vault")], [(x["kind"], x["agent"]) for x in flags])
+        _, out, _ = self.sb.hook("stop_gate", stop)
+        self.assertIsNone(out, "a flagged file is not re-checked until it changes")
 
-    def test_gate_passes_clean_work(self):
+    def test_gate_passes_clean_work_once(self):
         f = self.sb.write("20 Work/Fine.md", WORK_OK)
-        self.sb.hook(
-            "post_edit",
-            {"agent_type": "vault-keeper", "agent_id": "a2", "tool_name": "Write", "tool_input": {"file_path": f}},
-        )
-        _, out, _ = self.sb.hook(
-            "subagent_gate", {"agent_type": "vault-keeper", "agent_id": "a2", "stop_hook_active": False}
-        )
-        self.assertIsNone(out)
-        runs = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/runs.jsonl")
-        self.assertEqual("pass", runs[-1]["gate"])
-
-    def test_verifier_findings_are_logged(self):
-        msg = (
-            "SUBJECT: ml-dev\nVERDICT: FLAG\nFINDINGS:\n- [high] tools/x.py:3 — wrong — evidence — fix\n"
-            "- [low] naming\nCHECKS RUN:\n- ruff: ok"
-        )
-        self.sb.hook("subagent_gate", {"agent_type": "verifier", "agent_id": "v", "last_assistant_message": msg})
-        flags = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/flags.jsonl")
-        self.assertEqual([("ml-dev", "high"), ("ml-dev", "low")], [(x["agent"], x["severity"]) for x in flags])
-
-    def test_stop_gate_blocks_once(self):
-        f = self.sb.write("20 Work/Bad.md", WORK_BAD)
         self.sb.hook("post_edit", {"tool_name": "Write", "tool_input": {"file_path": f}})
         _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": False})
-        self.assertEqual("block", out["decision"])
-        _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": True})
-        self.assertIn("systemMessage", out)
+        self.assertIsNone(out)
+        runs = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/runs.jsonl")
+        self.assertEqual(["pass"], [r["gate"] for r in runs])
+        self.sb.hook("stop_gate", {"stop_hook_active": False})
+        runs = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/runs.jsonl")
+        self.assertEqual(1, len(runs), "unchanged files are not checked again")
+        time.sleep(0.05)
+        self.sb.write("20 Work/Fine.md", WORK_BAD)
+        _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": False})
+        self.assertEqual("block", (out or {}).get("decision"), "a changed file is checked again")
 
     def test_session_start_context(self):
         _, out, _ = self.sb.hook("session_start", {"source": "startup"})
         ctx = out["hookSpecificOutput"]["additionalContext"]
         self.assertIn("Today is", ctx)
-        self.assertIn("Agent ledger", ctx)
+        self.assertIn("Ledger", ctx)
+        self.assertNotIn("Retro due", ctx)
 
 
 class TestLedger(unittest.TestCase):
+    def setUp(self):
+        self.sb = Sandbox()
+
+    def tearDown(self):
+        self.sb.close()
+
+    def run_ledger(self, *a):
+        return subprocess.run(
+            [sys.executable, str(self.sb.dir / ".claude/scripts/ledger.py"), *a],
+            capture_output=True,
+            text=True,
+            env=self.sb.env,
+            cwd=self.sb.dir,
+        )
+
     def test_resolve_folds(self):
-        sb = Sandbox()
-        try:
+        fid = self.run_ledger("add", "--agent", "ml-dev", "--kind", "note", "--summary", "x").stdout.strip()
+        self.assertTrue(fid.startswith("F-"))
+        self.assertIn("1 flags", self.run_ledger("list", "--open").stdout)
+        self.assertEqual(0, self.run_ledger("resolve", fid, "--how", "fixed").returncode)
+        self.assertIn("0 flags", self.run_ledger("list", "--open").stdout)
 
-            def run(*a):
-                return subprocess.run(
-                    [sys.executable, str(sb.dir / ".claude/scripts/ledger.py"), *a],
-                    capture_output=True,
-                    text=True,
-                    env=sb.env,
-                    cwd=sb.dir,
-                )
+    def test_retro_due_after_correction(self):
+        self.assertEqual(1, self.run_ledger("retro-due").returncode)
+        self.run_ledger("add", "--playbook", "firmware", "--kind", "review", "--severity", "low", "--summary", "x")
+        self.assertEqual(1, self.run_ledger("retro-due").returncode, "one low review flag is not enough")
+        self.run_ledger("add", "--playbook", "vault", "--kind", "note", "--summary", "Kaszti corrected the Log line")
+        r = self.run_ledger("retro-due")
+        self.assertEqual(0, r.returncode)
+        self.assertIn("corrected", r.stdout)
+        _, out, _ = self.sb.hook("session_start", {"source": "startup"})
+        self.assertIn("Retro due", out["hookSpecificOutput"]["additionalContext"])
+        self.run_ledger("retro-done", "--note", "2026-W46")
+        self.assertEqual(1, self.run_ledger("retro-due").returncode)
 
-            fid = run("add", "--agent", "ml-dev", "--kind", "note", "--summary", "x").stdout.strip()
-            self.assertTrue(fid.startswith("F-"))
-            self.assertIn("1 flags", run("list", "--open").stdout)
-            self.assertEqual(0, run("resolve", fid, "--how", "fixed").returncode)
-            self.assertIn("0 flags", run("list", "--open").stdout)
-        finally:
-            sb.close()
+    def test_retro_due_on_three_flags(self):
+        for _ in range(3):
+            self.run_ledger("add", "--playbook", "ml", "--kind", "review", "--severity", "low", "--summary", "x")
+        self.assertEqual(0, self.run_ledger("retro-due").returncode)
 
 
 if __name__ == "__main__":

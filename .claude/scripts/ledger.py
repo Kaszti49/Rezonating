@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Agent ledger: flags raised against agents, and a log of agent runs.
+"""Ledger: what went wrong (flags) and what ran (runs). The retro's evidence.
 
 Files (append-only JSONL, merged with git's union driver so two machines never conflict):
-  90 Meta/Agents/Ledger/flags.jsonl   {"ev":"flag",...} and {"ev":"resolve","id":...}
-  90 Meta/Agents/Ledger/runs.jsonl    one line per finished subagent run (+ telemetry lines)
+  90 Meta/Agents/Ledger/flags.jsonl   {"ev":"flag",...}, {"ev":"resolve","id":...}, {"ev":"retro",...}
+  90 Meta/Agents/Ledger/runs.jsonl    one line per gated turn of the session
 
 Commands:
-  ledger.py add --agent firmware-dev --kind verifier-flag --severity high \\
+  ledger.py add --playbook firmware --kind review --severity high \\
                 --summary "ISR calls a blocking API" [--level L1] [--task "..."] [--files a,b]
-  ledger.py resolve F-261003-ab12 --how "retried with deep-engineer; fixed in 4c1e2a"
-  ledger.py list [--open] [--agent NAME] [--since 14d]
+  ledger.py resolve F-261003-ab12 --how "fixed in 4c1e2a"
+  ledger.py list [--open] [--playbook NAME] [--since 14d]
   ledger.py stats [--since 14d] [--json]
   ledger.py runs [--last 10]
+  ledger.py retro-due            prints "due: <reason>" (exit 0) or "not due" (exit 1)
+  ledger.py retro-done --note "2026-W47"   marks a finished retro
 
-Kinds: gate-fail (L0 hook), verifier-flag (L1), retry (L2), escalation (L3), human (L4),
-       scope (agent tried to write outside its folders), note (anything else worth a retro).
+`--agent` still works as an old name for `--playbook`; flags from the agent era keep their agent names.
+Kinds: gate-fail (L0 hook), review (L1, the verify playbook), retry (L2), escalation (L3), human (L4),
+       note (a person corrected Claude, or anything else worth a retro).
+       Old kinds kept for history: verifier-flag (L1), scope (L0).
 """
 
 from __future__ import annotations
@@ -29,10 +33,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rzlib  # noqa: E402
 
-KINDS = ["gate-fail", "verifier-flag", "retry", "escalation", "human", "scope", "note"]
+KINDS = ["gate-fail", "review", "retry", "escalation", "human", "note", "verifier-flag", "scope"]
 LEVEL_OF = {
     "gate-fail": "L0",
     "scope": "L0",
+    "review": "L1",
     "verifier-flag": "L1",
     "retry": "L2",
     "escalation": "L3",
@@ -172,6 +177,40 @@ def stats(since=None) -> dict:
     }
 
 
+def last_retro() -> dict | None:
+    marks = [e for e in rzlib.read_jsonl(rzlib.FLAGS) if e.get("ev") == "retro"]
+    return max(marks, key=lambda e: e.get("ts", "")) if marks else None
+
+
+def mark_retro(note: str = "") -> None:
+    rzlib.append_jsonl(rzlib.FLAGS, {"ev": "retro", "ts": rzlib.now_iso(), "machine": rzlib.machine(), "note": note})
+
+
+def retro_due(today=None) -> tuple[bool, str]:
+    """Is a retro worth running now? Evidence = flags raised since the last finished retro."""
+    import datetime as dt
+
+    today = today or dt.date.today()
+    last = last_retro()
+    since = (last or {}).get("ts", "")
+    new = [f for f in flags() if f.get("ts", "") > since]
+    if not new:
+        return False, "no new flags since the last retro"
+    notes = [f["id"] for f in new if f.get("kind") == "note"]
+    highs = [f["id"] for f in new if f.get("severity") == "high"]
+    if notes:
+        return True, f"a person corrected Claude ({', '.join(notes[:3])})"
+    if highs:
+        return True, f"high-severity flag(s) {', '.join(highs[:3])}"
+    if len(new) >= 3:
+        return True, f"{len(new)} new flags since the last retro"
+    start = since or min(f.get("ts", "") for f in new)  # no retro yet: count from the oldest flag
+    days = (today - dt.date.fromisoformat(start[:10])).days
+    if days >= 7:
+        return True, f"{len(new)} new flag(s), {days} days {'since the last retro' if since else 'unreviewed'}"
+    return False, f"{len(new)} new low/med flag(s), {days} day(s) old"
+
+
 def _fmt_flag(f: dict) -> str:
     st = "OPEN" if f["status"] == "open" else "done"
     line = f"{f['id']} [{st}] {f.get('ts', '')[:10]} {f.get('agent', '?')} {f.get('kind', '')}/{f.get('severity', '')}"
@@ -186,7 +225,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("add")
-    p.add_argument("--agent", required=True)
+    p.add_argument("--playbook", "--agent", dest="agent", required=True)
     p.add_argument("--kind", required=True, choices=KINDS)
     p.add_argument("--summary", required=True)
     p.add_argument("--severity", default="med", choices=SEVERITIES)
@@ -201,15 +240,26 @@ def main(argv=None) -> int:
     p.add_argument("--by", default="")
     p = sub.add_parser("list")
     p.add_argument("--open", action="store_true")
-    p.add_argument("--agent")
+    p.add_argument("--playbook", "--agent", dest="agent")
     p.add_argument("--since")
     p = sub.add_parser("stats")
     p.add_argument("--since")
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("runs")
     p.add_argument("--last", type=int, default=10)
+    sub.add_parser("retro-due")
+    p = sub.add_parser("retro-done")
+    p.add_argument("--note", default="")
     a = ap.parse_args(argv)
 
+    if a.cmd == "retro-due":
+        due, why = retro_due()
+        print(("due: " if due else "not due: ") + why)
+        return 0 if due else 1
+    if a.cmd == "retro-done":
+        mark_retro(a.note)
+        print("retro marked")
+        return 0
     if a.cmd == "add":
         files = [x.strip() for x in a.files.split(",") if x.strip()]
         print(add_flag(a.agent, a.kind, a.summary, a.severity, a.level, a.task, files, a.model, by=a.by))

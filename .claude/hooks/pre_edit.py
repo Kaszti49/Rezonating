@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """PreToolUse(Write|Edit): refuse edits that break a hard rule, before they happen.
 
-1. Agent scope: a specialist may only write inside its folders (.claude/agent-scopes.json).
-2. Raw data: never write *.wav, data/raw/ or data/private/.
-3. Vault notes: no Templater code ('<%') outside 90 Meta/Templates.
-4. Decisions: Claude never sets status: accepted, never puts itself in decided_by, never edits an
+1. Raw data: never write *.wav, data/raw/ or data/private/.
+2. Vault notes: no Templater code ('<%') outside 90 Meta/Templates.
+3. Decisions: Claude never sets status: accepted, never puts itself in decided_by, never edits an
    accepted decision.
-5. Daily notes: Claude never changes Kaszti's or Viktor's section.
+4. Daily notes: Claude never changes Kaszti's or Viktor's section.
 Anything else is left to the normal permission flow. Fails open on internal errors.
 """
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -87,17 +85,6 @@ def main() -> None:
     relpath = rzlib.rel(fp, root)
     if relpath is None:
         return
-
-    agent = data.get("agent_type") or ""
-    scopes = json.loads(rzlib.read_text(rzlib.ROOT / ".claude" / "agent-scopes.json") or "{}")
-    if agent in scopes and not agent.startswith("_"):
-        allowed = scopes[agent]
-        if not rzlib.glob_match(relpath, allowed):
-            where = ", ".join(allowed) if allowed else "nothing (read-only agent)"
-            deny(
-                f"{agent} may only write to: {where}. '{relpath}' is outside that. "
-                "Leave this change out and mention it in your report so the orchestrator can route it."
-            )
 
     low = relpath.lower()
     if low.endswith(".wav") or low.startswith(("data/raw/", "data/private/")):
