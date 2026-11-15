@@ -1,6 +1,6 @@
 ---
 type: work
-status: todo
+status: backlog
 owner: claude
 priority: p2
 area: project
@@ -23,3 +23,4 @@ Uses some subscription quota (a few minutes per case). Firmware cases need ESP-I
 
 ## Log
 - 2026-10-03 created by Claude with the agent system (due date is a proposal)
+- 2026-11-15 obsolete if [[D-025 One agent with playbooks]] is accepted: the agents and `run_evals.py` are gone. Moved to backlog; a person can drop it.

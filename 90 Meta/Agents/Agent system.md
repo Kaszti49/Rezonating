@@ -4,123 +4,129 @@ cssclasses: [rz-wide]
 ---
 # Agent system
 
-How Claude works as a team of agents in this repo. Why: [[D-013 Agent system]]. What changed when: [[Changelog]].
+How Claude works in this repo: **one agent, many playbooks, and a retro that improves them**. Why: [[D-025 One agent with playbooks]] (proposed; supersedes [[D-013 Agent system]]). What changed when: [[Changelog]].
 
 ```dataviewjs
 await dv.view("90 Meta/Views/rz", {section: "agents"})
 ```
 
 ## In one minute
-- You talk to **one** Claude: the orchestrator, i.e. the normal `claude` session started in the repo folder (CMD or PowerShell). It plans, hands work to specialist agents, has the work checked and escalates when something fails.
-- Each specialist runs on a set model and effort level, may write only in its own folders, and is checked by deterministic hooks the moment it finishes (the **gate**).
-- A separate **verifier** on a different model reviews code and research before anything counts as done. Problems go into the **ledger**.
-- Once a week (`/retro`, Tuesday) the **curator** reads the ledger and proposes at most three improvements, each with evidence and an eval. You approve each one; the system never rewrites itself.
+- You talk to **one** Claude: the normal `claude` session started in the repo folder. It does the work itself. It doesn't hand anything to subagents.
+- For each kind of work it loads a **playbook** first, a short checklist in `.claude/skills/<name>/SKILL.md`. Playbooks load only when needed, so they cost nothing the rest of the time.
+- **Deterministic hooks** check everything it changed before it ends a reply (the **gate**). Code and decision-grade research also go through the **verify** playbook. Problems go into the **ledger**.
+- The **retro** turns the ledger into at most three improvements. It is triggered by evidence, not by the calendar. You approve every change.
 
 ```mermaid
 flowchart LR
-  You([Kaszti / Viktor]) <--> O[Orchestrator<br/>main session]
-  O --> FW[firmware-dev<br/>Opus 5.5 · high]
-  O --> ML[ml-dev<br/>Opus 5.5 · high]
-  O --> RS[researcher<br/>Sonnet 5.5 · medium]
-  O --> WR[writer<br/>Sonnet 5.5 · medium]
-  O --> VK[vault-keeper<br/>Haiku 5.5]
-  FW & ML & RS & WR & VK --> G{{L0 gate<br/>hooks}}
-  G -->|fail, 2 fix rounds| G
-  G -->|pass| V[verifier<br/>Opus 5.5 · high]
-  V -->|PASS| O
-  V -->|FLAG / BLOCK| LG[(Ledger)]
-  G -->|still failing| LG
-  LG --> O
-  O -->|L3| DE[deep-engineer<br/>Opus 5.5 · xhigh]
-  O -->|L4| You
-  LG -->|weekly /retro| C[curator<br/>Opus 5.5 · high]
-  C -->|max 3 proposals| You
+  You([Kaszti / Viktor]) <--> C[Claude<br/>one session]
+  C -->|loads| P[Playbook<br/>firmware · ml · research · writing · vault]
+  P --> W[Work]
+  W --> G{{L0 gate<br/>Stop hook}}
+  G -->|fail, 2 fix rounds| W
+  G -->|pass| V[verify playbook<br/>L1]
+  V -->|FLAG: fix, max 2| W
+  V -->|PASS| You
+  G & V -->|flags| LG[(Ledger)]
+  You -->|correction = note flag| LG
+  V -->|still failing| RC[root-cause<br/>L3]
+  RC -->|still failing, money, hardware, decisions| You
+  LG -->|Retro due| R[retro playbook]
+  R -->|max 3 proposals| You
+  You -->|yes| P
 ```
 
-## The agents
-| Agent | Model · effort | Writes to | Used for |
-| --- | --- | --- | --- |
-| orchestrator | the session's model (Opus recommended) | everything, asks first for config | talking to you, planning, routing, small edits |
-| `firmware-dev` | Opus 5.5 · high | `firmware/`, `packs/`, `docs/`, `tools/` | ESP-IDF C code, builds |
-| `ml-dev` | Opus 5.5 · high | `ml/`, `tools/`, `data/` manifests, `packs/`, `docs/` | signal processing, training, test vectors |
-| `researcher` | Sonnet 5.5 · medium | `60 Research/`, `00 Inbox/` | datasheets, prices, papers, datasets |
-| `writer` | Sonnet 5.5 · medium | `docs/`, READMEs, `10 Project/`, `00 Inbox/` | docs, OTIO texts |
-| `vault-keeper` | Haiku 5.5 | the numbered vault folders | work items, parts, daily lines, Handoff |
-| `verifier` | Opus 5.5 · high | nothing (read-only) | independent review, verdict PASS / FLAG / BLOCK |
-| `deep-engineer` | Opus 5.5 · xhigh | code folders + `schemas/` | escalations: failed twice, hard root causes |
-| `curator` | Opus 5.5 · high | `90 Meta/Agents/` proposals, retros, evals | improving the agents |
-
-Each agent's own instructions are its file in `.claude/agents/` (its personal CLAUDE.md). All of them also read the project `CLAUDE.md`; `firmware/CLAUDE.md` and `ml/CLAUDE.md` load when they work in those folders.
+## The playbooks
+| Playbook | When |
+| --- | --- |
+| `firmware` (+ `esp-idf-build-flash`) | any change under `firmware/`, on-device pack code, porting the hackathon fall core |
+| `ml-training` | `ml/`, `tools/`, data manifests, test vectors, training and results |
+| `research` | answers that need sources: parts, prices, datasheets, papers, datasets |
+| `writing` | READMEs, docs, OTIO texts, study lessons |
+| `vault-conventions` | any vault note: exact properties and editing rules |
+| `verify` | after code, schema, pack or decision-grade research (L1) |
+| `root-cause` | failed twice, or a hard cause across firmware, ml and hardware (L3) |
+| `retro` | improving the system |
+| `wrap-up` | end of a session |
+| `find-skills` | "is there a skill for …" |
 
 ## Escalation ladder
-| Level | Who | When | What happens |
+| Level | What | When | What happens |
 | --- | --- | --- | --- |
-| L0 | hooks | a specialist finishes | checks for the files it edited (vault rules, validate.py, ruff, pytest, `idf.py build`); on failure it is sent back, twice at most, then a `gate-fail` flag |
-| L1 | verifier | after code, schema, pack or decision-grade research | PASS, or findings logged as `verifier-flag` |
-| L2 | same agent | FLAG | retried with the findings, at most twice |
-| L3 | deep-engineer, or a stronger model | still failing | full history handed over; root cause first |
-| L4 | you | still failing, BLOCK, money, hardware, decisions | written in today's daily note and the Handoff, Claude asks |
+| L0 | Stop hook (`stop_gate.py`) | before Claude ends a reply | checks for the files edited since they last passed (vault rules, validate.py, ruff, pytest, `idf.py build`); two fix rounds, then a `gate-fail` flag |
+| L1 | `verify` playbook | after code, schema, pack or decision-grade research | a cold re-read of the diff and a PASS / FLAG / BLOCK verdict; findings logged as `review` flags |
+| L2 | retry | FLAG | fix with the findings, at most two rounds |
+| L3 | `root-cause` playbook | still failing | reproduce, prove the cause, smallest fix; suggest a stronger model or effort |
+| L4 | you | still failing, BLOCK, money, hardware, decisions | written in today's daily note and the Handoff; Claude asks |
+
+## The retro
+**Evidence:** the ledger (`90 Meta/Agents/Ledger/flags.jsonl`): gate failures, review findings, retries, escalations, and every time a person corrects Claude (`note` flags, logged right away).
+
+**Trigger:** `python .claude/scripts/ledger.py retro-due` says *due* when, since the last retro, there is:
+- a person's correction,
+- a high-severity flag,
+- three new flags,
+- or flags at least a week old that no retro has reviewed.
+
+The session start shows **Retro due** and Claude runs the retro at the next natural break. You can also type `/retro` at any time.
+
+**Output:** a retro note in `Retros/` and at most three proposals in `Proposals/`. Each has the evidence, the exact diff, a way to check it (a test in `.claude/tests/`, a check run, or a replay of the flagged case), the risk and the rollback. The cheapest fix comes first, in this order:
+1. a deterministic check,
+2. one sentence in a playbook,
+3. a new playbook section,
+4. a `CLAUDE.md` rule,
+5. a new playbook.
+
+The retro also retires rules that never fire.
+
+**Approval:** you say yes or no to each proposal. Only approved ones are applied (editing `.claude/` and `CLAUDE.md` asks permission anyway). Each one gets a line in the [[Changelog]]. Then `ledger.py retro-done` resets the trigger.
 
 ## What you type
 | You want | Type |
 | --- | --- |
 | Start working | `claude` in `C:\Work\Projects\Enterpartner\Rezonating` |
-| Give work to one agent directly | mention it: `@agent-researcher find EU stock for …`, or just describe the task |
+| Use a playbook directly | `/verify`, `/research …`, or just describe the task |
 | End a session properly | `/wrap-up` |
-| Weekly improvement round | `/retro` (Tuesday, after the work) |
-| Look for an existing skill | "is there a skill for …" (the `find-skills` skill) |
-| Check an agent's prompt quality | `/doctor prompt-audit .claude/agents/<name>.md` |
-| Run the agent tests | `python .claude/scripts/run_evals.py --agent vault-keeper` |
+| Improvement round now | `/retro` |
+| Is a retro due? | `python .claude/scripts/ledger.py retro-due` |
 | See open flags | `python .claude/scripts/ledger.py list --open` |
 | Run the gate by hand | `python .claude/scripts/checks.py` |
+| Test the hooks themselves | `python -m unittest discover -s .claude/tests` |
 
 ## Rules the hooks enforce (not just ask for)
 | Rule | Where |
 | --- | --- |
-| Agents write only in their folders | `pre_edit.py` + `.claude/agent-scopes.json` |
+| Checks pass before a reply ends (two fix rounds, then a flag) | `stop_gate.py` + `checks.py` |
 | No Templater code in notes; Claude never accepts a decision or changes an accepted one | `pre_edit.py` |
 | Nothing written to `data/raw/`, `data/private/`, `*.wav` | `pre_edit.py` + settings deny rules |
-| Notes keep the property rules | `post_edit.py`, gates, `stop_gate.py` |
+| Notes keep the property rules | `post_edit.py`, `stop_gate.py` |
 | Code formatted (ruff, clang-format) | `post_edit.py` |
-| No raw recordings in commits; Claude never mixes vault and code in one commit | `commit_guard.py` (+ `.githooks/pre-commit` for people) |
+| No raw recordings in commits; vault and code never in one commit | `commit_guard.py` (+ `.githooks/pre-commit` for people) |
 | Edits to `.claude/`, any `CLAUDE.md`, `schemas/`, `.mcp.json` ask a person first | settings `ask` rules |
 | Force-push, `reset --hard`, `git clean`, `rm -rf`, global skill installs | settings `deny` rules |
 
 ## Files
 ```
-CLAUDE.md                     project rules + orchestration policy (main session)
+CLAUDE.md                     project rules + the playbook table
 firmware/CLAUDE.md, ml/CLAUDE.md
 .claude/
-  agents/*.md                 one file per agent: model, effort, tools, instructions
-  skills/*/SKILL.md           esp-idf-build-flash, ml-training, vault-conventions, wrap-up, retro, find-skills
+  skills/*/SKILL.md           the playbooks
   rules/*.md                  path-scoped rules: vault notes, schemas
-  hooks/*.py                  session_start, pre_edit, post_edit, commit_guard, subagent_gate, agent_report, stop_gate
-  scripts/                    rzlib, vault_schema, checks (the gate), ledger, run_evals
-  evals/cases/<agent>/*.json  agent tests
-  agent-scopes.json           where each agent may write
+  hooks/*.py                  session_start, pre_edit, post_edit, commit_guard, stop_gate
+  scripts/                    rzlib, vault_schema, checks (the gate), ledger (+ retro-due)
+  tests/                      unittest suite for all of the above
   settings.json               permissions, hooks, plugins
 .mcp.json                     espressif-docs (sign in once), esp-idf (needs ESP-IDF v6)
 tools/local/                  local-model helpers (home desktop only)
 90 Meta/Agents/
   Ledger/flags.jsonl, runs.jsonl, Changelog.md
-  Proposals/, Retros/, Evals/Eval log.md
+  Proposals/, Retros/, Evals/Eval log.md (agent era, historical)
 ```
 
 ## Local models
-Ollama runs only on Kaszti's home desktop. Claude Code always uses the Claude subscription; the local model only drafts cheap things through `tools/local/` (week summary, inbox triage), and its output is labelled as a draft. See `tools/local/README.md`.
+Ollama runs only on Kaszti's home desktop. Claude Code always uses the Claude subscription. The local model only drafts cheap things through `tools/local/` (week summary, inbox triage), and its output is labelled as a draft. See `tools/local/README.md`.
 
-## Changing the agent system
-1. **Evidence first:** a flag in the ledger, or a person's correction logged as a `note` flag.
-2. **Proposal:** the curator (or you) writes `90 Meta/Agents/Proposals/P-### …` with the exact diff, the eval case and the rollback.
-3. **Test:** `run_evals.py --agent <a>` before and with `--candidate "<proposal>"`.
-4. **Review:** `/doctor prompt-audit <file>`, then a person says yes.
-5. **Apply and record:** apply the diff, `status: applied`, one line in [[Changelog]], resolve the flags.
-
-Adding an agent: its file in `.claude/agents/`, its scope in `agent-scopes.json`, its name in the `SubagentStop` matcher (`settings.json`) and in `SPECIALISTS` (`subagent_gate.py`), a routing row in `CLAUDE.md`, and at least one eval case.
-
-## Known limits
-- The gate checks files an agent changed with Edit/Write. A file written by a script the agent ran isn't seen; the verifier's `git diff` catches it.
-- Effort can't be raised per task, only per agent; that's why `deep-engineer` exists.
-- Agents are pinned to exact model ids (`claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`) since 2026-10-13, so a new model never changes an agent silently: moving to a newer model is a Changelog line. If a plan doesn't include a model, Claude Code falls back to the session's model and shows a warning.
-- Evals use subscription quota: run them for proposals, not every day.
-- `.claude/` points at vault paths (the ledger). Before the repo goes open source, move the ledger out of the vault or drop it (see [[D-012 Obsidian vault in the repo]]).
+## Adding a playbook
+Only through the retro, or when you ask for one:
+1. Create `.claude/skills/<name>/SKILL.md` with a `description` that says when to load it.
+2. Add a row to the playbook table in `CLAUDE.md` and here.
+3. Add a line to the [[Changelog]].

@@ -1,13 +1,13 @@
 ---
 type: work
-status: doing
+status: done
 owner: claude
 priority: p1
 area: data
 due: 2026-10-20
 pack:
 created: 2026-10-12
-done:
+done: 2026-11-01
 ---
 # Lab 1 Link codec and simulator
 
@@ -17,7 +17,7 @@ done:
 - [x] codec round-trips every frame type
 - [x] golden vectors in `tools/lab/tests/vectors/link-v0.json` (56 cases)
 - [x] `rzlab sim` + `rzlab tail` show the measured rate and keep host gaps separate from device drops
-- [ ] C header `link.h` matches the vectors (host build)
+- [x] C header `link.h` matches the vectors (host build)
 
 ## Notes
 - Protocol: [[D-018 Node link protocol v0]], spec in `tools/lab/PROTOCOL.md`.
@@ -29,3 +29,4 @@ done:
 ## Log
 - 2026-10-12 created
 - 2026-10-12 Claude: Python codec, vectors, accounting, simulator and `rzlab tail` done; C header open
+- 2026-11-15 Claude: done (logged late). The C side is `firmware/bringup-esp32/main/rz_link.h`; its host test (`test_host/`, vectors generated from `link-v0.json`) passed 74/74 with a verifier PASS, and it streamed to `rzlab` from the real board on 2026-11-02 (commit 64ad038).

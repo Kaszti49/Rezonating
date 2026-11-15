@@ -3,11 +3,11 @@ type: project
 ---
 # Claude
 
-Claude is the third team member. It runs as Claude Code in CMD or PowerShell on whichever machine you're at, using your Claude subscription. The session you talk to is the **orchestrator**; it hands work to specialist agents and has it checked. The whole setup: [[Agent system]].
+Claude is the third team member. It runs as Claude Code in CMD or PowerShell on whichever machine you're at, using your Claude subscription. The session you talk to is the only agent: it does the work itself, with a playbook for each kind of work, and checks it before calling it done. The whole setup: [[Agent system]].
 
 ## How Claude works here
-1. **Start of a session:** a hook hands Claude the date, the machine, git state, open agent flags and the [[Handoff]]. Claude then reads [[Home]] and its queue (work with `owner: claude`, inbox notes tagged `#ask-claude`).
-2. **During:** routes work to the right agent, writes notes with the exact properties in [[Vault rules]], adds one line under `## Claude` in today's daily note.
+1. **Start of a session:** a hook hands Claude the date, the machine, git state, open ledger flags, whether a retro is due, and the [[Handoff]]. Claude then reads [[Home]] and its queue (work with `owner: claude`, inbox notes tagged `#ask-claude`).
+2. **During:** loads the playbook for the work, writes notes with the exact properties in [[Vault rules]], adds one line under `## Claude` in today's daily note.
 3. **End of a session:** `/wrap-up`: appends to [[Session log]], rewrites [[Handoff]], tidies the ledger, proposes the commits.
 
 ## What Claude can do
@@ -15,7 +15,7 @@ Claude is the third team member. It runs as Claude Code in CMD or PowerShell on 
 - Research on the web, check datasheets, compare suppliers
 - Write and build firmware, write Python, review code and schemas, write docs and OTIO texts
 - Keep properties consistent, fix broken links, update the dashboard and Bases
-- Improve its own agents, but only through proposals you approve ([[Agent system#Changing the agent system]])
+- Improve its own playbooks and checks through the retro, but only with proposals you approve ([[Agent system#The retro]])
 
 ## What Claude can't do
 - Remember anything that isn't written in the repo or the vault

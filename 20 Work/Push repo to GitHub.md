@@ -1,13 +1,13 @@
 ---
 type: work
-status: review
+status: done
 owner: kaszti
 priority: p1
 area: project
 due: 2026-10-02
 pack:
 created: 2026-10-01
-done:
+done: 2026-11-03
 ---
 # Push repo to GitHub
 
@@ -15,10 +15,11 @@ done:
 
 ## Done when
 - [x] `git push -u origin main` succeeded
-- [ ] Viktor cloned with `--recurse-submodules`
+- [x] Viktor cloned with `--recurse-submodules` ✅ 2026-11-03
 
 ## Notes
 
 ## Log
 - 2026-10-01 created
 - 2026-10-03 Claude: push verified (both commits on origin/main since 2026-10-01); set done once Viktor has cloned
+- 2026-11-15 Claude: done (logged late). Both boxes were already ticked; Viktor cloned on 2026-11-03.

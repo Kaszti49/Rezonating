@@ -1,7 +1,7 @@
 ---
 type: pack
 stage: design
-order_no: 1
+order_no: 2
 head: geophone
 metric: person-ID accuracy (%)
 target_value: 85

@@ -120,3 +120,35 @@ Append-only. Newest at the bottom. One entry per Claude session.
 - **Next session should:**
   - With Kaszti, USB unplugged: Ω across the 680 Ω resistor (about 680?), cell end to black (about 1070–1120?). Fix the joint, then about 2.0 V red–black, then a press test with one end fixed while watching CH1 in the site.
   - Then fix the reconnect/acquisition restart in the Lab.
+
+## 2026-11-15
+- **Did:**
+  - Merged the HARMAN Hackathon fall detector as a snapshot.
+    - The code (`Kaszti49/RezonFallDetector` at `f6d2eee`) was only on GitHub: the local folder was 7 commits behind, so Claude fetched it, without merging into that folder.
+    - The core, tools, pages, practice sketches, labels and the hackathon NOTES excerpt went to `firmware/hackathon-rezon/`; the wiring, parts, casing STL and Blender sources to `hardware/hackathon/`.
+    - Left out: the video, audio, presentation and photos.
+    - `train.bat` and `mixtest.sh` now read recordings from `data/raw/hackathon/`, and `.gitignore` covers `secrets.h`, the exes and `events.tsv`.
+    - No secrets in the snapshot (phone and PIN are placeholders only).
+  - Replay check (g++ from MSYS2): with the device's stored settings the stage session gives 3 falls (43.7, 51.5 and 60.4 s) and 0 jumps flagged, which matches the labels.
+  - Vision change, confirmed by Kaszti: fall first, architecture kept.
+    - Proposed D-023 (supersedes D-003) and D-024 (the hackathon core becomes the fall engine via an ESP-IDF port; linear score; Python twin; calling, speaker and BLE parked under Later).
+    - Updated Charter, Roadmap, fall, footstep-id, `CLAUDE.md` scope and lesson s08 EN/HU.
+    - Created EXP-001 and [[Port the fall core to ESP-IDF]].
+  - Agent system → one agent with playbooks (D-025 proposed, supersedes D-013):
+    - Removed the agents, scopes, subagent_gate, agent_report and evals.
+    - The Stop hook is now the L0 gate (mtime-tracked, two fix rounds, then a flag).
+    - Added `ledger.py retro-due` / `retro-done`, a "Retro due" line in SessionStart, and `--playbook` (`--agent` still works).
+    - New playbooks: firmware, research, writing, verify, root-cause. Reworked: ml-training, vault-conventions, retro, wrap-up.
+    - Notes updated: `CLAUDE.md`, [[Agent system]], How our system works, Team, Claude.
+- **Playbooks:** no subagents. Checks: `.claude/tests` 19 passed (it first caught a retro-due bug, now fixed), ruff clean, vault_schema clean on every touched note.
+- **Decided with the team:** Kaszti chose fall first with the architecture kept, the merge as a snapshot copy, and a retro that proposes while a person approves.
+- **Left open:**
+  - D-023, D-024 and D-025 to accept.
+  - The new Roadmap dates are a proposal.
+  - The hackathon recordings must be copied into `data/raw/hackathon/` (the pre_edit rule forbids Claude to write there).
+  - The dashboard's "Verifier" KPI will stay at 0/0 (view code untouched).
+  - The 12 agent-era flags need the first retro.
+- **Next session should:**
+  - Run the `retro` playbook (it is due).
+  - Then ask whether D-023 to D-025 were accepted; if so, start [[Port the fall core to ESP-IDF]].
+

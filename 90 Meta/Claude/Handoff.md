@@ -1,52 +1,49 @@
 ---
 type: handoff
-updated: 2026-11-02
+updated: 2026-11-15
 ---
 # Handoff
 
 **Read this first every session.** It's the current state in under a page. Rewrite it at the end of each session; don't append.
 
-## Where we are (2026-11-02, EP-LAPTOP, ended by a power cut)
-- **The site streams the real board.**
-  - The bench ESP32 runs the link-mode bring-up firmware, verifier **PASS** (F-261101-457b resolved). Claude flashed it at Kaszti's request (ESP-IDF v6.0, 213 376 B).
-  - `rzlab serve` → `serial:COM12` gives `adc_dec` at 997.3 Hz (−0.21 %), 0 device drops.
-  - Link loss at 115200: about 0.07 % of frames, plus 200 host-side samples.
-- **The load cell still gives no signal: the excitation stops at the 680 Ω resistor.**
-  - 3.3 V on its 3V3 end, **0 V on the cell end**: either the resistor or its joint is open, or that end is shorted to GND (the resistor soldered to black, or a solder bridge).
-  - CH1 and CH2 move together when the rig is handled, and CH1 sits at the ADC offset (≈250 µV).
-  - The green wire's contact is also suspect (CH1 jumps when it moves).
-- **After a reconnect the ADC read ID 0xFFFF/0x0000** until Kaszti re-seated the jumpers. The mikroBUS jumpers are fragile.
-- **EP-LAPTOP:**
-  - The repo folder `C:\Users\enterpartner\Rezonating-main` is a **zip copy, not a git clone**: today's push went through a scratchpad clone.
-  - Python 3.12, ml + Lab, Lab UI, WinLibs GCC (host tests: `CC=gcc`) and ESP-IDF v6.0 in `C:\esp\v6.0` are installed.
-  - The classifier blocks `-ExecutionPolicy Bypass` (IDF activation, the esp-idf MCP), so Claude ran idf.py through a scratchpad launcher that sets the env from `Microsoft.v6.0.PowerShell_profile.ps1`. That launcher is gone next session: recreate it, or use the EIM desktop shortcut.
-
-## Study site (2026-11-03, pc-10)
-- `python tools/study/serve.py` (port 8790). 28 lessons EN/HU, 3D parts and builds, fault cases, cards, Claude tutor. Progress goes to `10 Project/Study/` (new `study` note type in vault_schema.py and Vault rules).
-- **Not verified yet** (the verifier was skipped for the usage limit): run `verifier` on `tools/study/**`, and check lesson facts against the writers' flags. Their flags:
-  - AMS1117 800 mA / 1.1 V are not datasheet-checked;
-  - the SM-24 damping figures come from a secondary source;
-  - f_data = CLKIN/2/OSR should be confirmed in the datasheet;
-  - a native speaker should skim the Hungarian.
-- The writer hook blocks `tools/`. Content went through `docs/study-drafts/` and was moved. Consider allowing `tools/study/web/content/**` for the writer (`.claude/` change: needs approval).
-- Ask Kaszti: delete the old `docs/study-guide.html` and `docs/study-library/`?
+## Where we are (2026-11-15, desktop-db0e1qv, off-day)
+- **The hackathon fall detector is in the repo.** The HARMAN Hackathon (13–14 Nov) built a working detector: 3 of 3 stage falls caught, 3 of 3 jumps rejected ([[EXP-001 Hackathon fall detector on stage]]).
+  - Snapshot of `Kaszti49/RezonFallDetector` at `f6d2eee`: the code is in `firmware/hackathon-rezon/` (Arduino, reference only; read its README), the hardware sources in `hardware/hackathon/`.
+  - Recordings are **not** in the repo. The 4 CSVs are in `data/` (now git-ignored), but `train.bat` and `mixtest.sh` look in `data/raw/hackathon/`. Kaszti: move them there along with the session logs (`firmware/data/*.log` from the hackathon repo). Claude may not write there.
+- **OTIO in Veszprém on 2026-11-30 (Monday):** the next thing that has to be presentable. The plan is to present the fall detector. More fall tests come first, which is why the gain question is open.
+- **Fall goes first now; the architecture stays.** Accepted: [[D-023 Year 1 order fall first]] and [[D-024 Hackathon core is the fall pack engine]].
+  - The C++ core is ported into the ESP-IDF node with a linear score and a Python twin. Calling, speaker and BLE are parked under Later in the [[Roadmap]].
+  - The new Roadmap dates (fall gate 2027-01-12, footstep 2027-04-06) are Claude's proposal.
+- **Claude is one agent with playbooks** ([[D-025 One agent with playbooks]], accepted; [[Agent system]]).
+- **Work cleanup (2026-11-15):** 7 items that were done but never logged are now `done`, each with its evidence in the Log: Push repo, Lab 1, EU stock, company PC, ESP-IDF, OTIO Győr, first order. [[ORD-001 First rig]] still needs its order and delivery dates.
+  - The Stop hook is the L0 gate.
+  - `verify` is the L1 check.
+  - The retro is triggered by evidence: `ledger.py retro-due` already says **due** (12 agent-era flags, three logged corrections).
+- **Bench (from 2026-11-03):** load-cell press test PASS after the 680 kΩ → 690 Ω (470 + 220) fix. The Lab connect fix passed the verifier but is not yet tested on the real board.
+- **Study site** (`python tools/study/serve.py`, port 8790) still needs checking with the `verify` playbook. Lesson facts flagged by the writers: AMS1117 values, SM-24 damping, f_data = CLKIN/2/OSR, a native-speaker skim of the Hungarian.
 
 ## Next up
 | Who | What |
 | --- | --- |
-| Kaszti | USB unplugged, Ω mode: across the 680 Ω resistor (≈680 Ω? OL = open joint), cell end to black (≈1070–1120 Ω? ≈0 = short). Is the resistor on the **red** wire? Re-do the green/white ends (tin, clamp). Then red–black ≈2.0 V and a press test with one end fixed. Clone the repo properly on EP-LAPTOP (or replace the zip folder). Flip D-021/D-022 in Obsidian |
-| Kaszti + Viktor | Is the classic ESP32 the node now? Is the ADXL355 in the lab? Is the sim drift plausible? |
-| Viktor | Review D-021 parameters; [[FootprintID dataset loader]]; confirm the bench-guide pin map |
-| Claude | 1) Press test with Kaszti in the site. 2) Lab: restart acquisition after a serial reconnect. 3) README fixes from F-261102-f78b (mislabel bound 5 → 8, inside the FIR window). 4) Higher link baud? (proposal). 5) Symlink tests skip on WinError 1314. 6) Lab re-verifies 4c, 5, 7, sim people. 7) D-022. Add EP-LAPTOP and desktop-o8pjtu7 to [[Workstations]] |
+| Kaszti | Move the CSVs and logs into `data/raw/hackathon/`. Fill in the ORD-001 dates. OK the new Roadmap dates. Older items: D-021/D-022, the EP-LAPTOP git clone, delete the old `docs/study-guide.html`? |
+| Kaszti + Viktor | More fall tests, then decide gain 2 or 4. OTIO Veszprém prep (2026-11-30): should Claude make a work item for it? Is the SM-24 + ADC 15 Click setup now the Year 1 bench rig? |
+| Viktor | Review [[Port the fall core to ESP-IDF]] and D-024. D-021 parameters. [[FootprintID dataset loader]] |
+| Claude | 1) **Retro** (due): triage the 12 open flags ([[First agent retro]]). 2) [[Port the fall core to ESP-IDF]] (unblocked). 3) `verify` the study site. 4) Lab: restart acquisition after a reconnect, then the README fixes from F-261102-f78b |
+
+## Commit plan (not committed)
+1. **Code:** "Merge hackathon fall detector (f6d2eee) as reference": `firmware/hackathon-rezon/`, `hardware/hackathon/`, `.gitignore`, `tools/study/.../s08.*`.
+2. **Code:** "Replace agents with playbooks": `.claude/`, `CLAUDE.md`.
+3. **Vault:** the decisions, EXP-001, the work notes, the pack notes, Charter, Roadmap, the system notes, the daily note, the Session log, this Handoff, the Changelog.
+
+The two uncommitted vault files that were there before this session (`10 Project/Study/Kaszti.md`, `20 Work/Push repo to GitHub.md`) are untouched.
 
 ## Open flags
-- F-261102-f78b (low): README mislabel bound; DRDY latency ≥130 µs drifts the index and nothing reports it (idea: worst grid offset in `[CNT]`).
-- 4c (F-261013-860d/-4a62, next failure → deep-engineer), sim people (F-261013-02f8/-80bb), Lab 7 (F-261013-1e25): waiting on re-verify.
-- F-261013-906b, -e9b4, -da80, F-261006-646c, F-261101-b2c0 (gate skips idf-build): for /retro.
+- 12 open from the agent era (they keep their agent names); the retro takes them. Notable: F-261101-b2c0 (the gate skips idf-build when IDF is only reachable through the EIM profile), F-261013-860d (4c), F-261102-f78b (README bound).
 
 ## Watch out
-- After a USB unplug, `rzlab serve` reconnects but stays idle: POST `/api/acquisition {"action":"start"}` (or Start in the UI).
-- Don't open COM12 from two programs; a text capture needs the site disconnected.
-- Ω measurements only with the USB unplugged; a meter lead in the mA jack shorts what it touches.
-- ml vectors are pinned to footstep-id's trigger; Bench retuning means regenerating them and telling firmware.
+- The dashboard's Claude card still shows a "Verifier" KPI; it stays at 0/0 now. Fix it only if someone asks (view code).
+- `firmware/hackathon-rezon/` is a reference: don't develop it further, port from it.
+- The replay defaults differ from the settings that were in the device's flash; use the `--set` values in its README.
+- After a USB unplug, `rzlab serve` reconnects but stays idle: Start in the UI.
+- Ω measurements only with the USB unplugged.
 - Accepted decisions are hook-locked: propose a new one with `supersedes`.
