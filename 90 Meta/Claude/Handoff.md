@@ -9,7 +9,7 @@ updated: 2026-11-15
 ## Where we are (2026-11-15, desktop-db0e1qv, off-day)
 - **The hackathon fall detector is in the repo.** The HARMAN Hackathon (13–14 Nov) built a working detector: 3 of 3 stage falls caught, 3 of 3 jumps rejected ([[EXP-001 Hackathon fall detector on stage]]).
   - Snapshot of `Kaszti49/RezonFallDetector` at `f6d2eee`: the code is in `firmware/hackathon-rezon/` (Arduino, reference only; read its README), the hardware sources in `hardware/hackathon/`.
-  - Recordings are **not** in the repo. The 4 CSVs are in `data/` (now git-ignored), but `train.bat` and `mixtest.sh` look in `data/raw/hackathon/`. Kaszti: move them there along with the session logs (`firmware/data/*.log` from the hackathon repo). Claude may not write there.
+  - Recordings are **not** in git. The 4 CSVs and the 2 session logs are in `data/raw/hackathon/` on the home desktop (Kaszti, 2026-11-15); the README's replay check passes from there. Other machines need their own copy.
 - **OTIO in Veszprém on 2026-11-30 (Monday):** the next thing that has to be presentable. The plan is to present the fall detector. More fall tests come first, which is why the gain question is open.
 - **Fall goes first now; the architecture stays.** Accepted: [[D-023 Year 1 order fall first]] and [[D-024 Hackathon core is the fall pack engine]].
   - The C++ core is ported into the ESP-IDF node with a linear score and a Python twin. Calling, speaker and BLE are parked under Later in the [[Roadmap]].
@@ -25,7 +25,7 @@ updated: 2026-11-15
 ## Next up
 | Who | What |
 | --- | --- |
-| Kaszti | Move the CSVs and logs into `data/raw/hackathon/`. Fill in the ORD-001 dates. OK the new Roadmap dates. Older items: D-021/D-022, the EP-LAPTOP git clone, delete the old `docs/study-guide.html`? |
+| Kaszti | Fill in the ORD-001 dates. OK the new Roadmap dates. Older items: D-021/D-022, the EP-LAPTOP git clone, delete the old `docs/study-guide.html`? |
 | Kaszti + Viktor | More fall tests, then decide gain 2 or 4. OTIO Veszprém prep (2026-11-30): should Claude make a work item for it? Is the SM-24 + ADC 15 Click setup now the Year 1 bench rig? |
 | Viktor | Review [[Port the fall core to ESP-IDF]] and D-024. D-021 parameters. [[FootprintID dataset loader]] |
 | Claude | 1) **Retro** (due): triage the 12 open flags ([[First agent retro]]). 2) [[Port the fall core to ESP-IDF]] (unblocked). 3) `verify` the study site. 4) Lab: restart acquisition after a reconnect, then the README fixes from F-261102-f78b |
