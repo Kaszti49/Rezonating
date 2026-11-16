@@ -1,0 +1,306 @@
+<!doctype html>
+<!-- OTIO 2026 poster, 950 x 1350 mm portrait. Template: build.py fills the IMG and WAVE markers.
+     Edit text here; edit image prompts in PROMPTS.md; build with: python docs/otio-poster/build.py -->
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<title>Rezonating – OTIO poszter</title>
+<style>
+@font-face { font-family: "Inter"; src: url(../fonts/inter-latin.woff2) format("woff2"); font-weight: 100 900;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2199, U+2212, U+2215; }
+@font-face { font-family: "Inter"; src: url(../fonts/inter-latin-ext.woff2) format("woff2"); font-weight: 100 900;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Mono"; src: url(../fonts/mono-latin.woff2) format("woff2"); font-weight: 100 800;
+  unicode-range: U+0000-00FF, U+2000-206F, U+2190-2199, U+2212; }
+@font-face { font-family: "Mono"; src: url(../fonts/mono-latin-ext.woff2) format("woff2"); font-weight: 100 800;
+  unicode-range: U+0100-02AF, U+1E00-1EFF; }
+
+@page { size: 950mm 1350mm; margin: 0; }
+
+:root {
+  --paper: #ECE9E3;      /* low-saturation warm grey base */
+  --paper-2: #E2DED6;
+  --ink: #141619;
+  --ink-2: #4E5258;      /* tint of ink for secondary text */
+  --rule: #C9C4BA;
+  --accent: #F0641E;     /* the one accent: vibration, matches the Enterpartner orange */
+  --m: 40mm;             /* side margin; brief requires >= 30 mm safe zone */
+  --g: 10mm;             /* gutter */
+  --u: 6mm;              /* baseline unit */
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 950mm; height: 1350mm; }
+body {
+  background: var(--paper) url(../assets/grain.png) repeat; background-size: 120mm;
+  color: var(--ink); font-family: "Inter", sans-serif; font-size: 28pt; line-height: 12mm;
+  font-feature-settings: "ss01", "cv11", "tnum"; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  position: relative; overflow: hidden;
+}
+.mono { font-family: "Mono", monospace; letter-spacing: 0.02em; }
+
+/* ---------- header ---------- */
+header { position: absolute; left: var(--m); right: var(--m); top: 34mm; }
+.topline { display: flex; justify-content: space-between; align-items: flex-start; }
+.meta { font-size: 24pt; line-height: 10mm; color: var(--ink-2); text-transform: uppercase; }
+.meta b { color: var(--ink); font-weight: 600; }
+.meta .acc { color: var(--accent); }
+.partner { display: flex; align-items: center; gap: 8mm; text-align: right; }
+.partner img { width: 52mm; height: 52mm; }        /* well under the 13 cm sharpness limit */
+.partner .lbl { font-size: 20pt; line-height: 8mm; color: var(--ink-2); text-transform: uppercase; }
+.partner .name { font-size: 30pt; line-height: 12mm; font-weight: 700; }
+h1 {
+  font-size: 400pt; line-height: 128mm; font-weight: 800; letter-spacing: -0.055em;
+  margin: -6mm 0 0 -5mm; /* optical alignment of the R to the margin */
+}
+h1 .dot { color: var(--accent); }
+.claim { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4mm; }
+.claim p { font-size: 64pt; line-height: 26mm; font-weight: 600; letter-spacing: -0.02em; }
+.claim p span { color: var(--ink-2); font-weight: 400; }
+.authors { text-align: right; font-size: 28pt; line-height: 11mm; }
+.authors b { font-weight: 700; }
+.authors small { display: block; font-size: 22pt; line-height: 9mm; color: var(--ink-2); }
+
+/* ---------- hero ---------- */
+.hero { position: absolute; left: 0; right: 0; top: 262mm; height: 390mm; background: #0d0e10; overflow: hidden; }
+.hero img { width: 100%; height: 100%; object-fit: cover; object-position: center 55%; display: block; }
+.hero::after { /* subtle vignette */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 75% 85% at 60% 50%, transparent 55%, rgba(0,0,0,.38) 100%);
+}
+.callout { position: absolute; display: flex; align-items: center; gap: 0; z-index: 2; }
+.callout i { display: block; width: 4mm; height: 4mm; border-radius: 50%; border: 0.6mm solid var(--paper); background: var(--accent); flex: none; }
+.callout s { display: block; height: 0.5mm; background: var(--paper); flex: none; }
+.callout span { background: var(--paper); color: var(--ink); font-size: 22pt; line-height: 9mm; padding: 1.5mm 4mm; white-space: nowrap; }
+.callout span b { font-weight: 700; }
+.callout.left { flex-direction: row-reverse; }
+.callout.up { flex-direction: column; transform: translateX(-50%); }
+.callout.up s { width: 0.5mm; height: 70mm; }
+
+/* ---------- spec strip (extreme scale hierarchy) ---------- */
+.specs { position: absolute; left: var(--m); right: var(--m); top: 664mm; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--g); }
+.spec { border-top: 1.2mm solid var(--ink); padding-top: 3mm; }
+.spec .n { height: 52mm; display: flex; align-items: baseline; font-size: 150pt; line-height: 52mm; font-weight: 800; letter-spacing: -0.05em; }
+.spec .n small { font-size: 60pt; letter-spacing: -0.02em; font-weight: 700; }
+.spec .t { font-size: 24pt; line-height: 10mm; color: var(--ink-2); }
+.spec.acc .n { color: var(--accent); }
+
+/* ---------- sections ---------- */
+.grid3 { position: absolute; left: var(--m); right: var(--m); display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 18mm; }
+.rowA { top: 758mm; }
+.rowC { top: 1052mm; }
+section h2 { font-size: 52pt; line-height: 20mm; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4mm; display: flex; gap: 5mm; align-items: baseline; }
+section h2 .no { font-family: "Mono", monospace; font-size: 26pt; color: var(--accent); font-weight: 600; letter-spacing: 0; }
+section p, section li { font-size: 28pt; line-height: 12mm; }
+section p + p, section p + ul { margin-top: 3mm; }
+section ul { list-style: none; }
+section li { padding-left: 8mm; position: relative; }
+section li::before { content: ""; position: absolute; left: 0; top: 5mm; width: 4mm; height: 1mm; background: var(--accent); }
+section b { font-weight: 700; }
+.muted { color: var(--ink-2); }
+.timeline { margin-top: 4mm; border-left: 0.8mm solid var(--rule); padding-left: 7mm; }
+.timeline div { position: relative; font-size: 24pt; line-height: 10mm; margin-bottom: 1.5mm; }
+.timeline div::before { content: ""; position: absolute; left: -10.4mm; top: 3mm; width: 4.4mm; height: 4.4mm; border-radius: 50%; background: var(--paper); border: 0.8mm solid var(--ink-2); }
+.timeline div.done::before { background: var(--ink); border-color: var(--ink); }
+.timeline div.next::before { border-color: var(--accent); }
+.timeline .when { font-family: "Mono", monospace; font-size: 20pt; color: var(--ink-2); display: block; line-height: 8mm; }
+
+/* ---------- how it works band ---------- */
+.how { position: absolute; left: 0; right: 0; top: 892mm; height: 148mm; background: var(--paper-2); }
+.how-in { position: absolute; left: var(--m); right: var(--m); top: 8mm; bottom: 8mm; display: grid;
+  grid-template-columns: 250mm 1fr 140mm; column-gap: 14mm; align-items: stretch; }
+.how .lbl { font-size: 20pt; line-height: 8mm; text-transform: uppercase; color: var(--ink-2); }
+.how .lbl b { color: var(--ink); }
+.how-photo { position: relative; }
+/* exploded view shot on white: multiply drops the white into the band colour */
+.how-photo img { width: 100%; height: 100%; object-fit: contain; display: block; mix-blend-mode: multiply; }
+.how-photo .ph { inset: 0; }
+.callout.ink i { border-color: var(--paper-2); }
+.callout.ink s { background: var(--ink); height: 0.4mm; }
+.callout.ink span { background: transparent; padding: 0 3mm; font-size: 20pt; line-height: 8mm; }
+.wave { position: relative; }
+.wave svg { position: absolute; left: 0; right: 0; top: 9mm; bottom: 9mm; width: 100%; height: calc(100% - 18mm); }
+.wave .ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 8mm; }
+.wave .ticks span { position: absolute; font-size: 20pt; line-height: 8mm; color: var(--ink-2); transform: translateX(-50%); }
+.result { display: flex; flex-direction: column; justify-content: space-between; border-left: 1.2mm solid var(--accent); padding-left: 6mm; }
+.result .who { font-size: 64pt; line-height: 24mm; font-weight: 800; letter-spacing: -0.03em; }
+.result .who span { color: var(--ink-2); font-weight: 400; }
+
+/* ---------- row C cards with photos ---------- */
+.photo { position: relative; height: 140mm; background: #1a1b1e; overflow: hidden; margin-bottom: 6mm; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cap { font-size: 20pt; line-height: 8mm; color: var(--ink-2); margin: -3mm 0 4mm; }
+.stack section + section { margin-top: 9mm; }
+
+/* ---------- references ---------- */
+.refs { position: absolute; left: var(--m); right: var(--m); top: 1288mm; border-top: 0.6mm solid var(--ink); padding-top: 4mm;
+  display: grid; grid-template-columns: 84mm 1fr 1fr; column-gap: 12mm; }
+.refs h2 { font-size: 30pt; line-height: 10mm; font-weight: 700; }
+.refs h2 .no { font-family: "Mono", monospace; font-size: 20pt; color: var(--accent); display: block; line-height: 8mm; }
+.refs p { font-size: 20pt; line-height: 8mm; color: var(--ink-2); }
+.refs p b { color: var(--ink); font-weight: 600; }
+
+/* ---------- placeholders for images not generated yet ---------- */
+.ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3mm;
+  color: #8d9096; font-family: "Mono", monospace; font-size: 22pt; line-height: 9mm; text-align: center;
+  background: repeating-linear-gradient(135deg, #1a1b1e 0 6mm, #202226 6mm 12mm); }
+.ph b { color: var(--accent); font-size: 40pt; line-height: 16mm; }
+.missing-text { background: #ffd23f; outline: 1mm solid var(--accent); padding: 0 2mm; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topline">
+    <div class="meta mono">
+      <b>OTIO 2026</b> · <span class="acc">Informatika szekció</span><br>
+      Székesfehérvári SZC Széchenyi István Műszaki Technikum<br>
+      8000 Székesfehérvár, Budai út 45.
+    </div>
+    <div class="partner">
+      <div><div class="lbl mono">Duális képzőhely</div><div class="name">Enterpartner Kft.</div></div>
+      <img src="../assets/enterpartner-logo.png" alt="Enterpartner Kft.">
+    </div>
+  </div>
+  <h1>Rezonating<span class="dot">.</span></h1>
+  <div class="claim">
+    <p>Tudja, ki lépett be. <span>Kamera nélkül.</span></p>
+    <div class="authors"><b>Kaszti Benedek · Szabó Viktor</b><small>pályázók</small></div>
+  </div>
+</header>
+
+<div class="hero">
+  {{IMG:H}}
+  <div class="callout" style="left:52%; top:84.5%"><i></i><s style="width:15mm"></s><span><b>Lépés</b> · rezgés a födémben</span></div>
+  <div class="callout up" style="left:77%; bottom:calc(51% - 2mm)"><span><b>Csomópont</b> · ESP32-S3, döntés a készüléken</span><s></s><i></i></div>
+</div>
+
+<div class="specs">
+  <div class="spec acc"><div class="n">0</div><div class="t">kamera, mikrofon vagy viselhető eszköz</div></div>
+  <div class="spec"><div class="n">1000<small>/s</small></div><div class="t">rezgésminta geofononként</div></div>
+  <div class="spec"><div class="n">2</div><div class="t">SM-24 geofon a csomópontban</div></div>
+  <div class="spec"><div class="n">85<small>%</small></div><div class="t">cél: helyes felismerés 3 fő közül</div></div>
+</div>
+
+<div class="grid3 rowA">
+  <section>
+    <h2><span class="no">01</span>Bevezetés</h2>
+    <p>Egy okos otthonnak tudnia kellene, ki van a szobában. Ma ehhez kamera, mikrofon vagy karkötő kell, és ezeket sokan nem akarják.</p>
+    <p>Pedig mindenki másképp lép, és a lépés rezgése végigfut a padlón [1]. Rezgésérzékelőnk a HARMAN Hackathonon már esést ismert fel; most a lépéseket tanulja.</p>
+  </section>
+  <section>
+    <h2><span class="no">02</span>Célkitűzés</h2>
+    <p><b>Felismerhető-e egy háztartás tagja pusztán a lépése rezgéséből?</b></p>
+    <ul>
+      <li>kamera és mikrofon nélkül</li>
+      <li>néhány bejárással betanítható</li>
+      <li>az idegent „ismeretlen”-ként jelzi</li>
+      <li>3 főből legalább 85% helyes felismerés a saját padlónkon</li>
+    </ul>
+  </section>
+  <section>
+    <h2><span class="no">03</span>A projekt leírása</h2>
+    <p>Két geofon a padló rezgését méri; a csomópont kivágja a lépéseket, és eldönti, kié.</p>
+    <div class="timeline">
+      <div class="done"><span class="when">2026 ősz · kész</span>Csomópont és mérőlánc működik</div>
+      <div class="done"><span class="when">2026. nov. · kész</span>Hackathon: esésfelismerés, lépésfelvétel</div>
+      <div class="next"><span class="when">2026. dec. – 2027. ápr.</span>Mérés a FootprintID-adatokon [2], majd saját padlón</div>
+    </div>
+  </section>
+</div>
+
+<div class="how">
+  <div class="how-in">
+    <div class="how-photo">{{IMG:B}}
+      <div class="callout ink left" style="right:64.4%; top:14%"><i></i><s style="width:10mm"></s><span class="mono">Fedél</span></div>
+      <div class="callout ink" style="left:58.3%; top:33%"><i></i><s style="width:10mm"></s><span class="mono">ESP32-S3</span></div>
+      <div class="callout ink left" style="right:56.1%; top:46%"><i></i><s style="width:10mm"></s><span class="mono">ADC · 24 bit</span></div>
+      <div class="callout ink" style="left:56.1%; top:55%"><i></i><s style="width:10mm"></s><span class="mono">2× SM-24 geofon</span></div>
+      <div class="callout ink left" style="right:63.9%; top:71%"><i></i><s style="width:10mm"></s><span class="mono">Ház · Ø 19 cm</span></div>
+    </div>
+    <div class="wave">
+      <div class="lbl mono"><b>Saját mérés</b> · 6 s járás, HARMAN Hackathon, színpad · <span style="color:var(--accent)">▮</span> a készülék lépésjelzése</div>
+      {{WAVE}}
+    </div>
+    <div class="result">
+      <div class="lbl mono"><b>Kimenet</b> · kié a lépés</div>
+      <div class="who">P2</div>
+      <div class="lbl mono">P1 · P2 · P3 · ismeretlen</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid3 rowC">
+  <div>
+    <div class="photo">{{IMG:E}}</div>
+    <section>
+      <h2><span class="no">04</span>Újdonság, innováció</h2>
+      <ul>
+        <li>Nincs kép, nincs hang, semmit nem kell viselni.</li>
+        <li>A padló maga az érzékelő.</li>
+        <li>A döntés a készüléken születik, felhő nélkül.</li>
+        <li>Egy hardver, cserélhető szoftvercsomagok.</li>
+      </ul>
+    </section>
+  </div>
+  <div>
+    <div class="photo">{{IMG:D}}</div>
+    <section>
+      <h2><span class="no">05</span>Hasznosíthatóság</h2>
+      <ul>
+        <li><b>Okos otthon:</b> fény, fűtés, zene ahhoz igazodik, aki belép.</li>
+        <li><b>Idősgondozás:</b> jelez, ha szokatlan a mozgás.</li>
+        <li><b>Biztonság:</b> figyelmeztet az idegen lépésekre.</li>
+      </ul>
+    </section>
+  </div>
+  <div class="stack">
+    <section>
+      <h2><span class="no">06</span>A projekt hatása</h2>
+      <p><b>Társadalmi:</b> személyre szabott otthon a magánszféra feladása nélkül.</p>
+      <p><b>Gazdasági:</b> olcsó, kereskedelmi alkatrészekből épül.</p>
+      <p><b>Tudományos:</b> mérhető összevetés nyilvános adatokon.</p>
+    </section>
+    <section>
+      <h2><span class="no">07</span>Következtetés</h2>
+      <p>A lépés olyan, mint az aláírás. Hipotézisünk: két geofon és egy kis osztályozó elég egy háromfős háztartás megkülönböztetéséhez. A hardver működik; most a saját adat jön.</p>
+    </section>
+  </div>
+</div>
+
+<div class="refs">
+  <h2><span class="no">08</span>Szakirodalom</h2>
+  <p>[1] Pan, S. et al.: <b>FootprintID:</b> Indoor pedestrian identification through ambient structural vibration sensing. Proc. ACM IMWUT 1(3), 2017. doi:10.1145/3130954<br>
+     [2] <b>FootprintID-adathalmaz</b> (10 fő, 5 geofon). Zenodo, 2021. zenodo.org/records/4691144</p>
+  <p>[3] Adatlapok: TI ADS131M02, Espressif ESP32-S3, SM-24 geofon.<br>
+     <b>Képek:</b> a fényképek AI-generált illusztrációk; a rezgésgörbe saját mérés.</p>
+</div>
+
+<script>
+/* Print check: smallest font size, image resolution (px per printed cm), elements past the safe zone. */
+window.addEventListener("load", function () {
+  const PX_PER_MM = 96 / 25.4, report = { minFontPt: 99, minFontText: "", images: [], unsafe: [] };
+  const W = 950, H = 1350, SAFE = 30;
+  for (const el of document.querySelectorAll("body *")) {
+    if (el.closest("script,style")) continue;
+    const own = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+    if (!own) continue;
+    const pt = parseFloat(getComputedStyle(el).fontSize) * 72 / 96;
+    if (pt < report.minFontPt) { report.minFontPt = +pt.toFixed(1); report.minFontText = el.textContent.trim().slice(0, 50); }
+    const rg = document.createRange(); rg.selectNodeContents(el);
+    const r = rg.getBoundingClientRect(), mm = v => v / PX_PER_MM;   /* the text itself, not its box */
+    if (mm(r.left) < SAFE - 0.5 || mm(r.top) < SAFE - 0.5 || mm(r.right) > W - SAFE + 0.5 || mm(r.bottom) > H - SAFE + 0.5)
+      report.unsafe.push(el.textContent.trim().slice(0, 40) + ` [${mm(r.left).toFixed(0)},${mm(r.top).toFixed(0)}–${mm(r.right).toFixed(0)},${mm(r.bottom).toFixed(0)} mm]`);
+  }
+  for (const img of document.images) {
+    const r = img.getBoundingClientRect();
+    const scale = Math.max(r.width / img.naturalWidth, r.height / img.naturalHeight); /* object-fit: cover */
+    const pxPerCm = img.naturalWidth ? (1 / scale) * PX_PER_MM * 10 : 0;
+    report.images.push({ src: img.getAttribute("src"), natural: `${img.naturalWidth}x${img.naturalHeight}`,
+      printedMm: `${(r.width / PX_PER_MM).toFixed(0)}x${(r.height / PX_PER_MM).toFixed(0)}`, pxPerCm: +pxPerCm.toFixed(1) });
+  }
+  const s = document.createElement("script"); s.type = "application/json"; s.id = "report";
+  s.textContent = JSON.stringify(report); document.body.appendChild(s);
+});
+</script>
+</body>
+</html>
