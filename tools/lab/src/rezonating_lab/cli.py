@@ -60,6 +60,9 @@ def build_parser() -> argparse.ArgumentParser:
     sim.add_argument(
         "--walk-start", type=float, default=10.0, metavar="SECONDS", help="walk starts this long after the ADC starts"
     )
+    sim.add_argument(
+        "--room", action="store_true", help="one walker loops around the device (positions for the Locate page)"
+    )
 
     simds = sub.add_parser("sim-dataset", help="write labelled simulated sessions (recorder layout, no link, fast)")
     simds.add_argument("--out", type=Path, required=True, help="output folder (a data root of simulated sessions)")
@@ -111,6 +114,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="do not start an in-process simulator when the 'simulator' connection finds none listening",
     )
+    serve.add_argument(
+        "--sim-room",
+        action="store_true",
+        help="the in-process simulator walks a person around the device (for the Locate page)",
+    )
 
     val = sub.add_parser(
         "validate", help="check every session folder of a data root (names, sidecars, WAV headers, labels)"
@@ -158,6 +166,14 @@ def cmd_sim(args: argparse.Namespace) -> int:
 
     walk_note = ""
     adc_signal = None
+    if args.walkers and args.room:
+        print("rzlab sim: --walkers and --room cannot be combined", file=sys.stderr)
+        return 2
+    if args.room:
+        from .sim.room import RoomAdcSignal
+
+        adc_signal = RoomAdcSignal
+        walk_note = ", one walker loops around the device (--room)"
     if args.walkers:
         from .recorder.config import find_repo_root
         from .recorder.forms import PSEUDONYM_RE
@@ -337,8 +353,9 @@ def cmd_serve(args: argparse.Namespace) -> int:
         embedded_sim=not args.no_embedded_sim,
         dev_ports=DEV_SERVER_PORTS if args.dev else (),
         lab_config=lab_config,
+        sim_room=args.sim_room,
     )
-    shown = f"[{host}]" if ":" in host else host
+    shown =f"[{host}]" if ":" in host else host
     dev_note = "; Vite dev server on 5173 allowed (--dev)" if args.dev else ""
     print(f"rzlab serve: http://{shown}:{args.port}/  (loopback only{dev_note}; Ctrl+C to stop)", flush=True)
     try:

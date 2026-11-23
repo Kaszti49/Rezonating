@@ -18,6 +18,9 @@ import type {
   UnitName,
 } from './types';
 import type { RigCheckView } from './rigcheck';
+import type { LocateState, LocateStep } from './locate';
+
+const MAX_LOCATE_STEPS = 60;
 
 export type WsState = 'connecting' | 'open' | 'down';
 export type Theme = 'dark' | 'light';
@@ -136,6 +139,10 @@ class AppState {
   runner = $state.raw<RunnerView | null>(null);
   /** Latest rig check view (WEB_API.md section 11), from the `rigcheck` event or a rig check command's answer. */
   rigcheck = $state.raw<RigCheckView | null>(null);
+  /** Locate page state (WEB_API.md section 15), from the `locate` event or a Locate command's answer. */
+  locate = $state.raw<LocateState | null>(null);
+  /** Located steps, newest last (`locate_step` events; the Locate page seeds it from GET /api/locate). */
+  locateSteps = $state.raw<LocateStep[]>([]);
   /** `performance.now()` when `runner` arrived: the countdown is shown relative to it (no browser wall clock). */
   runnerAt = 0;
   /** True while this page asked for the stop: the result is then shown from the stop answer, not as a surprise. */
@@ -331,6 +338,16 @@ class AppState {
       case 'rigcheck':
         this.rigcheck = m as RigCheckView;
         break;
+      case 'locate':
+        this.locate = m as LocateState;
+        break;
+      case 'locate_step': {
+        const s = m as LocateStep;
+        const keep = this.locateSteps.length >= MAX_LOCATE_STEPS ? this.locateSteps.slice(1) : this.locateSteps.slice();
+        keep.push(s);
+        this.locateSteps = keep;
+        break;
+      }
       case 'stream_reset': {
         const r = m as StreamResetEvent;
         this.rings.get(r.stream)?.reset(r.epoch & 0xffff);

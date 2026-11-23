@@ -9,9 +9,10 @@
   import DatasetsPage from './components/DatasetsPage.svelte';
   import ExperimentsPage from './components/ExperimentsPage.svelte';
   import BenchPage from './components/BenchPage.svelte';
+  import LocatePage from './components/LocatePage.svelte';
   import { app } from './lib/store.svelte';
 
-  type Path = '/live' | '/device' | '/record' | '/review' | '/datasets' | '/experiments' | '/bench';
+  type Path = '/live' | '/device' | '/record' | '/review' | '/datasets' | '/experiments' | '/bench' | '/locate';
   const LATER: string[] = [];
 
   let path = $state(normalise(location.pathname));
@@ -23,6 +24,7 @@
     if (p.startsWith('/datasets')) return '/datasets';
     if (p.startsWith('/bench')) return '/bench';
     if (p.startsWith('/experiments')) return '/experiments';
+    if (p.startsWith('/locate')) return '/locate';
     return '/live';
   }
 
@@ -88,6 +90,7 @@
     <a href="/datasets" class:active={path === '/datasets'} onclick={(e) => go(e, '/datasets')} aria-current={path === '/datasets' ? 'page' : undefined}>Datasets</a>
     <a href="/experiments" class:active={path === '/experiments'} onclick={(e) => go(e, '/experiments')} aria-current={path === '/experiments' ? 'page' : undefined}>Experiments</a>
     <a href="/bench" class:active={path === '/bench'} onclick={(e) => go(e, '/bench')} aria-current={path === '/bench' ? 'page' : undefined}>Bench</a>
+    <a href="/locate" class:active={path === '/locate'} onclick={(e) => go(e, '/locate')} aria-current={path === '/locate' ? 'page' : undefined}>Locate</a>
     {#each LATER as name (name)}
       <span class="soon" aria-disabled="true" title="Coming in a later phase">{name}<small>coming</small></span>
     {/each}
@@ -111,6 +114,8 @@
         <DatasetsPage onOpenReview={openInReview} />
       {:else if path === '/experiments'}
         <ExperimentsPage />
+      {:else if path === '/locate'}
+        <LocatePage />
       {:else}
         <RecordPage />
       {/if}

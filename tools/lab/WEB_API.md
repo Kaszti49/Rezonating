@@ -1387,3 +1387,39 @@ Datasets index (never in the repository).
 | `bad_run`, `bad_title` | 422 | Invalid run id or note title |
 
 Job errors are reported in the job (`state: "error"`, `error: {code, message}`), not as an HTTP error.
+
+## 15. Locate (where a step came from)
+
+The Locate page finds steps on `adc_raw` (both ADC channels) and estimates for each one: the **side** (left or right of
+the device), a **bearing** with its front/back mirror, and, once calibrated, a rough **distance**. The maths and its limits:
+`core/locate.py` and the vault note `60 Research/Footstep direction with two geophones.md`. Display maths only (D-017):
+no pack uses it. Geometry: channel 0 is the left geophone, channel 1 the right one, +y is "front"; `phi_deg` runs from
+-90 (straight left) through 0 (straight ahead) to +90 (straight right), and the mirror is `180 - phi_deg`.
+
+A step window (50 ms before the onset to 300 ms after) that holds a lost sample is not located: it is counted in
+`skipped_gaps`.
+
+### Events (WebSocket)
+
+- `locate` (cached, in the snapshot): `{type, calibration, calibrating, notes, steps, skipped_gaps, noise_rms, fs_hz}`.
+  `calibration`: `{spacing_m, c_mps, tau0_s, gain_ratio, swap_sides, ref_amp, ref_m, decay_n, calibrated: ["left", "right"]}`.
+  `calibrating`: `null` or `{spot: "left"|"right", got, want}`. Sent at start-up, after every step and after every command.
+- `locate_step`: `{type, id, index (adc_raw sample index of the onset block), epoch, calibration_step, tau_s (arrival ch1 - ch0),
+  cc (-1..1; negative = channels in anti-phase), amp: [ch0, ch1] (band rms, codes), side: "left"|"right"|"unsure",
+  side_votes: {timing, amplitude}, phi_deg (null when the timing is unusable), phi_sigma_deg, distance_m (null until
+  calibrated), distance_band: "near"|"mid"|"far"|"unknown", confidence (0..1), lag_limited}`.
+
+### REST
+
+| Method and path | Body | Answer |
+| --- | --- | --- |
+| `GET /api/locate` | | the `locate` view plus `recent` (the last 60 `locate_step` events) |
+| `POST /api/locate/calibrate` | `{spot: "left"\|"right", steps: 3..20 (default 5)}` | the view; the next `steps` steps are taken as standing 1 m straight to that side |
+| `POST /api/locate/calibrate/cancel` | | the view |
+| `POST /api/locate/calibrate/reset` | | the view, back to the defaults (100 m/s, no distance) |
+| `POST /api/locate/settings` | `{c_mps?: 10..2000, decay_n?: 0.3..2, spacing_m?: 0.02..5}` | the view |
+| `POST /api/locate/clear` | | the view with an empty `recent` |
+
+The calibration is kept in `locate.json` next to the Lab's `config.toml` (`%APPDATA%\rzlab\` on Windows). With both spots
+done it sets the wave speed, the fixed timing offset between the channels, the ch1/ch0 sensitivity ratio, whether the
+channels are swapped, and the reference loudness of a step at 1 m (for the distance).

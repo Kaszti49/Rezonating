@@ -73,6 +73,7 @@ CACHED_EVENTS = (
     "recording",
     "runner",
     "rigcheck",
+    "locate",
 )  # the snapshot a new client gets
 
 
@@ -200,10 +201,12 @@ class DeviceManager:
         ring_seconds: float = RING_SECONDS,
         embedded_sim: bool = True,
         wall: Callable[[], float] = time.perf_counter,
+        sim_room: bool = False,
     ) -> None:
         self._emit_cb: Emit = emit or (lambda ev: None)
         self.ring_seconds = ring_seconds
         self.embedded_sim_enabled = embedded_sim
+        self.sim_room = sim_room  # the embedded simulator walks a person around the device (sim/room.py)
         self._wall = wall
         self.serial_open_retry_s = SERIAL_OPEN_RETRY_S
         self._cmd_q: queue.Queue = queue.Queue()
@@ -647,12 +650,14 @@ class DeviceManager:
         if self._embedded is not None:
             return
         from ..sim.node import SimConfig
+        from ..sim.room import RoomAdcSignal
         from ..sim.server import SimThread
 
+        sim_cfg = SimConfig(adc_signal=RoomAdcSignal) if self.sim_room else SimConfig()
         try:
-            sim = SimThread(SimConfig(), "127.0.0.1", port).start()
+            sim = SimThread(sim_cfg, "127.0.0.1", port).start()
         except OSError:
-            sim = SimThread(SimConfig(), "127.0.0.1", 0).start()
+            sim = SimThread(sim_cfg, "127.0.0.1", 0).start()
         self._embedded = sim
         self.host_log(f"no simulator was listening: started an embedded one on 127.0.0.1:{sim.port}")
 

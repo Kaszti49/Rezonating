@@ -28,6 +28,8 @@ from .ports import list_serial_ports
 from .bench_routes import register_bench_routes
 from .dataset_routes import register_dataset_routes
 from .experiment_routes import register_experiment_routes
+from .locate import Locator
+from .locate_routes import register_locate_routes
 from .record_routes import register_record_routes
 from .rigcheck import RigChecks
 from .review_routes import register_review_routes
@@ -42,6 +44,7 @@ DTYPE_I32 = 0
 HEADER = struct.Struct("<BBBBHHQI")
 HEADER_LEN = HEADER.size  # 20
 BROADCAST_PERIOD_S = 0.05  # ~20 Hz
+LOCATE_PERIOD_S = 0.1  # the Locate page's step finder runs this often
 MAX_FRAMES_PER_MESSAGE = 8192
 MAX_MESSAGES_PER_TICK = 256
 CLIENT_QUEUE_MAX = 600
@@ -177,6 +180,7 @@ def create_app(
     dev_ports: tuple[int, ...] = (),
     lab_config: LabConfig | None = None,
     recorder: Recorder | None = None,
+    sim_room: bool = False,
 ) -> FastAPI:
     """Build the app for a server that listens on loopback ``port`` (the port is needed for the Host/Origin guard).
     ``dev_ports`` lists extra loopback ports (the Vite dev server, ``rzlab serve --dev``) whose Host and Origin pass;
@@ -184,11 +188,12 @@ def create_app(
 
     ``lab_config`` holds the recorder settings (data root, staging, sidecar copy target); default: read from the
     environment and ``config.toml`` (``recorder/config.py``). Tests pass their own."""
-    mgr = manager or DeviceManager(embedded_sim=embedded_sim)
+    mgr = manager or DeviceManager(embedded_sim=embedded_sim, sim_room=sim_room)
     cfg = lab_config or (recorder.cfg if recorder is not None else load_config())
     rec = recorder or Recorder(mgr, cfg)
     rig = RigChecks(mgr, cfg, recording=lambda: rec.active)
     rec.rig_running = lambda: rig.running
+    loc = Locator(mgr, cfg.config_path.parent / "locate.json" if cfg.config_path is not None else None)
     hub = Hub()
 
     async def broadcaster() -> None:
@@ -203,6 +208,14 @@ def create_app(
             await asyncio.sleep(max(0.0, delay))
             hub.pump(mgr.rings)
 
+    async def locator() -> None:
+        while True:
+            await asyncio.sleep(LOCATE_PERIOD_S)
+            try:
+                await asyncio.to_thread(loc.tick)
+            except Exception as exc:  # noqa: BLE001 - a Locate bug must not take the server down; it is logged
+                mgr.host_log(f"locate: {type(exc).__name__}: {exc}", 2)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         loop = asyncio.get_running_loop()
@@ -216,7 +229,11 @@ def create_app(
         mgr.publish(rec.status())
         mgr.publish(rec.runner_event())
         mgr.publish(rig.view())
+        loc_state = loc.view()
+        loc_state.pop("recent")
+        mgr.publish(loc_state)
         task = loop.create_task(broadcaster())
+        loc_task = loop.create_task(locator())
         auto: asyncio.Task | None = None
         if initial_connect is not None:
 
@@ -231,6 +248,7 @@ def create_app(
             yield
         finally:
             task.cancel()
+            loc_task.cancel()
             if auto is not None:
                 auto.cancel()
             await asyncio.to_thread(rig.close)
@@ -247,6 +265,7 @@ def create_app(
     app.state.manager = mgr
     app.state.recorder = rec
     app.state.rigcheck = rig
+    app.state.locator = loc
     app.state.lab_config = cfg
     app.state.hub = hub
     app.state.static_dir = static_dir
@@ -478,6 +497,7 @@ def create_app(
     register_dataset_routes(app, cfg)
     register_bench_routes(app, cfg, mgr)
     register_experiment_routes(app, cfg)
+    register_locate_routes(app, loc)
 
     # ----------------------------------------------------------------------------------- WebSocket
 
@@ -560,7 +580,7 @@ def create_app(
 
 async def _send_snapshot(websocket: WebSocket, mgr: DeviceManager) -> None:
     st = mgr.state()
-    for kind in ("connection", "hello", "config", "status", "recording", "runner", "rigcheck"):
+    for kind in ("connection", "hello", "config", "status", "recording", "runner", "rigcheck", "locate"):
         if kind in st:
             await websocket.send_text(json.dumps(st[kind], separators=(",", ":"), allow_nan=False))
 
