@@ -1,0 +1,13 @@
+# Bench recording firmware: ESP32-S3 DevKit (OTIO rig). 4 MB is enough for this app and fits every S3 module;
+# the octal PSRAM is not used.
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_SINGLE_APP=y
+
+# Text report on UART0 (the board's UART/COM USB port, CH343), 115200 baud (the default). No secondary console: the native
+# USB-Serial/JTAG port carries only the link (tools/lab/PROTOCOL.md 1, "Console").
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_FREERTOS_HZ=1000

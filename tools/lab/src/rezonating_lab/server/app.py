@@ -222,7 +222,9 @@ def create_app(
 
             async def first_connect() -> None:
                 with contextlib.suppress(Exception):  # the failure is already an `error` event
-                    await asyncio.wrap_future(mgr.connect(initial_connect))
+                    # start=True, like the web UI's Connect: otherwise the Live page stays idle until someone
+                    # presses Start acquisition
+                    await asyncio.wrap_future(mgr.connect(initial_connect, start=True))
 
             auto = loop.create_task(first_connect())
         try:

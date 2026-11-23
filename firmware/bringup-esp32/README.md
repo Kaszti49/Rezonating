@@ -6,6 +6,10 @@ no code with it. It checks the ADC 15 Click (ADS131M02 + LTC6903 clock) and the 
 board, then prints a readable report. It has no Wi-Fi. On request it switches to the link protocol on UART0 and streams
 `adc_dec` to the Rezonating Lab (see [Link mode](#link-mode-uart0-115200-adc_dec-only)).
 
+**Shared with `../rig-s3`.** The same sources also build the ESP32-S3 recording firmware for the OTIO rig (two
+geophones, link on the native USB port with `adc_raw` + `adc_dec`). `main/rig.h` holds what differs between the two
+rigs; build both after a change here.
+
 ## Pin map (as wired on 2026-10-13)
 
 | Signal | ESP32 GPIO | Board pin |

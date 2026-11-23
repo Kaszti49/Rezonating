@@ -1,15 +1,18 @@
 /*
- * Rezonating bench bring-up for the classic ESP32 rig (bench-only, not the node firmware).
+ * Rezonating bench bring-up (bench-only, not the node firmware). Builds for two rigs (rig.h):
+ *   classic ESP32 (firmware/bringup-esp32): ADC 15 Click on SPI3, HX711 bit-banged.
+ *   ESP32-S3 (firmware/rig-s3): ADC 15 Click on SPI2 with the OTIO wiring guide's pins, two SM-24 geophones, no HX711.
  *
- * ADC 15 Click (ADS131M02 + LTC6903 clock) on SPI3, HX711 bit-banged. Prints a readable,
- * greppable report on UART0 at 115200. Every line starts with a tag:
+ * ADC 15 Click = ADS131M02 + LTC6903 clock. Prints a readable, greppable report on UART0 at 115200. Every line starts
+ * with a tag:
  *   [BOOT] banner, [LTC] clock chip, [ADC] ADC identity/config, [RATE] measured data rate,
  *   [HX] HX711 detection, [STAT] once-per-second channel stats, [CNT] cumulative counters (10 s),
  *   [DIAG] start-up SPI setting matrix for the ADC (bit-bang reference first), and which setting is used. Only with
  *          CONFIG_BRINGUP_DIAG=y (menuconfig "Rezonating bring-up"); the default boot uses the fixed ADC SPI setting.
  *
- * Link mode (link_mode.c): a valid link protocol v0 GET_INFO on UART0 switches the board for good (until reboot) from
- * this text report to tools/lab/PROTOCOL.md framing, streaming adc_dec (D-016 FIR / 2) to rzlab. All text stops then.
+ * Link mode (link_mode.c): a valid link protocol v0 GET_INFO starts a session with rzlab (tools/lab/PROTOCOL.md).
+ * Classic ESP32: on UART0, adc_dec (D-016 FIR / 2) only, and the text report stops for good. ESP32-S3: on the native
+ * USB-Serial/JTAG port, adc_raw and adc_dec, and the text report keeps running on UART0.
  *
  * Datasheet references:
  *   ADS131M02: TI SBAS853A (Jan 2020, rev. Apr 2021).
@@ -31,10 +34,24 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "link_mode.h"
+#include "rig.h"
 #include "rz_drdy.h"
 #include "sdkconfig.h"
 
-/* ---------------------------------------------------------------- pin map (wired 2026-10-13) */
+/* ---------------------------------------------------------------- pin map */
+#if CONFIG_IDF_TARGET_ESP32S3
+/* OTIO wiring guide (hardware/case-v1/Rezon_Wiring_Guide_OTIO.html), the same pins as the hackathon sketch
+ * (firmware/hackathon-rezon/rezon/rezon.ino). None is an octal PSRAM pin (33-37) or a strapping pin. */
+#define PIN_SCK      GPIO_NUM_12 /* Click SCK */
+#define PIN_MISO     GPIO_NUM_13 /* Click SDO = ADC DOUT */
+#define PIN_MOSI     GPIO_NUM_14 /* Click SDI = ADC DIN and LTC6903 SDI */
+#define PIN_CS_ADC   GPIO_NUM_11 /* Click CS1 */
+#define PIN_CS_LTC   GPIO_NUM_9  /* Click CS2 (mikroBUS PWM) = LTC6903 SEN */
+#define PIN_DRDY     GPIO_NUM_10 /* Click INT = ADC DRDY, active low */
+#define PIN_RST      GPIO_NUM_8  /* Click RST = ADC SYNC/RESET, active low */
+#define SPI_HOST_ID  SPI2_HOST   /* any pins through the GPIO matrix; 2 MHz is far below its limit */
+#else
+/* classic ESP32 bench rig, wired 2026-10-13 */
 #define PIN_SCK      GPIO_NUM_18 /* Click SCK */
 #define PIN_MISO     GPIO_NUM_19 /* Click SDO = ADC DOUT */
 #define PIN_MOSI     GPIO_NUM_23 /* Click SDI = ADC DIN and LTC6903 SDI */
@@ -45,6 +62,7 @@
 #define PIN_HX_DT    GPIO_NUM_34 /* HX711 DT (input-only pin, no internal pulls) */
 #define PIN_HX_SCK   GPIO_NUM_32 /* HX711 SCK */
 #define SPI_HOST_ID  SPI3_HOST   /* GPIO 18/19/23 are the SPI3 (VSPI) IO_MUX pins */
+#endif
 
 #define LTC_SPI_HZ   1000000 /* LTC6903 fSCK max 20 MHz */
 #define ADC_SPI_HZ   2000000 /* ADS131M02 is fine far above this; 2 MHz is kind to jumper wires */
@@ -77,9 +95,10 @@
  * fDATA = fMOD / OSR = (fCLKIN / 2) / OSR (8.3.7, Eq. 5) = 4.096 MHz / 2048 = 2000 SPS. */
 #define ADC_OSR        2048u
 #define ADC_CLOCK_VAL  0x0312u
-/* GAIN1 (8.6.5, Table 8-18): PGAGAIN1[6:4] = 111b, PGAGAIN0[2:0] = 111b -> gain 128 on both. */
-#define ADC_GAIN       128
-#define ADC_GAIN1_VAL  0x0077u
+/* GAIN1 (8.6.5, Table 8-18): PGAGAIN1[6:4] = PGAGAIN0[2:0] = log2(gain): 111b = 128 (classic rig, 0x0077),
+ * 010b = 4 (ESP32-S3 rig, 0x0022). rig.h gives the reason for each. */
+#define ADC_GAIN       RIG_ADC_GAIN
+#define ADC_GAIN1_VAL  ((uint16_t)((RIG_ADC_GAIN_CODE << 4) | RIG_ADC_GAIN_CODE))
 
 #define ADC_NOMINAL_SPS 2000.0
 #define ADC_WORD_BYTES  3                       /* 24-bit words (WLENGTH 01b) */
@@ -162,7 +181,9 @@ static volatile int64_t s_drdy_t[DRDY_T_RING]; /* esp_timer time of DRDY edge e 
 static volatile bool s_report_on;
 static hx_state_t s_hx;
 static portMUX_TYPE s_hx_mux = portMUX_INITIALIZER_UNLOCKED;
+#if RIG_HAS_HX711
 static portMUX_TYPE s_hx_bitbang_mux = portMUX_INITIALIZER_UNLOCKED;
+#endif
 
 /* ---------------------------------------------------------------- helpers */
 static const char *fmt_fixed(char *buf, size_t len, double v, int decimals)
@@ -753,6 +774,7 @@ static void adc_task(void *arg)
 }
 
 /* ---------------------------------------------------------------- HX711 */
+#if RIG_HAS_HX711
 /* 24 bits MSB first, two's complement, then a 25th pulse (next conversion: channel A, gain 128).
  * SCK high for more than 60 us powers the HX711 down, so the pulses run with interrupts off on this core
  * (about 60 us in total). After the 25th pulse a real HX711 drives DT high until the next conversion. */
@@ -853,6 +875,8 @@ static void hx_task(void *arg)
     }
 }
 
+#endif /* RIG_HAS_HX711 */
+
 /* ---------------------------------------------------------------- report */
 static void print_window(const win_stats_t *w, uint32_t sec)
 {
@@ -922,27 +946,46 @@ void app_main(void)
     esp_chip_info(&chip);
     uint32_t flash_bytes = 0;
     (void)esp_flash_get_size(NULL, &flash_bytes);
-    link_txt("\n[BOOT] Rezonating bench bring-up (bench-only, classic ESP32 + ADC 15 Click + HX711)\n");
-    link_txt("[BOOT] chip model=%d (1=ESP32) rev=v%d.%d cores=%d flash=%" PRIu32 " MB IDF=%s\n", (int)chip.model,
+    link_txt("\n[BOOT] Rezonating bench bring-up (bench-only, %s)\n", RIG_NAME);
+    link_txt("[BOOT] chip model=%d (1=ESP32, 9=ESP32-S3) rev=v%d.%d cores=%d flash=%" PRIu32 " MB IDF=%s\n",
+             (int)chip.model,
            chip.revision / 100, chip.revision % 100, chip.cores, flash_bytes / (1024 * 1024), esp_get_idf_version());
-    link_txt("[BOOT] pins: SCK=%d SDO/MISO=%d SDI/MOSI=%d CS1(ADC)=%d CS2(LTC6903)=%d DRDY=%d RST=%d | HX711 DT=%d SCK=%d\n",
-           PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS_ADC, PIN_CS_LTC, PIN_DRDY, PIN_RST, PIN_HX_DT, PIN_HX_SCK);
+    link_txt("[BOOT] pins: SCK=%d SDO/MISO=%d SDI/MOSI=%d CS1(ADC)=%d CS2(LTC6903)=%d DRDY=%d RST=%d\n", PIN_SCK,
+             PIN_MISO, PIN_MOSI, PIN_CS_ADC, PIN_CS_LTC, PIN_DRDY, PIN_RST);
+#if RIG_HAS_HX711
+    link_txt("[BOOT] pins: HX711 DT=%d SCK=%d\n", PIN_HX_DT, PIN_HX_SCK);
+#endif
+#if RIG_LINK_USJ
+    link_txt("[BOOT] link (rzlab) on the native USB port (USB-Serial/JTAG): adc_raw 2000 Hz + adc_dec 1000 Hz; this "
+             "text report stays on UART0\n");
+#endif
 
     /* GPIO: RST high (idle), HX711 SCK low (powered), DT and DRDY inputs. */
+#if RIG_HAS_HX711
+    const uint64_t out_mask = (1ULL << PIN_RST) | (1ULL << PIN_HX_SCK);
+    const uint64_t in_mask = (1ULL << PIN_HX_DT) | (1ULL << PIN_DRDY);
+#else
+    const uint64_t out_mask = 1ULL << PIN_RST;
+    const uint64_t in_mask = 1ULL << PIN_DRDY;
+#endif
     gpio_config_t out = {
-        .pin_bit_mask = (1ULL << PIN_RST) | (1ULL << PIN_HX_SCK),
+        .pin_bit_mask = out_mask,
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,
     };
     gpio_set_level(PIN_RST, 1);
+#if RIG_HAS_HX711
     gpio_set_level(PIN_HX_SCK, 0);
+#endif
     ESP_ERROR_CHECK(gpio_config(&out));
     gpio_set_level(PIN_RST, 1);
+#if RIG_HAS_HX711
     gpio_set_level(PIN_HX_SCK, 0);
+#endif
     gpio_config_t in = {
-        .pin_bit_mask = (1ULL << PIN_HX_DT) | (1ULL << PIN_DRDY),
+        .pin_bit_mask = in_mask,
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE, /* GPIO34 has no pulls; DRDY gets its pull-up in adc_task */
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -964,7 +1007,8 @@ void app_main(void)
         gpio_set_level(PIN_CS_LTC, 1);
     }
 
-    /* SPI3 with two devices: LTC6903 (mode 0) and ADS131M02 (mode 1). No DMA: frames are 2 and 12 bytes. */
+    /* SPI3 (classic) or SPI2 (S3) with two devices: LTC6903 (mode 0) and ADS131M02 (mode 1). No DMA: frames are 2
+     * and 12 bytes. */
     spi_bus_config_t bus = {
         .mosi_io_num = PIN_MOSI,
         .miso_io_num = PIN_MISO,
@@ -1070,8 +1114,12 @@ void app_main(void)
     }
 
     /* 7. HX711: detect, then keep reading in the background */
+#if RIG_HAS_HX711
     xTaskCreatePinnedToCore(hx_task, "hx711", 3072, NULL, 5, NULL, 0);
     (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(3000));
+#else
+    link_txt("[HX] no HX711 on this rig\n");
+#endif
 
     /* 6 and 8. Once per second: channel stats, HX711, lost samples; counters every 10 s */
     link_txt("[STAT] columns: mean/rms/ac_rms input-referred uV at gain %d; min/max raw codes; clip = codes at full "
@@ -1085,8 +1133,8 @@ void app_main(void)
             link_txt("[STAT] no stats from the ADC task for 2 s\n");
             continue;
         }
-        if (link_mode_on()) {
-            continue; /* link mode: no text; keep draining the stats queue */
+        if (link_text_off()) {
+            continue; /* link mode on the classic rig: no text; keep draining the stats queue */
         }
         sec++;
         print_window(&w, sec);

@@ -456,6 +456,13 @@ def test_initial_connect_option(tmp_path, sim):
                 break
             time.sleep(0.1)
         assert c.get("/api/state").json()["connection"]["state"] == "connected"
+        # Like the web UI's Connect button: the streams start too, so the Live page shows data without a click.
+        running = False
+        while time.time() < deadline and not running:
+            st = c.get("/api/state").json().get("status") or {}
+            running = st.get("acquiring") is True and all(s["running"] for s in st.get("streams", [{"running": 0}]))
+            time.sleep(0.1)
+        assert running, c.get("/api/state").json().get("status")
 
 
 def test_pump_never_skips_runs_beyond_the_per_tick_limit():

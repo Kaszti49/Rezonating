@@ -9,6 +9,11 @@ firmware/bringup-esp32/sdkconfig
 firmware/bringup-esp32/sdkconfig.old
 firmware/bringup-esp32/managed_components/
 firmware/bringup-esp32/dependencies.lock
+firmware/rig-s3/build/
+firmware/rig-s3/sdkconfig
+firmware/rig-s3/sdkconfig.old
+firmware/rig-s3/managed_components/
+firmware/rig-s3/dependencies.lock
 
 # Python
 __pycache__/
@@ -59,3 +64,6 @@ firmware/hackathon-rezon/tools/*.exe
 firmware/hackathon-rezon/data/events.tsv
 firmware/hackathon-rezon/build/
 *.blend1
+
+# FreeCAD backups
+*.FCBak
