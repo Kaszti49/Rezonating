@@ -1,8 +1,8 @@
 ---
 type: work
-status: todo
+status: backlog
 owner: claude
-priority: p1
+priority: p2
 area: firmware
 due:
 pack: "[[fall]]"
@@ -29,3 +29,4 @@ done:
 ## Log
 - 2026-11-15 created after the hackathon merge
 - 2026-11-15 Claude: D-023/D-024 accepted by Kaszti and Viktor; unblocked
+- 2026-11-23 Claude: backlog, p2. Footstep-id goes first ([[D-026 Year 1 order footstep-id first]], proposed, Kaszti's call in chat); the port waits until the footstep work is under way

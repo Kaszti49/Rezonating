@@ -152,3 +152,16 @@ Append-only. Newest at the bottom. One entry per Claude session.
   - Run the `retro` playbook (it is due).
   - Then ask whether D-023 to D-025 were accepted; if so, start [[Port the fall core to ESP-IDF]].
 
+
+## 2026-11-23
+- **Did:** (pc-10, work day)
+  - OTIO case v1 in FreeCAD through the MCP Bridge (bridge moved to loopback 127.0.0.1:39280): Ø186.4 × 51.0 mm PLA, 3-lug bayonet with a click, two geophone cups, board on corner pins plus a centre post, USB-C tunnel, inlaid REZON + wave on the lid (1.2 mm pocket, white pieces 0.1 mm smaller per side). Fit and lock checks clean. STLs, fit-test prints and renders in `hardware/case-v1/` ([[Design the OTIO case v1]], [[OTIO case v1]]).
+  - Stripped OTIO wiring guide `hardware/case-v1/Rezon_Wiring_Guide_OTIO.html` (ESP32-S3 + ADC 15 Click + 2 geophones, 11 steps).
+  - Board on COM40 with the hackathon sketch: 998 SPS, 0 CRC errors, gain 2. Tap test with 2 geophones PASS; one geophone's polarity is reversed (−0.99 correlation on floor signals). Direct taps reach 6.2 M of 8.39 M codes at gain 2.
+  - Vision change, confirmed by Kaszti: footstep-id first (1 of 3 people, ≥ 85 %), and it also tells the side (left/right) of a step. Proposed [[D-026 Year 1 order footstep-id first]] (supersedes D-023) and [[D-027 Footstep-id tells the side of a step]]. Charter, Roadmap (footstep gate 2027-03-02, fall 2027-04-06: Claude's proposal), the pack notes, lesson s08 EN/HU and [[Port the fall core to ESP-IDF]] (backlog) updated. `scratch/side_test.py` gets the side right on synthetic steps down to 0.15 ms.
+  - `firmware/rig-s3`: builds the bring-up sources for the S3 rig (OTIO pins in `rig.h`, gain 4, link on the native USB port with `adc_raw` 2 kSPS + `adc_dec`, text report on UART0). Flashed with Kaszti's OK: ADC ID 0x2205, 1996.10 Hz (−0.195 %), 0 lost of 41 938. Link test over the USB-OTG port (COM41) for 30 s: 0 lost, 0 bad frames, 1994.93 Hz.
+  - Lab: `rzlab serve --connect` now starts acquisition too (`app.py`, test added; 49 passed).
+- **Playbooks:** firmware, esp-idf-build-flash, ml-training, vault-conventions, writing, verify (rig-s3 PASS). Every L0 gate run passed (vault-schema, ruff, idf-build). New flag F-261123-dab8 (note: advised a second USB cable without checking the board).
+- **Decided with the team:** Kaszti: footstep-id first, with the left/right side; two geophones in the case (~123 mm apart); flash `rig-s3`; one cable in the USB-OTG port; commit and push everything today.
+- **Left open:** D-026 and D-027 to accept (D-027 has no target yet); the `CLAUDE.md` scope line still says fall first (waits for an OK); the new Roadmap dates; Kaszti's OK of the case look and three caliper measurements (corner holes, header height, USB spacing); the reversed geophone polarity (CH2 terminal order?); pin map in the firmware README vs the hackathon guide (Viktor); a Lab data root on pc-10; the retro (due); 12 older flags.
+- **Next session should:** run the retro first (it is due), then record real footsteps with the Lab on the rig and run `side_test.py` on them; print the bayonet fit test.

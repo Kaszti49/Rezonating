@@ -17,10 +17,10 @@ One indoor node that detects **falls** from floor vibration, recognises **who is
 | Pack | Target |
 | --- | --- |
 | [[fall]] | ≥ 95% of dummy falls caught, < 1 false alarm per week |
-| [[footstep-id]] | ≥ 85% correct with 3 people on our own floor |
+| [[footstep-id]] | ≥ 85% correct with 3 people on our own floor; also tells which side (left/right) a step came from, target not set yet ([[D-027 Footstep-id tells the side of a step]], proposed) |
 | [[appliance]] | Flags an induced imbalance in 9 of 10 runs |
 
-Order: fall first, then footstep-id, then appliance ([[D-023 Year 1 order fall first]], proposed).
+Order: footstep-id first, then fall, then appliance ([[D-026 Year 1 order footstep-id first]], proposed; it replaces [[D-023 Year 1 order fall first]]). First goal: recognise 1 of 3 people with ≥ 85 % accuracy.
 
 ## Not in Year 1
 Field node, LoRa, battery and solar, hive, barn, rodents, tap surface, own app. They stay in the idea list until Year 1 results are in ([[D-010 Plan Year 1 only]]).
