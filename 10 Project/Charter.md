@@ -17,7 +17,7 @@ One indoor node that detects **falls** from floor vibration, recognises **who is
 | Pack | Target |
 | --- | --- |
 | [[fall]] | ≥ 95% of dummy falls caught, < 1 false alarm per week |
-| [[footstep-id]] | ≥ 85% correct with 3 people on our own floor; also tells which side (left/right) a step came from, target not set yet ([[D-027 Footstep-id tells the side of a step]], proposed) |
+| [[footstep-id]] | ≥ 85% correct with 3 people on our own floor; also tells where a step came from (side, a front/back-mirrored bearing, a distance band); target not set yet ([[D-027 Footstep-id tells the side of a step]], proposed) |
 | [[appliance]] | Flags an induced imbalance in 9 of 10 runs |
 
 Order: footstep-id first, then fall, then appliance ([[D-026 Year 1 order footstep-id first]], proposed; it replaces [[D-023 Year 1 order fall first]]). First goal: recognise 1 of 3 people with ≥ 85 % accuracy.

@@ -165,3 +165,18 @@ Append-only. Newest at the bottom. One entry per Claude session.
 - **Decided with the team:** Kaszti: footstep-id first, with the left/right side; two geophones in the case (~123 mm apart); flash `rig-s3`; one cable in the USB-OTG port; commit and push everything today.
 - **Left open:** D-026 and D-027 to accept (D-027 has no target yet); the `CLAUDE.md` scope line still says fall first (waits for an OK); the new Roadmap dates; Kaszti's OK of the case look and three caliper measurements (corner holes, header height, USB spacing); the reversed geophone polarity (CH2 terminal order?); pin map in the firmware README vs the hackathon guide (Viktor); a Lab data root on pc-10; the retro (due); 12 older flags.
 - **Next session should:** run the retro first (it is due), then record real footsteps with the Lab on the rig and run `side_test.py` on them; print the bayonet fit test.
+
+## 2026-11-23 (evening, desktop-db0e1qv)
+- **Did:**
+  - Pulled two commits from origin (fast-forward; the local `runs.jsonl` line auto-merged, still valid JSONL).
+  - Research note [[Footstep direction with two geophones]]: with two geophones 123 mm apart, side is solid; the bearing comes with a front/back mirror and needs the floor's wave speed calibrated; distance comes only from loudness (a band); a true x/y position needs ≥ 3 spread sensors (published systems still miss by 0.4–0.8 m). The −0.99 anti-phase could be the case rocking (coin-on-lid test).
+  - Lab **Locate** page (8th page):
+    - `core/locate.py` (sub-sample cross-correlation, bearing, distance band, two-spot calibration; display maths, D-017), `server/locate.py` + `locate_routes.py` (step finder on `adc_raw`, `locate`/`locate_step` events, WEB_API.md section 15).
+    - `sim/room.py` (a walker loops around the device; `rzlab sim --room`, `rzlab serve --sim-room`).
+    - `LocatePage.svelte`: 2D radar with wedges, mirror wedges and water-drop ripples.
+  - One-click launcher `tools/lab/launcher/`: a desktop shortcut starts the server hidden, connects a plugged-in node, opens a Chrome/Edge app window, and stops the server when the window closes. A first-run setup builds `.venv` and the UI. Installed on this machine (desktop + Start menu).
+  - Vault: [[D-027 Footstep-id tells the side of a step]] rewritten to side + bearing + distance band (still proposed); Charter, Roadmap and [[footstep-id]] updated; [[Test the Locate page on the real floor]] created for 2026-11-24.
+- **Playbooks:** research, ml-training, vault-conventions, verify (PASS: gate vault-schema + ruff pass; 25 new tests pass; full Lab suite 649 passed, 3 failed: two need the symlink privilege on this PC (WinError 1314), and the soak smoke test passes alone, so it fails only under load). The UI check passes (0 errors, 0 warnings). The launcher was tested end to end: closing the window stopped the server. On the simulated walker, the side was right for 46 of 46 steps, on an ideal floor.
+- **Decided with the team:** Kaszti chose bearing + distance band (over left/right only and over x/y), a 2D top-down radar, a new Locate page, one-click start, and water-drop ripples.
+- **Left open:** the real-floor test (no device here today); D-026/D-027 to accept and the D-027 target; the retro (due); 13 older flags; the two symlink tests on this PC.
+- **Next session should:** with the rig on the floor, work through [[Test the Locate page on the real floor]] with Kaszti and tune the detector and calibration from the numbers; then the retro.

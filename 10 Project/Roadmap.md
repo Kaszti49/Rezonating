@@ -21,7 +21,7 @@ We work on **Monday and Tuesday** only, so every date falls on one of those days
 
 **2026-11-23: footstep-id moves first again** ([[D-026 Year 1 order footstep-id first]], proposed). Kaszti set the first goal: recognise 1 of 3 people with ≥ 85 % accuracy. The pack dates go back to the pre-hackathon plan (footstep ID gate 2027-03-02, fall gate 2027-04-06 with appliance); they are Claude's proposal and need Kaszti's or Viktor's OK. The hackathon fall detector keeps working meanwhile; its port to the node waits.
 
-**2026-11-23: footstep-id also tells the side of a step** ([[D-027 Footstep-id tells the side of a step]], proposed): left or right of the device, from the two geophones in the case (about 123 mm apart). Worked on together with person ID; its target is not set yet.
+**2026-11-23: footstep-id also tells the side of a step** ([[D-027 Footstep-id tells the side of a step]], proposed): left or right of the device, from the two geophones in the case (about 123 mm apart). Worked on together with person ID; its target is not set yet. The same day it was widened to a bearing (front/back mirrored) plus a distance band, shown live on the Lab's new Locate page for OTIO.
 
 ```mermaid
 gantt
