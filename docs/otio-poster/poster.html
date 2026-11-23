@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- OTIO 2026 poster, 950 x 1350 mm portrait. Template: build.py fills the IMG and WAVE markers.
+<!-- 36. OTIO poster (Veszprém regional, 2026-11-30), 950 x 1350 mm portrait. Template: build.py fills the IMG and WAVE markers.
      Edit text here; edit image prompts in PROMPTS.md; build with: python docs/otio-poster/build.py -->
 <html lang="hu">
 <head>
@@ -41,7 +41,7 @@ body {
 /* ---------- header ---------- */
 header { position: absolute; left: var(--m); right: var(--m); top: 34mm; }
 .topline { display: flex; justify-content: space-between; align-items: flex-start; }
-.meta { font-size: 24pt; line-height: 10mm; color: var(--ink-2); text-transform: uppercase; }
+.meta { font-size: 30pt; line-height: 12.5mm; color: var(--ink); font-weight: 600; text-transform: uppercase; }
 .meta b { color: var(--ink); font-weight: 600; }
 .meta .acc { color: var(--accent); }
 .partner { display: flex; align-items: center; gap: 8mm; text-align: right; }
@@ -55,7 +55,7 @@ h1 {
 h1 .dot { color: var(--accent); }
 .claim { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4mm; }
 .claim p { font-size: 64pt; line-height: 26mm; font-weight: 600; letter-spacing: -0.02em; }
-.claim p span { color: var(--ink-2); font-weight: 400; }
+.claim p span { color: var(--accent); }
 .authors { text-align: right; font-size: 28pt; line-height: 11mm; }
 .authors b { font-weight: 700; }
 .authors small { display: block; font-size: 22pt; line-height: 9mm; color: var(--ink-2); }
@@ -118,7 +118,7 @@ section b { font-weight: 700; }
 .callout.ink s { background: var(--ink); height: 0.4mm; }
 .callout.ink span { background: transparent; padding: 0 3mm; font-size: 20pt; line-height: 8mm; }
 .wave { position: relative; }
-.wave svg { position: absolute; left: 0; right: 0; top: 9mm; bottom: 9mm; width: 100%; height: calc(100% - 18mm); }
+.wave svg { position: absolute; left: 0; right: 0; top: 18mm; bottom: 9mm; width: 100%; height: calc(100% - 27mm); }
 .wave .ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 8mm; }
 .wave .ticks span { position: absolute; font-size: 20pt; line-height: 8mm; color: var(--ink-2); transform: translateX(-50%); }
 .result { display: flex; flex-direction: column; justify-content: space-between; border-left: 1.2mm solid var(--accent); padding-left: 6mm; }
@@ -139,6 +139,13 @@ section b { font-weight: 700; }
 .refs p { font-size: 20pt; line-height: 8mm; color: var(--ink-2); }
 .refs p b { color: var(--ink); font-weight: 600; }
 
+/* ---------- "this is not the real device" tags on the images ---------- */
+.tag { position: absolute; z-index: 3; background: var(--ink); color: var(--paper); font-family: "Mono", monospace;
+  font-size: 28pt; line-height: 12mm; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 1.5mm 5mm; }
+.hero .tag { left: var(--m); top: 10mm; }
+.photo .tag { left: 6mm; top: 6mm; }
+.how-photo .tag { left: 0; top: 0; }
+
 /* ---------- placeholders for images not generated yet ---------- */
 .ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3mm;
   color: #8d9096; font-family: "Mono", monospace; font-size: 22pt; line-height: 9mm; text-align: center;
@@ -152,7 +159,7 @@ section b { font-weight: 700; }
 <header>
   <div class="topline">
     <div class="meta mono">
-      <b>OTIO 2026</b> · <span class="acc">Informatika szekció</span><br>
+      <b>36. OTIO</b><br>
       Székesfehérvári SZC Széchenyi István Műszaki Technikum<br>
       8000 Székesfehérvár, Budai út 45.
     </div>
@@ -161,15 +168,16 @@ section b { font-weight: 700; }
       <img src="../assets/enterpartner-logo.png" alt="Enterpartner Kft.">
     </div>
   </div>
-  <h1>Rezonating<span class="dot">.</span></h1>
+  <h1>Rezonating</h1>
   <div class="claim">
-    <p>Tudja, ki lépett be. <span>Kamera nélkül.</span></p>
+    <p><span>–</span> járásfelismerés rezgésből, saját szeizmográffal</p>
     <div class="authors"><b>Kaszti Benedek · Szabó Viktor</b><small>pályázók</small></div>
   </div>
 </header>
 
 <div class="hero">
   {{IMG:H}}
+  <div class="tag">Látványterv</div>
   <div class="callout" style="left:52%; top:84.5%"><i></i><s style="width:15mm"></s><span><b>Lépés</b> · rezgés a födémben</span></div>
   <div class="callout up" style="left:77%; bottom:calc(51% - 2mm)"><span><b>Csomópont</b> · ESP32-S3, döntés a készüléken</span><s></s><i></i></div>
 </div>
@@ -177,7 +185,7 @@ section b { font-weight: 700; }
 <div class="specs">
   <div class="spec acc"><div class="n">0</div><div class="t">kamera, mikrofon vagy viselhető eszköz</div></div>
   <div class="spec"><div class="n">1000<small>/s</small></div><div class="t">rezgésminta geofononként</div></div>
-  <div class="spec"><div class="n">2</div><div class="t">SM-24 geofon a csomópontban</div></div>
+  <div class="spec"><div class="n">2</div><div class="t">SM-24 geofon a tervezett csomópontban</div></div>
   <div class="spec"><div class="n">85<small>%</small></div><div class="t">cél: helyes felismerés 3 fő közül</div></div>
 </div>
 
@@ -185,7 +193,8 @@ section b { font-weight: 700; }
   <section>
     <h2><span class="no">01</span>Bevezetés</h2>
     <p>Egy okos otthonnak tudnia kellene, ki van a szobában. Ma ehhez kamera, mikrofon vagy karkötő kell, és ezeket sokan nem akarják.</p>
-    <p>Pedig mindenki másképp lép, és a lépés rezgése végigfut a padlón [1]. Rezgésérzékelőnk a HARMAN Hackathonon már esést ismert fel; most a lépéseket tanulja.</p>
+    <p>Pedig mindenki másképp lép, és a lépés rezgése végigfut a padlón [1]. </p>
+    <p>A HARMAN Hackathonon (2026. nov.) SM-24 geofonnal és ESP32-S3-mal épített próbapadunk a színpadi mérésen 3 szándékos esésből 3-at jelzett, 3 ugrásból egyet sem.</p>
   </section>
   <section>
     <h2><span class="no">02</span>Célkitűzés</h2>
@@ -199,11 +208,11 @@ section b { font-weight: 700; }
   </section>
   <section>
     <h2><span class="no">03</span>A projekt leírása</h2>
-    <p>Két geofon a padló rezgését méri; a csomópont kivágja a lépéseket, és eldönti, kié.</p>
+    <p>A tervezett csomópontban két geofon méri a padló rezgését; a készülék kivágja a lépéseket, és eldönti, kié.</p>
     <div class="timeline">
-      <div class="done"><span class="when">2026 ősz · kész</span>Csomópont és mérőlánc működik</div>
-      <div class="done"><span class="when">2026. nov. · kész</span>Hackathon: esésfelismerés, lépésfelvétel</div>
-      <div class="next"><span class="when">2026. dec. – 2027. ápr.</span>Mérés a FootprintID-adatokon [2], majd saját padlón</div>
+      <div class="done"><span class="when">2026. nov. · kész</span>Próbapad egy geofonnal (hackathon): esésjelzés, lépésfelvétel</div>
+      <div class="next"><span class="when">terv · 2026. dec. – 2027. jan.</span>Csomópont két geofonnal, saját firmware</div>
+      <div class="next"><span class="when">terv · 2027. ápr.</span>Mérés a FootprintID-adatokon [2], majd saját padlón</div>
     </div>
   </section>
 </div>
@@ -211,6 +220,7 @@ section b { font-weight: 700; }
 <div class="how">
   <div class="how-in">
     <div class="how-photo">{{IMG:B}}
+      <div class="tag">Tervezett felépítés</div>
       <div class="callout ink left" style="right:64.4%; top:14%"><i></i><s style="width:10mm"></s><span class="mono">Fedél</span></div>
       <div class="callout ink" style="left:58.3%; top:33%"><i></i><s style="width:10mm"></s><span class="mono">ESP32-S3</span></div>
       <div class="callout ink left" style="right:56.1%; top:46%"><i></i><s style="width:10mm"></s><span class="mono">ADC · 24 bit</span></div>
@@ -218,11 +228,11 @@ section b { font-weight: 700; }
       <div class="callout ink left" style="right:63.9%; top:71%"><i></i><s style="width:10mm"></s><span class="mono">Ház · Ø 19 cm</span></div>
     </div>
     <div class="wave">
-      <div class="lbl mono"><b>Saját mérés</b> · 6 s járás, HARMAN Hackathon, színpad · <span style="color:var(--accent)">▮</span> a készülék lépésjelzése</div>
+      <div class="lbl mono"><b>Saját mérés</b> · 6 s járás, HARMAN Hackathon, színpad<br>Próbapad: SM-24 geofon, ADC 15 Click (ADS131M02), ESP32-S3 · <span style="color:var(--accent)">▮</span> lépésjelzés</div>
       {{WAVE}}
     </div>
     <div class="result">
-      <div class="lbl mono"><b>Kimenet</b> · kié a lépés</div>
+      <div class="lbl mono"><b>Tervezett kimenet</b><br>kié a lépés</div>
       <div class="who">P2</div>
       <div class="lbl mono">P1 · P2 · P3 · ismeretlen</div>
     </div>
@@ -231,7 +241,7 @@ section b { font-weight: 700; }
 
 <div class="grid3 rowC">
   <div>
-    <div class="photo">{{IMG:E}}</div>
+    <div class="photo">{{IMG:E}}<div class="tag">Látványterv</div></div>
     <section>
       <h2><span class="no">04</span>Újdonság, innováció</h2>
       <ul>
@@ -243,7 +253,7 @@ section b { font-weight: 700; }
     </section>
   </div>
   <div>
-    <div class="photo">{{IMG:D}}</div>
+    <div class="photo">{{IMG:D}}<div class="tag">Látványterv</div></div>
     <section>
       <h2><span class="no">05</span>Hasznosíthatóság</h2>
       <ul>
@@ -262,7 +272,8 @@ section b { font-weight: 700; }
     </section>
     <section>
       <h2><span class="no">07</span>Következtetés</h2>
-      <p>A lépés olyan, mint az aláírás. Hipotézisünk: két geofon és egy kis osztályozó elég egy háromfős háztartás megkülönböztetéséhez. A hardver működik; most a saját adat jön.</p>
+      <p>A lépés olyan, mint az aláírás. Hipotézisünk: két geofon és egy kis osztályozó elég egy háromfős háztartás megkülönböztetéséhez. </p>
+      <p>Így igazoljuk: először a nyilvános FootprintID-adatokon [2], majd saját padlón, 3 fővel. A cél legalább 85% helyes felismerés, az idegent „ismeretlen”-ként jelezve.</p>
     </section>
   </div>
 </div>
@@ -270,9 +281,9 @@ section b { font-weight: 700; }
 <div class="refs">
   <h2><span class="no">08</span>Szakirodalom</h2>
   <p>[1] Pan, S. et al.: <b>FootprintID:</b> Indoor pedestrian identification through ambient structural vibration sensing. Proc. ACM IMWUT 1(3), 2017. doi:10.1145/3130954<br>
-     [2] <b>FootprintID-adathalmaz</b> (10 fő, 5 geofon). Zenodo, 2021. zenodo.org/records/4691144</p>
+     [2] <b>FootprintID-adathalmaz</b> (10 fő, 5 geofon). Zenodo, 2021. doi:10.5281/zenodo.4691144</p>
   <p>[3] Adatlapok: TI ADS131M02, Espressif ESP32-S3, SM-24 geofon.<br>
-     <b>Képek:</b> a fényképek AI-generált illusztrációk; a rezgésgörbe saját mérés.</p>
+     <b>Képek:</b> a fényképek és a robbantott ábra AI-generált látványtervek; a rezgésgörbe saját mérés a hackathon próbapadjával.</p>
 </div>
 
 <script>
