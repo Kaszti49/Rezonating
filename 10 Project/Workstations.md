@@ -10,6 +10,7 @@ name (Windows: `echo %COMPUTERNAME%`), so keep the first column exact.
 | --- | --- | --- | --- | --- | --- | --- |
 | desktop-db0e1qv | Kaszti | home | vault manager; only machine with local models | not yet | to set up | used rarely for project work, and that's an off-day |
 | pc-10 | Kaszti, Viktor | company | main machine on Monday and Tuesday | v6.0 (`C:\esp\v6.0`) | no | set up 2026-10-05; repo in `Desktop\EP_RezonatingProject\Rezonating`; Python 3.12 per user; build from PowerShell, not Git Bash (idf.py refuses MSYS) |
+| ep-laptop | Kaszti | ? | demos and floor tests since 2026-11 | v6.0 (`C:\esp\v6.0`) | no | a real clone since 2026-11-24 (`C:\Users\enterpartner\Rezonating-main`); Python 3.12 for the Lab (`python` on PATH is Espressif's 3.11); Windows symlinks are not allowed (two Lab tests fail) |
 | (Viktor's PC, if used) | Viktor | home | optional | ? | no | add a row when it's used |
 
 ## Setting up a machine

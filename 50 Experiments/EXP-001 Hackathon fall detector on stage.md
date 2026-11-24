@@ -24,6 +24,13 @@ result: partial
 
 ## Results
 - Replay on 2026-11-15 with the stored settings: falls flagged at 43.7, 51.5 and 60.4 s, which are the three labelled falls. None of the jumps at 64.3, 70.1 and 74.9 s was flagged as a fall, and the alarm called once.
+- The same three falls and three jumps as a table, for the Lab's Home page (added by Claude 2026-11-24, same numbers):
+
+| Set | Right | Same | Wrong |
+| --- | --- | --- | --- |
+| Falls caught | 3 | 0 | 0 |
+| Jumps not taken for a fall | 3 | 0 | 0 |
+
 - Earlier bench recordings (2026-11-12, gain 4, compiled defaults): all 7 impact-sized events were flagged and the walking-only recording raised 0 alarms. The labels on those 7 events are provisional. A synthetic walking-over-fall mix found 35 of 35 falls.
 
 ## What it does not show

@@ -180,3 +180,16 @@ Append-only. Newest at the bottom. One entry per Claude session.
 - **Decided with the team:** Kaszti chose bearing + distance band (over left/right only and over x/y), a 2D top-down radar, a new Locate page, one-click start, and water-drop ripples.
 - **Left open:** the real-floor test (no device here today); D-026/D-027 to accept and the D-027 target; the retro (due); 13 older flags; the two symlink tests on this PC.
 - **Next session should:** with the rig on the floor, work through [[Test the Locate page on the real floor]] with Kaszti and tune the detector and calibration from the numbers; then the retro.
+
+## 2026-11-24 (EP-LAPTOP)
+- **Did:**
+  - Pulled to `c7ab3d1`: the zip folder became a real clone (it matched `40e7978`; nothing lost). `rzlab serve --sim-room` runs at 127.0.0.1:8765 in this session.
+  - First real-floor test of the Locate page (rig-s3 on COM17): failed on distance, angle, front/back and small steps. Rewritten several times, then replaced by Kaszti's rule (first, else louder, else front or back; no calibration): 28 of 32 known steps right, 3 same, 1 wrong, **in-sample**.
+  - Found on the way: the detector fired on step tails and missed small steps; clipped windows were used; the loudness was noise-subtracted with the wrong band; a bad one-spot calibration flipped the sides; the geophones stopped moving alike at about 09:11 (cause not known).
+  - Round 1 of the 8-spot test: no accuracy (no pauses, labels read from the signal). 1 m left/right clear, 2 m right, front and back identical.
+  - Retro [[2026-W48]] with 3 proposals; [[EXP-002 Locate page first real floor run]], [[EXP-003 Eight spots round 1]], [[Side of a step with two nearby sensors]], [[Lab and Locate review 2026-11-24]].
+- **Playbooks:** root-cause, ml-training, verify, retro, research, vault-conventions. The L0 Stop gate ran once today (P-002); checks were run by hand. Flags F-261124-13a0, -1bff, -63e1, -cfd6, -17a0 (corrections, open); -70f7 (review, resolved). 655 Lab tests passed; 3 known failures.
+- **Decided with the team:** Kaszti: black-and-white rule, no angle or distance and no calibration on the page; proposals only for the retro and the review (nothing applied).
+- **Left open:** the coin test; round 2; the neutral point in `core/locate.py` (1.05 is wrong here); D-026 and D-027 (bearing and distance no longer match the page); the retro proposals; whether the captures become data (consent, pseudonym); commit and push (nothing committed today).
+- **Next session should:** read [[Lab and Locate review 2026-11-24]] first, then ask Kaszti for the yes/no answers.
+- **Later on 2026-11-24:** Kaszti approved all proposals. Applied P-001 to P-003. Locate: louder, else first (Claude's loudness-only proposal scored 19 of 32 and was dropped), flat window, walk majority, rig health, gap counting, `locate-spots-v1`. New Home page (connect ring, bento dashboard, results read from the experiment notes), pages grouped, launcher opens Home. Checked in a headless browser at 1366, 1500 and 1920 px, dark and light, on the simulation, and on the real board at 1500 px. Removed ideas: [[Locate ideas parked]] and `scratch/parked-locate-2026-11-24/`. A numbers-for-judges rule: counts with n, never a bare percentage. Left open: coin test, round 2, D-027, consent and pseudonym. Committed and pushed at Kaszti's request.
