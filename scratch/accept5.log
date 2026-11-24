@@ -1,0 +1,99 @@
+stop ok: True problems: []
+
+--- rzlab validate <tmp>\rz-accept-2r9qenxy\dataroot
+ok   2026-10-13_accept-lab_bench_01  [adc_raw, accel]
+1 session(s) checked, 0 failed
+exit code: 0
+
+--- tools/validate.py on <tmp>\rz-accept-2r9qenxy\repo-copy
+10 files checked, 0 problem(s) 
+exit code: 0
+
+{
+ "session": "2026-10-13_accept-lab_bench_01",
+ "wall_total_s": 303.6,
+ "wall_record_s": 300.0,
+ "streams": {
+  "adc_raw": {
+   "frames": 609800,
+   "duration_s": 302.48,
+   "sample_rate": 2016,
+   "sample_rate_measured": 2016.0,
+   "loss": {
+    "device": 0,
+    "link": 0,
+    "host": 0
+   },
+   "labels": 58
+  },
+  "accel": {
+   "frames": 603751,
+   "duration_s": 302.48,
+   "sample_rate": 1996,
+   "sample_rate_measured": 1996.0001,
+   "loss": {
+    "device": 0,
+    "link": 0,
+    "host": 0
+   },
+   "labels": 58
+  }
+ },
+ "label_error_ms": {
+  "key/adc_raw": {
+   "n": 58,
+   "max_abs_ms": 9.44,
+   "p50_abs_ms": 4.27,
+   "p95_abs_ms": 8.84,
+   "mean_abs_ms": 4.12,
+   "mean_signed_ms": 1.33,
+   "unc_ms_mean": 12.5,
+   "within_unc": 58,
+   "within_unc_fraction": 1.0
+  },
+  "phone/adc_raw": {
+   "n": 58,
+   "max_abs_ms": 41.54,
+   "p50_abs_ms": 14.95,
+   "p95_abs_ms": 33.82,
+   "mean_abs_ms": 16.53,
+   "mean_signed_ms": -1.85,
+   "unc_ms_mean": 61.4,
+   "within_unc": 58,
+   "within_unc_fraction": 1.0
+  },
+  "key/accel": {
+   "n": 58,
+   "max_abs_ms": 9.22,
+   "p50_abs_ms": 4.11,
+   "p95_abs_ms": 8.48,
+   "mean_abs_ms": 4.06,
+   "mean_signed_ms": 1.1,
+   "unc_ms_mean": 12.5,
+   "within_unc": 58,
+   "within_unc_fraction": 1.0
+  },
+  "phone/accel": {
+   "n": 58,
+   "max_abs_ms": 42.06,
+   "p50_abs_ms": 14.7,
+   "p95_abs_ms": 33.71,
+   "mean_abs_ms": 16.54,
+   "mean_signed_ms": -2.14,
+   "unc_ms_mean": 61.4,
+   "within_unc": 58,
+   "within_unc_fraction": 1.0
+  }
+ },
+ "sim": {
+  "seed": 7,
+  "clock_drift_ppm": 60.0,
+  "timestamp_jitter_us": 150.0
+ },
+ "rzlab_validate_exit": 0,
+ "tools_validate_exit": 0,
+ "sidecars_in_copy": [
+  "data\\2026-10-13_accept-lab_bench_01\\2026-10-13_accept-lab_bench_01.accel.json",
+  "data\\2026-10-13_accept-lab_bench_01\\2026-10-13_accept-lab_bench_01.adc.json"
+ ]
+}
