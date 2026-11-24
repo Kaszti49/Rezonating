@@ -19,7 +19,7 @@ step after the work, never while writing it.
    - firmware: blocking or logging in an ISR, missing `IRAM_ATTR`, buffers in the wrong RAM, silent
      sample drops, register values against the datasheet, counter overflow, GPIO 33–37, v5 APIs on v6.
    - ml: splitting by window instead of by person, float64/float32 mismatch, features without test
-     vectors, unseeded randomness, a metric without a baseline.
+     vectors, unseeded randomness, a metric without a baseline, a limit scored on the data it was chosen on.
    - schemas/packs: a breaking change with no version bump or decision, examples not updated.
    - research: open 1–3 cited sources and confirm the numbers are really there.
    - vault: `10 Project/Vault rules.md`; a decision marked accepted by Claude.

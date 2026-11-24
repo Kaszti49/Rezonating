@@ -259,6 +259,36 @@ class TestHooks(unittest.TestCase):
         _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": False})
         self.assertEqual("block", (out or {}).get("decision"), "a changed file is checked again")
 
+    def test_gate_sees_edits_made_outside_write_and_edit(self):
+        old = self.sb.write("20 Work/Old.md", WORK_BAD)  # somebody's uncommitted work from before the session
+        past = time.time() - 3600
+        os.utime(old, (past, past))
+        self.sb.hook("session_start", {"source": "startup"})
+        _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": False})
+        self.assertIsNone(out, "older uncommitted work is not gated")
+        time.sleep(0.05)
+        self.sb.write("20 Work/ByBash.md", WORK_BAD)  # no post_edit: as if a script had written it
+        _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": False})
+        self.assertEqual("block", (out or {}).get("decision"))
+        self.assertIn("ByBash", out["reason"])
+        self.assertNotIn("Old.md", out["reason"])
+        self.sb.write("20 Work/ByBash.md", WORK_OK)
+        _, out, _ = self.sb.hook("stop_gate", {"stop_hook_active": False})
+        self.assertIsNone(out)
+        runs = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/runs.jsonl")
+        n = len(runs)
+        self.sb.hook("stop_gate", {"stop_hook_active": False})
+        runs = rzlib.read_jsonl(self.sb.dir / "90 Meta/Agents/Ledger/runs.jsonl")
+        self.assertEqual(n, len(runs), "the ledger the gate writes does not trigger the gate")
+
+    def test_session_start_time_is_kept_on_resume(self):
+        self.sb.hook("session_start", {"source": "startup"})
+        f = next((self.sb.dir / ".claude/state/gate").glob("start-*"))
+        first = f.read_text(encoding="utf-8")
+        time.sleep(0.02)
+        self.sb.hook("session_start", {"source": "resume"})
+        self.assertEqual(first, f.read_text(encoding="utf-8"))
+
     def test_session_start_context(self):
         _, out, _ = self.sb.hook("session_start", {"source": "startup"})
         ctx = out["hookSpecificOutput"]["additionalContext"]

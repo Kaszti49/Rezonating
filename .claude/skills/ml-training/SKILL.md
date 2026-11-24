@@ -18,6 +18,10 @@ description: Playbook for ml/, tools/ and data/ manifests (Python signal process
 5. Never read or write `data/raw/`, `data/private/` or WAV contents into notes or git.
 6. Finish with `ruff check` and `python -m pytest -q ml/tests` (the stop gate repeats them), then
    the `verify` playbook. Report dataset, split, metric, baseline and what the number doesn't show.
+7. **Simplest rule first, real data before a claim.** Before building anything with a threshold, score
+   the simplest rule on recorded data and keep it as the baseline. State which steps chose each limit,
+   and score on steps that did not; if there are none, say "in-sample" in the same sentence as the number.
+   A simulator result is never evidence for the real floor.
 
 Code lives in `ml/` (package `rezonating_ml`). Each pack (`packs/<id>/pack.json`) names its head,
 sample rate, trigger and model; the training code reads the same file, so firmware and Python can't drift.
@@ -27,6 +31,9 @@ sample rate, trigger and model; the training code reads the same file, so firmwa
   pseudonym list (`data/private/`) never are.
 - People are pseudonyms (P1, P2, …). Never write a real name next to a pseudonym anywhere.
 - Public data first: FootprintID and the 2025 structural-vibration gait dataset (see `60 Research/`).
+- **A real-floor test is a recording first.** Before a person steps, start a Lab recording (Record page) with the
+  spot, shoes, floor and order as labels (protocol `locate-spots-v1` for sides), and write the order in the
+  experiment note. The Lab's 10-minute ring buffer is not a record. No labels → no accuracy figure.
 
 ## Splits (the most common way to fool yourself)
 - Person identification: split **by session or day**, never by window from the same walk.

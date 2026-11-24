@@ -75,6 +75,7 @@ def cleanup_state(days: int = 14) -> None:
 def main() -> int:
     rzlib.utf8_stdio()
     data = rzlib.read_hook_input()
+    rzlib.mark_session_start(data.get("session_id", ""))
     today = dt.date.today()
     iso = today.isocalendar()
     lines = [f"Rezonating session facts (from .claude/hooks/session_start.py, source: {data.get('source', '?')}):"]

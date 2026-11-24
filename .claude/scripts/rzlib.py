@@ -14,6 +14,7 @@ import secrets
 import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # ---------------------------------------------------------------- paths
@@ -243,6 +244,25 @@ def record_edit(session_id: str, agent_id: str | None, relpath: str) -> None:
     name = re.sub(r"[^\w.-]", "_", agent_id or "main")
     with open(d / f"{name}.txt", "a", encoding="utf-8", newline="\n") as f:
         f.write(relpath + "\n")
+
+
+def _start_file(session_id: str) -> Path:
+    return STATE / "gate" / ("start-" + re.sub(r"[^\w.-]", "_", session_id or "nosession"))
+
+
+def mark_session_start(session_id: str) -> None:
+    """Remember when the session started; a resume or compaction keeps the first time."""
+    f = _start_file(session_id)
+    if not f.exists():
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(str(time.time()), encoding="utf-8")
+
+
+def session_start_time(session_id: str) -> float | None:
+    try:
+        return float(read_text(_start_file(session_id)) or "")
+    except ValueError:
+        return None
 
 
 def edits_by(session_id: str, agent_id: str | None) -> list[str]:

@@ -2,7 +2,8 @@
 """Stop: the L0 gate. Before the session ends its turn, the files it edited must pass the checks.
 
 Runs `checks.py` (vault rules, validate.py, ruff/pytest, idf.py build: picked by path) on the files
-Claude edited with Write/Edit since they last passed. On failure the turn is sent back with the
+Claude edited (Write/Edit, or any uncommitted file touched since the session started, which covers
+edits made through Bash) since they last passed. On failure the turn is sent back with the
 errors (decision: block), at most MAX_RETRIES times; after that it may stop, a gate-fail flag goes to
 the ledger (evidence for the retro) and the person is told. Passing files are remembered by mtime, so
 a long session doesn't rebuild the firmware on every turn. Fails open on internal errors.
@@ -21,6 +22,7 @@ import ledger  # noqa: E402
 import rzlib  # noqa: E402
 
 MAX_RETRIES = 2
+OWN_FILES = ("90 Meta/Agents/Ledger/", ".claude/state/")  # written by the gate itself
 PLAYBOOK_OF = [  # first match wins: which playbook a failing file belongs to (for the ledger)
     ("firmware/", "firmware"),
     ("packs/", "firmware"),
@@ -53,6 +55,16 @@ def _mtime(root: Path, p: str) -> float | None:
         return None
 
 
+def _changed_since_start(session: str, root: Path) -> list[str]:
+    """Uncommitted files touched since the session started: edits made through Bash are not recorded (P-002).
+
+    Older uncommitted work is left alone, and so are the files the gate writes itself."""
+    start = rzlib.session_start_time(session)
+    if start is None:
+        return []
+    return [p for p in rzlib.dirty_files(root) if not p.startswith(OWN_FILES) and (_mtime(root, p) or 0.0) >= start]
+
+
 def main() -> int:
     rzlib.utf8_stdio()
     data = rzlib.read_hook_input()
@@ -65,7 +77,7 @@ def main() -> int:
 
     todo = [
         p
-        for p in rzlib.edits_by(session, None)
+        for p in dict.fromkeys(rzlib.edits_by(session, None) + _changed_since_start(session, root))
         if _mtime(root, p) is not None and passed.get(p) != _mtime(root, p)
     ]
     if not todo:
