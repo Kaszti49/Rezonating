@@ -43,7 +43,17 @@ Source `hardware/case-v1/case_v1.py`, which is parametric and rebuilt in FreeCAD
   - **Pin map:** the hackathon one (`rezon.ino`): SCK 12, MISO 13, MOSI 14, CS 11, CS2 9, DRDY 10, RST 8.
   - **Case change:** the USB tunnel moved to y = −14 mm, and the corner pins are now Ø2.5 mm (0.5 mm under the hole) to take up hole-position error. The fit check is still clean.
 
+## Geophone lock (Claude, 2026-11-24, prototype in CAD, not printed)
+Kaszti: the press-fit cups are too tight and the geophones aren't accurate, so the cups go and the geophones stand on the room floor through two holes. Kaszti chose: reprint the base, a collar with three pins, one lever for both. Replaces the press-fit cup above. Files: `hardware/case-v1/geo_lock.py` (sizes and sums), `geo_lock_build.py` (model and checks), `geo_lock.FCStd`, `out/geo_lock_*.stl`, `out/geo_lock_report.txt`. Background: [[Geophone lock for the OTIO case]].
+- **Deploy:** the geophone stands free in a Ø32 mm hole. Free air: 3.3 mm at the hole, 1.77 mm to the cage, 1.50 mm below the pins. Still free when tilted 1° and 0.9 mm off centre.
+- **Travel:** a cam ring (lower layer) lifts the three pins 2.5 mm into V notches in a fixed cage (upper layer). About 43° of lever; a 5° wedge holds it.
+- **Lifted while deployed:** the pins land on the cam ring and the geophone hangs 1.5 mm below the case.
+- **Lever** through a slot in the +Y wall; a **rod** over the free half of the board turns both rings. The cage twist-locks on four nubs. The lid is unchanged.
+- **Checked in FreeCAD:** 43 checks (9 that the parts are sound solids, 34 for fit and motion), no collisions (board, modules, lid, five lever positions, fitting path). The rod snaps over a lip on its pins, so it stays on upside down (F-261124-7192). Not checked: strength, wear, print tolerance, a real geophone.
+- **Keep free:** the rod's path over the board (x = 24 to 36 mm) and 6.5 mm of board edge under each cam ring.
+
 ## Open
+- Geophone lock: body diameter, bottom shape and smooth height of the real SM-24s (the model uses the datasheet); print one lock first (`fit_test_geo_lock_base.stl`); thin geophone leads with a slack loop.
 - The wiring layout above: Kaszti and Viktor OK it, or move parts in `gen.py` and rerun it and `case_v1.py`.
 - **Pin maps disagree:** `firmware/README.md` (draft v0: SCLK 12, MOSI 11, MISO 13, CS 10, DRDY 9, RESET 8, no CS2) vs the hackathon `rezon.ino`, which this guide uses. Viktor to pick one for the ESP-IDF port.
 - **Hackathon guide's 3D view looks mirrored:** it draws the ESP32-S3's J1 and the Click's AN header on the wrong side for a module seen from above with USB-C on the left (Espressif's v1.1 pin layout shows J1 on the left with the antenna up). The new guide follows Espressif. Check against the real modules when placing the sockets.
@@ -56,4 +66,5 @@ Source `hardware/case-v1/case_v1.py`, which is parametric and rebuilt in FreeCAD
 - 2026-11-23 two geophones instead of one (Kaszti); blank board photo; new wiring layout to be made
 - 2026-11-23 model v1 built and fit-checked in FreeCAD; STLs and fit-test rings exported
 - 2026-11-23 wiring guide for the OTIO node (2 geophones, ESP32-S3, Click); case dummies moved to its layout
+- 2026-11-24 geophone cups replaced by floor holes and a lever lock (Kaszti); prototype modelled, 43 CAD checks pass
 - 2026-11-23 logo changed from a 0.6 mm engraving to a 1.2 mm pocket with white inlay pieces (Kaszti, from the boss); lid plate 2.4 → 3.0 mm

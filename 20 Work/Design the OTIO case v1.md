@@ -20,6 +20,7 @@ done:
 - [x] "REZON" and the wave engraved on the lid
 - [x] STL or 3MF for each part, printable in PLA on the X1E or A1 without supports, or with the supports named
 - [ ] Kaszti OKs the look
+- [ ] Geophone lock: one test print works with a real SM-24 (added 2026-11-24)
 
 ## Notes
 Requirements and choices: [[OTIO case v1]].
@@ -27,3 +28,4 @@ Requirements and choices: [[OTIO case v1]].
 ## Log
 - 2026-11-23 created
 - 2026-11-23 model v1 in `hardware/case-v1/`: fit check clean, lock path checked, STLs and fit-test rings out. Waiting on Kaszti's OK of the look, and on three caliper measurements (corner holes, header height, USB spacing)
+- 2026-11-24 Kaszti asked for floor holes and a lock for the geophones; modelled in FreeCAD (`geo_lock_build.py`), CAD checks pass, not printed

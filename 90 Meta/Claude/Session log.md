@@ -193,3 +193,13 @@ Append-only. Newest at the bottom. One entry per Claude session.
 - **Left open:** the coin test; round 2; the neutral point in `core/locate.py` (1.05 is wrong here); D-026 and D-027 (bearing and distance no longer match the page); the retro proposals; whether the captures become data (consent, pseudonym); commit and push (nothing committed today).
 - **Next session should:** read [[Lab and Locate review 2026-11-24]] first, then ask Kaszti for the yes/no answers.
 - **Later on 2026-11-24:** Kaszti approved all proposals. Applied P-001 to P-003. Locate: louder, else first (Claude's loudness-only proposal scored 19 of 32 and was dropped), flat window, walk majority, rig health, gap counting, `locate-spots-v1`. New Home page (connect ring, bento dashboard, results read from the experiment notes), pages grouped, launcher opens Home. Checked in a headless browser at 1366, 1500 and 1920 px, dark and light, on the simulation, and on the real board at 1500 px. Removed ideas: [[Locate ideas parked]] and `scratch/parked-locate-2026-11-24/`. A numbers-for-judges rule: counts with n, never a bare percentage. Left open: coin test, round 2, D-027, consent and pseudonym. Committed and pushed at Kaszti's request.
+
+## 2026-11-24 (pc-10)
+- **Did:**
+  - Pulled to `741582c` (fast-forward; today's daily note and `runs.jsonl` merged by hand, both sides kept).
+  - Geophone lock for the OTIO case, modelled in FreeCAD on top of `case_v1.py`: Ø32 mm floor holes, a collar with three pins, cam ring, cage with V notches, one lever, rod. Files `hardware/case-v1/geo_lock*.{py,FCStd}`, STLs, renders, `out/geo_lock_report.txt` (43 checks pass: 9 part validity, 34 fit and motion). Not printed.
+  - Notes: [[Geophone lock for the OTIO case]], [[OTIO case v1]], [[Design the OTIO case v1]].
+- **Playbooks:** research, vault-conventions, verify, wrap-up. Verify: one med finding (rod not held upside down, F-261124-7192), fixed and rebuilt. First build: the lever hit the wall at 15° to 43°, fixed.
+- **Decided with the team:** Kaszti: geophones out of the tight cups and free on the floor; reprint the base; a collar with three pins; one lever for both.
+- **Left open:** the three SM-24 sizes (the model uses the datasheet); a test print; whether free geophones measure better (not tested); the coin test. The FreeCAD MCP tools never loaded in this session; the bridge was driven with a token Kaszti gave.
+- **Next session should:** put the measured sizes into `geo_lock.py`, rerun `geo_lock_build.py`, and print the test lock.

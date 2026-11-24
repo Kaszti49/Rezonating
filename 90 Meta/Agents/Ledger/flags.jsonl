@@ -98,3 +98,5 @@
 {"ev":"resolve","id":"F-261013-da80","ts":"2026-11-24T12:13:30+01:00","how":"superseded: agents removed (D-025), closed in retro 2026-W48","by":"claude"}
 {"ev":"resolve","id":"F-261013-e9b4","ts":"2026-11-24T12:13:31+01:00","how":"superseded: agents removed (D-025), closed in retro 2026-W48","by":"claude"}
 {"ev":"retro","ts":"2026-11-24T12:13:31+01:00","machine":"ep-laptop","note":"2026-W48"}
+{"ev":"flag","id":"F-261124-7192","ts":"2026-11-24T13:23:02+01:00","machine":"pc-10","session":"","agent":"verify","model":"","kind":"review","level":"L1","severity":"med","task":"","summary":"hardware/case-v1/geo_lock_build.py: nothing held the rod on the crank pins with the case upside down, so one geophone could stay unlocked; the CAD checks did not test it","files":[],"by":"claude"}
+{"ev":"resolve","id":"F-261124-7192","ts":"2026-11-24T13:24:38+01:00","how":"snap lip on the crank pins; two checks added to geo_lock_build.py (0.71 mm3 held at 0.9 mm lift), rebuilt 43/43","by":"claude"}

@@ -122,3 +122,6 @@
 {"ev":"run","ts":"2026-11-24T09:53:07+01:00","machine":"ep-laptop","agent":"ml","session":"753fa84b-3aee-4e3d-b204-3031a996e059","gate":"pass","retries":0,"edited":1,"checks":[{"name":"ruff","result":"pass"}],"flag":null}
 {"ev":"run","ts":"2026-11-24T10:29:47+01:00","machine":"ep-laptop","agent":"vault","session":"753fa84b-3aee-4e3d-b204-3031a996e059","gate":"pass","retries":0,"edited":8,"checks":[{"name":"vault-schema","result":"pass"}],"flag":null}
 {"ev":"run","ts":"2026-11-24T12:15:10+01:00","machine":"ep-laptop","agent":"ml","session":"753fa84b-3aee-4e3d-b204-3031a996e059","gate":"pass","retries":0,"edited":23,"checks":[{"name":"vault-schema","result":"pass"},{"name":"ruff","result":"pass"}],"flag":null}
+{"ev":"run","ts":"2026-11-23T13:05:10+01:00","machine":"pc-10","agent":"vault","session":"500ac3fd-1668-438e-a5d0-90473f4456d5","gate":"pass","retries":0,"edited":1,"checks":[{"name":"vault-schema","result":"pass"}],"flag":null}
+{"ev":"run","ts":"2026-11-24T07:57:48+01:00","machine":"pc-10","agent":"vault","session":"20f02c20-4af7-4e8d-8c71-ba0624338236","gate":"pass","retries":0,"edited":1,"checks":[{"name":"vault-schema","result":"pass"}],"flag":null}
+{"ev":"run","ts":"2026-11-24T13:19:59+01:00","machine":"pc-10","agent":"session","session":"cc8a2878-1c53-45dc-af9e-36e95a6c8e0a","gate":"skip","retries":0,"edited":1,"checks":[],"flag":null}
