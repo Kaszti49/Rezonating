@@ -1,0 +1,30 @@
+import numpy as np,os
+from scipy import signal
+from rezonating_lab.core.locate import measure
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures"); b=20
+def load(n):
+    z=np.load(os.path.join(D,n)); V=z["V"]; g=np.flatnonzero(V)[0]; X=np.nan_to_num(z["X"][g:]); sos=signal.butter(2,10,'hp',fs=2000,output='sos'); H=signal.sosfilt(sos,X-X[0],axis=0); n=len(H)//b
+    return X,np.sqrt((H[:n*b].reshape(n,b,2)**2).mean((1,2)))
+def det(e,k,rise,refr,pct,win_s):
+    W=int(win_s*100); out=[];last=-10**9; nz=np.zeros(len(e))
+    for i in range(0,len(e),25):
+        nz[i:i+25]=np.percentile(e[max(0,i-W):max(i,30)],pct)
+    for i in range(30,len(e)):
+        if e[i]>k*nz[i] and e[i]>rise*np.median(e[i-15:i-1]) and i-last>=refr*100: out.append(i);last=i
+    return np.array(out)
+for name in ("floor-2026-11-24-cal2.npz","floor-2026-11-24-cal4.npz"):
+    X,e=load(name); W=500; fl=np.array([np.percentile(e[max(0,k-W):k+W],20) for k in range(0,len(e),50)]).repeat(50)[:len(e)]; ratio=e/fl; pk,_=signal.find_peaks(ratio,height=5,distance=35); pr=ratio[pk]
+    # quiet stretches: 5 s windows with no block over 5x local floor
+    q=[a for a in range(0,len(e)-500,500) if ratio[a:a+500].max()<5]
+    print(name,"quiet 5 s windows:",len(q))
+    for k,rise,refr,pct,win in ((5,4,.35,20,10),(5,3,.35,20,10),(4,3,.35,20,10),(4,2.5,.35,20,10),(3.5,2.5,.35,20,10),(4,2.5,.40,20,10),(4,2,.40,20,10),(3.5,2,.40,20,10)):
+        on=det(e,k,rise,refr,pct,win); dt=np.diff(on)/100; c=np.array([np.abs(on-p).min()<=30 for p in pk]); fa=sum(((on>=a)&(on<a+500)).sum() for a in q)
+        row=[100*c[(pr>=lo)&(pr<hi)].mean() for lo,hi in ((5,8),(8,12),(12,20),(20,1e9))]
+        print(f"  k{k} rise{rise} refr{refr}: n={len(on)} bumps caught 5-8x {row[0]:.0f}%  8-12x {row[1]:.0f}%  12-20x {row[2]:.0f}%  >20x {row[3]:.0f}% | <0.45 s after previous {100*(dt<.45).mean():.0f}% | triggers in quiet windows {fa} ({fa/max(1,len(q)*5/60):.1f}/min)")
+    # agreement vs loudness (post-trigger) with k4 rise2.5
+    on=det(e,4,2.5,.40,20,10); cc=[];am=[];t=[]
+    for o in on*b:
+        if o<150 or o>len(X)-700: continue
+        m=measure(X[o-100:o+600],1996.2); cc.append(m.cc);am.append(np.mean(m.amp));t.append(o/1996)
+    cc=np.array(cc);am=np.array(am);t=np.array(t); print("  agree (cc<-.9) by loudness:",[(f"{lo:g}-{hi:g}",int(((am>=lo)&(am<hi)).sum()),f"{100*np.mean(cc[(am>=lo)&(am<hi)]<-.9):.0f}%") for lo,hi in ((0,2e3),(2e3,5e3),(5e3,1.5e4),(1.5e4,5e4),(5e4,1e9)) if ((am>=lo)&(am<hi)).any()])
+    print("  agree per minute:",[(f"min{m}",int((t//60==m).sum()),f"{100*np.mean(cc[t//60==m]<-.9):.0f}%") for m in range(int(t.max()//60)+1)])

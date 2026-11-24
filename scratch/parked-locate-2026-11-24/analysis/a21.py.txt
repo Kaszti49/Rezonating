@@ -1,0 +1,36 @@
+import numpy as np,os
+from scipy import signal
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures"); H=os.path.dirname(os.path.abspath(__file__))
+def load(n):
+    z=np.load(os.path.join(D,n)); V=z["V"]; g=np.flatnonzero(V)[0]; return np.nan_to_num(z["X"][g:]).astype(float),float(z["fs"]),int(z["first"])+g
+st=np.load(os.path.join(H,"st2.npz")); X2,f2,o2=load("floor-2026-11-24-cal2.npz"); X3,f3,o3=load("floor-2026-11-24-cal3.npz"); X5,f5,o5=load("floor-2026-11-24-cal5.npz"); X1,f1,o1=load("floor-2026-11-24-round1.npz"); r1=np.load(os.path.join(H,"r1.npz"))["ix"]+o1
+ix5=None
+import rezonating_lab.server.locate as S
+from rezonating_lab.core.ringbuf import SampleRing
+class M:
+    def __init__(s,r,fs): s.rings={0:r}; s.ev=[]; s.fs=fs
+    def stream_names(s): return {0:"adc_raw"}
+    def stream_info(s,i): return {"fs_hz":s.fs}
+    def publish(s,e):
+        if e["type"]=="locate_step": s.ev.append(e)
+    def host_log(s,*a): pass
+def replay(X,fs):
+    r=SampleRing(2,int(60*fs)); m=M(r,fs); L=S.Locator(m,None); L.tick(); Xi=X.astype(np.int32)
+    for i in range(0,len(Xi),200): r.write(i,Xi[i:i+200]); L.tick()
+    return np.array([e["index"] for e in m.ev])
+ix5=replay(X5,f5)+o5
+KNOWN=[("L0853",X2,f2,o2,[st["ix"][j] for j in range(402,410)],+1),("R0853",X2,f2,o2,[st["ix"][j] for j in range(364,372)],-1),("L0915",X3,f3,o3,[1446042,1447702,1449202,1450642,1452042,1453482,1454982,1456562],+1),("R0940",X5,f5,o5,ix5[194:202],-1)]
+TENT=[("L1m~",X1,f1,o1,r1[385:401],+1),("R1m~",X1,f1,o1,r1[401:420],-1)]
+def lr(X,o,i,pre,post,shape,band,fs):
+    w=X[i-o-pre:i-o+post]; w=w-np.median(X[i-o-400:i-o-40],0); n=len(w)
+    if shape=="hann": h=np.hanning(n)
+    elif shape=="flat": h=signal.windows.tukey(n,0.1)
+    sos=signal.butter(2,band,'bp',fs=fs,output='sos'); pad=X[i-o-400:i-o+post+200]; y=signal.sosfiltfilt(sos,pad-np.median(pad,0),axis=0)[400-pre:400+post]; e=(y*h[:,None])**2
+    return np.log(np.sqrt(e[:,0].sum()/e[:,1].sum()))
+print("separation of left(+) and right(-) by log loudness ratio: median L, median R, d' (gap/pooled sd), wrong sides after best zero from the 08:53 pair")
+for name,pre,post,shape,band in (("now: -50/+300 Hann 10-200",100,600,"hann",(10,200)),("-10/+300 flat",20,600,"flat",(10,200)),("-10/+120 flat",20,240,"flat",(10,200)),("-10/+60 flat",20,120,"flat",(10,200)),("-10/+30 flat (first arrival)",20,60,"flat",(10,200)),("-10/+120 flat 20-100",20,240,"flat",(20,100)),("-10/+60 flat 20-100",20,120,"flat",(20,100)),("-10/+60 flat 60-200",20,120,"flat",(60,200))):
+    D_={n:np.array([lr(X,o,i,pre,post,shape,band,f) for i in ix]) for n,X,f,o,ix,s in KNOWN+TENT}
+    zero=(np.median(D_["L0853"])+np.median(D_["R0853"]))/2
+    Lk=np.r_[D_["L0853"],D_["L0915"]]; Rk=np.r_[D_["R0853"],D_["R0940"]]; sd=np.sqrt((Lk.var()+Rk.var())/2)
+    wr={n:int(sum((v-zero)*s<0)) for (n,X,f,o,ix,s) in KNOWN+TENT for v in [D_[n]]}
+    print(f"{name:34s} L0853 {np.median(D_['L0853']):+.2f} R0853 {np.median(D_['R0853']):+.2f} L0915 {np.median(D_['L0915']):+.2f} R0940 {np.median(D_['R0940']):+.2f} | d'={(np.median(Lk)-np.median(Rk))/sd:.2f} | sd L0853 {D_['L0853'].std():.2f} R0853 {D_['R0853'].std():.2f} | wrong of 8/8/8/8: {wr['L0853']}/{wr['R0853']}/{wr['L0915']}/{wr['R0940']}  round1 L {wr['L1m~']}/16 R {wr['R1m~']}/19")

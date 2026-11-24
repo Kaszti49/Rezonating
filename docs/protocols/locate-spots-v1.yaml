@@ -1,0 +1,113 @@
+# Machine-readable locate-spots-v1 (the human version is locate-spots-v1.md; keep the two in step).
+# Which side did a step come from: steps in place at eight marked spots, one after another, with 10 s of standing still
+# before each. Format: see the header of walk-pass-v1.yaml.
+format: 1
+protocol: locate-spots-v1
+title: Eight spots for the side of a step
+pack: footstep-id
+doc: locate-spots-v1.md
+labels: [silence, left-1m, right-1m, front-1m, back-1m, left-2m, right-2m, front-2m, back-2m]
+steps:
+  - id: silence
+    kind: timed
+    label: silence
+    duration_s: 30
+    fills: {}
+    instructions: Nobody moves. 30 s of silence at the start of every session.
+  - for_each_person:
+      - id: still-left-1m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to LEFT, 1 m, in a wide arc. Then stand still.
+      - id: left-1m
+        kind: timed
+        label: left-1m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: LEFT, 1 m. About ten ordinary steps in place.
+      - id: still-right-1m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to RIGHT, 1 m, in a wide arc. Then stand still.
+      - id: right-1m
+        kind: timed
+        label: right-1m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: RIGHT, 1 m. About ten ordinary steps in place.
+      - id: still-front-1m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to FRONT, 1 m, in a wide arc. Then stand still.
+      - id: front-1m
+        kind: timed
+        label: front-1m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: FRONT, 1 m. About ten ordinary steps in place.
+      - id: still-back-1m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to BACK, 1 m, in a wide arc. Then stand still.
+      - id: back-1m
+        kind: timed
+        label: back-1m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: BACK, 1 m. About ten ordinary steps in place.
+      - id: still-left-2m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to LEFT, 2 m, in a wide arc. Then stand still.
+      - id: left-2m
+        kind: timed
+        label: left-2m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: LEFT, 2 m. About ten ordinary steps in place.
+      - id: still-right-2m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to RIGHT, 2 m, in a wide arc. Then stand still.
+      - id: right-2m
+        kind: timed
+        label: right-2m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: RIGHT, 2 m. About ten ordinary steps in place.
+      - id: still-front-2m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to FRONT, 2 m, in a wide arc. Then stand still.
+      - id: front-2m
+        kind: timed
+        label: front-2m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: FRONT, 2 m. About ten ordinary steps in place.
+      - id: still-back-2m
+        kind: timed
+        label: silence
+        duration_s: 10
+        fills: {person: $person}
+        instructions: Walk to BACK, 2 m, in a wide arc. Then stand still.
+      - id: back-2m
+        kind: timed
+        label: back-2m
+        duration_s: 10
+        fills: {person: $person}
+        instructions: BACK, 2 m. About ten ordinary steps in place.

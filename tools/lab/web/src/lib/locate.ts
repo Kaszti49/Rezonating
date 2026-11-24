@@ -1,69 +1,63 @@
-// Locate page (WEB_API.md section 15): types and REST calls. Steps arrive as `locate_step` WebSocket events,
+// Locate (WEB_API.md section 15): types and REST calls. Steps arrive as `locate_step` WebSocket events,
 // the state as the cached `locate` event.
 import { request } from './api';
 
-export interface LocateCalibration {
-  spacing_m: number;
-  c_mps: number;
-  tau0_s: number;
-  gain_ratio: number;
-  swap_sides: boolean;
-  ref_amp: number | null;
-  ref_m: number;
-  decay_n: number;
-  calibrated: string[];
+/** `same`: the step came from the front, the back, or too far away to tell. */
+export type Side = 'left' | 'right' | 'same';
+
+/** Rig health from the signal itself. */
+export interface RigHealth {
+  rest: [number, number] | null;
+  quiet: number | null;
+  /** Share of the last steps where the two geophones move alike; null before five steps. */
+  agree: number | null;
+  agree_n: number;
+  baseline: { rest: [number, number]; quiet: number; saved?: string } | null;
+  warnings: string[];
 }
 
 export interface LocateState {
   type: 'locate';
-  calibration: LocateCalibration;
-  calibrating: { spot: 'left' | 'right'; got: number; want: number } | null;
-  notes: string[];
+  swap_sides: boolean;
   steps: number;
+  sides: Record<Side, number>;
+  health: RigHealth;
   skipped_gaps: number;
+  skipped_clipped: number;
   noise_rms: number | null;
   fs_hz: number | null;
   recent?: LocateStep[];
 }
-
-export type Side = 'left' | 'right' | 'unsure';
-export type Band = 'near' | 'mid' | 'far' | 'unknown';
 
 export interface LocateStep {
   type: 'locate_step';
   id: number;
   index: number;
   epoch: number;
-  calibration_step: boolean;
+  side: Side;
+  reason: 'louder' | 'first' | 'same';
+  /** Majority of the walk's last three steps. */
+  walk_side: Side;
+  walk_steps: number;
   tau_s: number;
   cc: number;
   amp: [number, number];
-  side: Side;
-  side_votes: { timing: string; amplitude: string };
-  phi_deg: number | null;
-  phi_sigma_deg: number;
-  distance_m: number | null;
-  distance_band: Band;
-  confidence: number;
-  lag_limited: boolean;
+  ratio: number;
+  /** The two geophones move alike (rig health; the rule does not use it). */
+  agree: boolean;
   t?: number;
 }
 
-export const locateApi = {
-  view: () => request<LocateState>('GET', '/api/locate'),
-  calibrate: (spot: 'left' | 'right', steps = 5) => request<LocateState>('POST', '/api/locate/calibrate', { spot, steps }),
-  cancel: () => request<LocateState>('POST', '/api/locate/calibrate/cancel', {}),
-  reset: () => request<LocateState>('POST', '/api/locate/calibrate/reset', {}),
-  settings: (s: { c_mps?: number; decay_n?: number; spacing_m?: number }) =>
-    request<LocateState>('POST', '/api/locate/settings', s),
-  clear: () => request<LocateState>('POST', '/api/locate/clear', {}),
+export const SIDE_WORD: Record<Side, string> = { left: 'LEFT', right: 'RIGHT', same: 'FRONT, BACK or FAR' };
+export const REASON_TEXT: Record<LocateStep['reason'], string> = {
+  louder: 'louder on that side',
+  first: 'heard first on that side',
+  same: 'about the same on both',
 };
 
-/** Radial extent (metres) drawn for a distance band; `unknown` spans the whole view, faintly. */
-export function bandRange(s: LocateStep, maxM: number): [number, number] {
-  if (s.distance_m !== null) {
-    const r = s.distance_m;
-    return [Math.max(0.15, r * 0.7), Math.min(maxM, r * 1.4)];
-  }
-  return [0.3, maxM];
-}
+export const locateApi = {
+  view: () => request<LocateState>('GET', '/api/locate'),
+  swap: (swap_sides: boolean) => request<LocateState>('POST', '/api/locate/settings', { swap_sides }),
+  saveBaseline: () => request<LocateState>('POST', '/api/locate/baseline', {}),
+  clear: () => request<LocateState>('POST', '/api/locate/clear', {}),
+};

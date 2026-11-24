@@ -1,0 +1,21 @@
+import numpy as np,os
+from rezonating_lab.core.locate import measure,decide,ZERO_RATIO
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures"); z=np.load(os.path.join(D,"floor-2026-11-24-round1.npz")); V=z["V"]; g=np.flatnonzero(V)[0]; X=np.nan_to_num(z["X"][g:]); fs=float(z["fs"]); ix=np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),"r1.npz"))["ix"]
+# index ranges by step number read off the list (tentative)
+seg={"L 1m (385-400)":("left",385,400),"R 1m (401-419)":("right",401,419),"F/B 1m part1 (420-436)":("same",420,436),"F/B 1m part2 (437-449)":("same",437,449),"L 2m (450-458)":("left",450,458),"R 2m (463-478)":("right",463,478),"F 2m (486-493)":("same",486,493),"B 2m (500-511)":("same",500,511)}
+print("%-26s %3s | %-42s | %s"%("segment","n","ratio p10 p50 p90","current rule (L/R/same)   lead tau p50 (agree only)   loudness"))
+for k,(lab,a,b) in seg.items():
+    q=[]; 
+    for j in range(a,b+1):
+        m=measure(X[ix[j]-100:ix[j]+600],fs); d=decide(m); q.append((d.side,d.ratio,m.tau_s*1e3,d.agree,np.mean(m.amp)))
+    r=np.array([x[1] for x in q]); s=[x[0] for x in q]; ag=[x[2] for x in q if x[3]]
+    print("%-26s %3d | %.2f  %.2f  %.2f                          | L%d R%d S%d   correct %d/%d   agree %d%%  tau %.2f   loud %d"%(k,len(q),*np.percentile(r,[10,50,90]),s.count("left"),s.count("right"),s.count("same"),sum(x==lab for x in s),len(q),100*np.mean([x[3] for x in q]),np.median(ag) if ag else float("nan"),np.median([x[4] for x in q])))
+print("\nratio-only rule, different 'same' zones (counts: left/right/same per segment)")
+for lo,hi in ((.80,1.20),(.85,1.15),(.90,1.12)):
+    print(f"  right if ratio<{lo}, left if >{hi}:"); tot=ok=0
+    for k,(lab,a,b) in seg.items():
+        res=[]
+        for j in range(a,b+1):
+            m=measure(X[ix[j]-100:ix[j]+600],fs); rr=m.amp[0]/m.amp[1]; res.append("right" if rr<lo else "left" if rr>hi else "same")
+        c=sum(x==lab for x in res); tot+=len(res); ok+=c; print("     %-26s L%d R%d S%d  correct %d/%d"%(k,res.count("left"),res.count("right"),res.count("same"),c,len(res)))
+    print("     total %d/%d"%(ok,tot))

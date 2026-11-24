@@ -150,7 +150,7 @@ def test_runner_produces_90_labelled_passes_per_person(tmp_path):
 def test_runner_endpoints_errors_and_starting_mid_recording(tmp_path):
     with lab(tmp_path, SimConfig(speed=10.0), recorder_opts={"timed_scale": SCALE}) as (client, sim, cfg):
         opts = client.get("/api/record/options").json()
-        assert opts["protocols"] == ["walk-pass-v1"]  # kill-test-phone is no longer offered
+        assert opts["protocols"] == ["walk-pass-v1", "locate-spots-v1"]  # kill-test-phone is no longer offered
         proto = client.get("/api/record/protocols/walk-pass-v1").json()
         assert proto["passes_per_person"] == 90 and proto["blocks"][0]["steps"][0]["duration_s"] == 60
         assert client.get("/api/record/protocols/kill-test-phone").status_code == 404

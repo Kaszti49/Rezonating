@@ -28,6 +28,7 @@ from .ports import list_serial_ports
 from .bench_routes import register_bench_routes
 from .dataset_routes import register_dataset_routes
 from .experiment_routes import register_experiment_routes
+from .home import register_home_routes
 from .locate import Locator
 from .locate_routes import register_locate_routes
 from .record_routes import register_record_routes
@@ -498,6 +499,7 @@ def create_app(
     register_bench_routes(app, cfg, mgr)
     register_experiment_routes(app, cfg)
     register_locate_routes(app, loc)
+    register_home_routes(app, cfg)
 
     # ----------------------------------------------------------------------------------- WebSocket
 

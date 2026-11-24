@@ -1,0 +1,66 @@
+import numpy as np,os
+from scipy import signal
+from rezonating_lab.core.locate import measure
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures")
+def load(n):
+    z=np.load(os.path.join(D,n)); V=z["V"]; g=np.flatnonzero(V)[0]; return np.nan_to_num(z["X"][g:]).astype(float),float(z["fs"]),int(z["first"])+g
+def feats(X,f,i,fs):
+    w=X[i-f-100:i-f+600]; w=w-np.median(w,0); sos=signal.butter(2,[10,200],'bp',fs=fs,output='sos'); y=signal.sosfiltfilt(sos,w,axis=0)
+    # first arrival per channel: first time |y| exceeds 25 % of its own peak within the window
+    on=[]
+    for c in (0,1): e=np.abs(y[:,c]); k=np.flatnonzero(e>0.25*e.max())[0]; on.append(k)
+    m=measure(X[i-f-100:i-f+600],fs)
+    pk=[np.abs(y[:300,c]).max() for c in (0,1)]
+    return (on[1]-on[0])/fs*1e3, m.tau_s*1e3, m.cc, m.amp[0]/m.amp[1], pk[0]/pk[1], m.lag_limited
+X2,f2,o2=load("floor-2026-11-24-cal2.npz"); s=np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),"st2.npz")); ix2=s["ix"]
+X3,f3,o3=load("floor-2026-11-24-cal3.npz"); X5,f5,o5=load("floor-2026-11-24-cal5.npz")
+# cal5 indices via replay
+import json
+from rezonating_lab.core.ringbuf import SampleRing
+import rezonating_lab.server.locate as S
+class M:
+    def __init__(s,r): s.rings={0:r}; s.ev=[]
+    def stream_names(s): return {0:"adc_raw"}
+    def stream_info(s,i): return {"fs_hz":f5}
+    def publish(s,e):
+        if e["type"]=="locate_step": s.ev.append(e)
+    def host_log(s,*a): pass
+r=SampleRing(2,int(60*f5)); m=M(r); L=S.Locator(m,None); L.tick(); Xi=X5.astype(np.int32)
+for i in range(0,len(Xi),200): r.write(i,Xi[i:i+200]); L.tick()
+ix5=np.array([e["index"] for e in m.ev])+o5
+sets={"09:53cal L (known)":[feats(X2,o2,ix2[j],f2) for j in range(402,410)],
+"09:53cal R (known)":[feats(X2,o2,ix2[j],f2) for j in range(364,372)],
+"09:15 left try (known)":[feats(X3,o3,i,f3) for i in (1446042,1447702,1449202,1450642,1452042,1453482,1454982,1456562)],
+"09:40 right accepted (known)":[feats(X5,o5,ix5[j],f5) for j in range(194,202)],
+"09:40:10-34 run (probably LEFT tries)":[feats(X5,o5,ix5[j],f5) for j in range(160,187)],
+"09:40:53-41:02 (ahead try)":[feats(X5,o5,ix5[j],f5) for j in range(211,224)],
+"09:41+ quiet (unknown place)":[feats(X5,o5,ix5[j],f5) for j in range(281,333)]}
+for k,v in sets.items():
+    v=np.array(v,float); print(f"{k:40s} n={len(v):2d} first-arrival dt med {np.median(v[:,0]):6.2f} ms [{np.percentile(v[:,0],25):.2f},{np.percentile(v[:,0],75):.2f}] | xcorr tau med {np.median(v[:,1]):6.2f} | loud ratio med {np.median(v[:,3]):.2f} [{np.percentile(v[:,3],25):.2f},{np.percentile(v[:,3],75):.2f}] | peak ratio med {np.median(v[:,4]):.2f} | agree {100*np.mean((v[:,2]<-.9)&(v[:,5]==0)):.0f}%")
+print("\nrules on the KNOWN sets (L correct if >0, R correct if <0):")
+B=1.05
+def score(name,f,dead):
+    tot=0;ok=0;same=0;row=[]
+    for lab,side in (("09:53cal L (known)",1),("09:15 left try (known)",1),("09:53cal R (known)",-1),("09:40 right accepted (known)",-1)):
+        v=[f(x) for x in sets[lab]]; c=sum((x*side>0) and abs(x)>dead for x in v); s0=sum(abs(x)<=dead for x in v); row.append(f"{c}/{len(v)} (same {s0})"); ok+=c;tot+=len(v);same+=s0
+    print(f"  {name:48s}", "L1",row[0],"| L2",row[1],"| R1",row[2],"| R2",row[3],"| total %d/%d, wrong %d, same %d"%(ok,tot,tot-ok-same,same))
+score("first arrival, dead zone 0.25 ms",lambda x:x[0],.25)
+score("first arrival, dead zone 0.10 ms",lambda x:x[0],.10)
+score("xcorr, dead zone 0.25 ms",lambda x:x[1]+.1,.25)
+for th in (.03,.06,.10):
+    score(f"loudness vs 1.05 baseline, dead +-{th:.2f}",lambda x,th=th:np.log(x[3]/B),th)
+    score(f"peak vs 1.05 baseline, dead +-{th:.2f}",lambda x,th=th:np.log(x[4]/B),th)
+print("\nCOMBINED (no calibration): zero = background steps tau -0.20 ms, ratio 1.05")
+T0,B0=-.20,1.05
+def comb(x,dt,dl):
+    fa,tau,cc,ratio,pk,lim=x
+    if cc<-.9 and not lim and abs(tau-T0)>dt: return 1 if tau>T0 else -1
+    l=np.log(ratio/B0); return (1 if l>0 else -1) if abs(l)>dl else 0
+for dt in (.3,.4,.5):
+    for dl in (.03,.05):
+        row=[];W=S_=O=0
+        for lab,side in (("09:53cal L (known)",1),("09:15 left try (known)",1),("09:53cal R (known)",-1),("09:40 right accepted (known)",-1)):
+            v=[comb(x,dt,dl) for x in sets[lab]]; row.append("%d right %d same %d wrong"%(sum(a==side for a in v),sum(a==0 for a in v),sum(a==-side for a in v))); O+=sum(a==side for a in v);S_+=sum(a==0 for a in v);W+=sum(a==-side for a in v)
+        print(f"  delay>{dt} ms else loudness>{dl}: L1 {row[0]} | L2 {row[1]} | R1 {row[2]} | R2 {row[3]} | TOTAL {O}/32 right, {S_} same, {W} wrong")
+for nm in ("09:40:10-34 run (probably LEFT tries)","09:40:53-41:02 (ahead try)","09:41+ quiet (unknown place)"):
+    v=[comb(x,.4,.03) for x in sets[nm]]; print("  ",nm,"-> left",sum(a==1 for a in v),"right",sum(a==-1 for a in v),"front/back",sum(a==0 for a in v))

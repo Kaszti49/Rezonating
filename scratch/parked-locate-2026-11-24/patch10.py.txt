@@ -1,0 +1,94 @@
+import os
+
+os.chdir(r"C:\Users\enterpartner\Rezonating-main\tools\lab")
+OUT = {}
+
+
+def sub(path, pairs):
+    s = open(path, encoding="utf-8", newline="").read()
+    crlf = "\r\n" in s
+    s = s.replace("\r\n", "\n")
+    for a, b in pairs:
+        assert s.count(a) == 1, (path, s.count(a), a[:110])
+        s = s.replace(a, b)
+    OUT[path] = s.replace("\n", "\r\n") if crlf else s
+
+
+sub("src/rezonating_lab/server/locate.py", [
+("REFRACTORY_S = 0.35  #", "REFRACTORY_S = 0.40  #"),
+("TRIGGER_K = 5.0  # block rms over the noise floor\n", "TRIGGER_K = 4.0  # block rms over the noise floor\n"),
+("RISE_K = 4.0  #", "RISE_K = 2.5  #"),
+("NOISE_ALPHA = 0.05  # noise floor EMA per quiet block\n",
+ '''# Noise floor: a low percentile of the last blocks, so step tails don't lift it (the old average of "quiet" blocks sat
+# 2 to 8 times above the real floor and missed small steps, 2026-11-24).
+NOISE_PCT = 20.0
+NOISE_WIN_S = 10.0
+NOISE_EVERY = 25  # blocks between two updates of the floor
+'''),
+("        self._warm: list[float] = []\n",
+ "        self._warm: list[float] = []\n        self._recent: deque[float] = deque(maxlen=int(round(NOISE_WIN_S / BLOCK_S)))\n        self._since_floor = 0\n"),
+('''                if len(self._warm) >= WARMUP_BLOCKS:
+                    self._noise = max(float(np.median(self._warm)), 1e-9)
+                continue
+''', '''                self._recent.append(e)
+                if len(self._warm) >= WARMUP_BLOCKS:
+                    self._noise = self._floor()
+                continue
+            self._recent.append(e)
+            self._since_floor += 1
+            if self._since_floor >= NOISE_EVERY:
+                self._since_floor = 0
+                self._noise = self._floor()
+'''),
+('''            elif e < 2.0 * self._noise:
+                self._noise = (1 - NOISE_ALPHA) * self._noise + NOISE_ALPHA * e
+''', ''),
+("    def gap(self) -> None:\n", '''    def _floor(self) -> float:
+        return max(float(np.percentile(self._recent, NOISE_PCT)), 1e-9)
+
+    def gap(self) -> None:
+'''),
+])
+sub("tests/test_locate.py", [
+("def test_detector_ignores_dc_and_slow_drift", '''def test_detector_finds_small_steps_during_and_after_loud_walking() -> None:
+    # small steps of 2026-11-24 were missed: loud step tails had lifted the old noise floor 2 to 8 times
+    rng = np.random.default_rng(8)
+    n = int(FS * 30)
+    t = np.arange(n) / FS
+    x = 100.0 * rng.standard_normal((n, 2))
+    onsets: list[float] = []
+    for k in range(40):  # 1.0 s .. 24 s loud walking, ringing tails
+        s = 1.0 + 0.6 * k
+        d = np.clip(t - s, 0, None)
+        x += (np.where(t >= s, 20000.0 * np.exp(-d / 0.2) * np.sin(2 * np.pi * 15 * d), 0.0))[:, None]
+    for k in range(5):
+        s = 25.2 + 0.8 * k
+        onsets.append(s)
+        x += (700.0 * burst(t - s))[:, None]
+    det = StepDetector(FS)
+    found = np.array(det.feed(0, x))
+    assert det.noise_rms < 400  # the floor is the noise, not the tails
+    assert sum(any(abs(found - int(o * FS)) <= 3 * det.block) for o in onsets) == len(onsets)
+
+
+def test_detector_floor_follows_a_rise_of_the_background() -> None:
+    rng = np.random.default_rng(9)
+    n = int(FS * 40)
+    x = 100.0 * rng.standard_normal((n, 2))
+    x[n // 2 :] *= 3.0
+    det = StepDetector(FS)
+    found = det.feed(0, x)
+    assert len(found) <= 2  # the jump itself may trigger, the new background may not
+    assert det.noise_rms > 200
+
+
+def test_detector_ignores_dc_and_slow_drift'''),
+])
+sub("README.md", [
+("- **Refused spots:**", '''- **Small steps:** the detector compares each 10 ms with the quietest 20 % of the last 10 s. Calibrate with ordinary
+  steps, not jumps: loud steps make the two geophones disagree.
+- **Refused spots:**'''),
+])
+for p, s in OUT.items():
+    open(p, "w", encoding="utf-8", newline="").write(s)
+print("ok", len(OUT))

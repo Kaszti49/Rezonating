@@ -1,0 +1,48 @@
+import numpy as np,os,math
+from rezonating_lab.core.locate import measure
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures"); H=os.path.dirname(os.path.abspath(__file__))
+def load(n):
+    z=np.load(os.path.join(D,n)); V=z["V"]; g=np.flatnonzero(V)[0]; return np.nan_to_num(z["X"][g:]).astype(float),float(z["fs"]),int(z["first"])+g
+import rezonating_lab.server.locate as S
+from rezonating_lab.core.ringbuf import SampleRing
+class M:
+    def __init__(s,r,fs): s.rings={0:r}; s.ev=[]; s.fs=fs
+    def stream_names(s): return {0:"adc_raw"}
+    def stream_info(s,i): return {"fs_hz":s.fs}
+    def publish(s,e):
+        if e["type"]=="locate_step": s.ev.append(e)
+    def host_log(s,*a): pass
+def replay(X,fs):
+    r=SampleRing(2,int(60*fs)); m=M(r,fs); L=S.Locator(m,None); L.tick(); Xi=X.astype(np.int32)
+    for i in range(0,len(Xi),200): r.write(i,Xi[i:i+200]); L.tick()
+    return np.array([e["index"] for e in m.ev])
+st=np.load(os.path.join(H,"st2.npz"))["ix"]; X2,f2,o2=load("floor-2026-11-24-cal2.npz"); X3,f3,o3=load("floor-2026-11-24-cal3.npz"); X5,f5,o5=load("floor-2026-11-24-cal5.npz"); X1,f1,o1=load("floor-2026-11-24-round1.npz")
+p=os.path.join(H,"ix5.npy"); ix5=np.load(p) if os.path.exists(p) else replay(X5,f5); np.save(p,ix5); r1=np.load(os.path.join(H,"r1.npz"))["ix"]
+SETS=[("L 08:53",X2,f2,[i-o2 for i in st[402:410]],"left"),("R 08:53",X2,f2,[i-o2 for i in st[364:372]],"right"),("L 09:15",X3,f3,[i-o3 for i in (1446042,1447702,1449202,1450642,1452042,1453482,1454982,1456562)],"left"),("R 09:40",X5,f5,list(ix5[194:202]),"right")]
+R1=[("r1 L1m~",385,401,"left"),("r1 R1m~",401,420,"right"),("r1 FB1m~",420,450,"between"),("r1 L2m~",450,459,"left"),("r1 R2m~",463,479,"right"),("r1 F2m~",486,494,"between"),("r1 B2m~",500,512,"between")]
+SETS+= [(n,X1,f1,list(r1[a:b]),s) for n,a,b,s in R1]
+def tukey(n,a=.1):
+    w=np.ones(n); k=int(a*(n-1)/2); w[:k+1]=.5*(1+np.cos(np.pi*(2*np.arange(k+1)/(a*(n-1))-1))); w[-k-1:]=w[:k+1][::-1]; return w
+def ratio_flat(X,f,i):
+    w=X[i-100:i+600]; w=(w-np.median(w,0))*tukey(700)[:,None]; s=np.fft.rfft(w,2048,axis=0); fr=np.fft.rfftfreq(2048,1/f); k=(fr>=10)&(fr<=200); e=(abs(s[k])**2).sum(0); return math.sqrt(e[0]/e[1])
+def band_corr(X,f,i):
+    w=X[i-100:i+600]; w=(w-np.median(w,0))*tukey(700)[:,None]; s=np.fft.rfft(w,2048,axis=0); fr=np.fft.rfftfreq(2048,1/f); s[(fr<10)|(fr>200)]=0; y=np.fft.irfft(s,axis=0); return (y[:,0]*y[:,1]).sum()/math.sqrt((y[:,0]**2).sum()*(y[:,1]**2).sum())
+F={n:[(measure(X[i-100:i+600],f),ratio_flat(X,f,i),band_corr(X,f,i)) for i in ix] for n,X,f,ix,s in SETS}
+def first(m):
+    l=m.tau_s+.2e-3; return 0 if m.lag_limited or abs(m.cc)<.9 or abs(l)>3e-3 or abs(l)<=.5e-3 else (1 if l>0 else -1)
+def loud(r,lo,hi): return 1 if r>hi else -1 if r<lo else 0
+N={1:"left",-1:"right",0:"between"}
+rules={"now (first, else louder vs 1.05 +-3%)":lambda m,rf,c: first(m) or loud(m.amp[0]/m.amp[1],1.05/math.exp(.03),1.05*math.exp(.03)),
+"A loudness only, Hann .90/1.12":lambda m,rf,c: loud(m.amp[0]/m.amp[1],.90,1.12),
+"A' loudness only, flat .90/1.12":lambda m,rf,c: loud(rf,.90,1.12),
+"B loud first (Hann), else first":lambda m,rf,c: loud(m.amp[0]/m.amp[1],.90,1.12) or first(m),
+"B' loud first (flat), else first":lambda m,rf,c: loud(rf,.90,1.12) or first(m),
+"C flat .93/1.10, else first":lambda m,rf,c: loud(rf,.93,1.10) or first(m)}
+print("%-40s"%"rule"," ".join("%-10s"%n for n,*_ in SETS),"| known32  wrong | r1~ 1m sides  2m between-ok")
+for k,fn in rules.items():
+    row=[];ok=wr=0
+    for n,X,f,ix,s in SETS:
+        g=[N[fn(*x)] for x in F[n]]; c=sum(a==s for a in g); row.append("%d/%d"%(c,len(g)))
+        if not n.startswith("r1"): ok+=c; wr+=sum(a not in (s,"between") for a in g)
+    print("%-40s"%k," ".join("%-10s"%x for x in row),"| %d/32   %d"%(ok,wr))
+print("zero-lag band corr: ",{n:"%.2f (10%% %.2f)"%(np.median([abs(x[2]) for x in v]),np.percentile([abs(x[2]) for x in v],10)) for n,v in F.items()})

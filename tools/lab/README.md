@@ -16,30 +16,32 @@ Rezonating). The shortcut:
    3.10+ and Node.js). A console window shows the progress (`launcher\Setup-RezonatingLab.ps1`).
 2. Starts `rzlab serve --sim-room` in the background (no console). If a lab server already answers on port 8765, it uses that one.
 3. Connects a plugged-in node (the ESP32-S3's own USB port first). With no node, pick the Simulator on the Device page.
-4. Opens the Lab in its own app window (Edge or Chrome with a separate profile: no tabs, no address bar), on the Locate page.
+4. Opens the Lab in its own app window (Edge or Chrome with a separate profile: no tabs, no address bar), on the Home page.
 5. Closing that window disconnects the node and stops the server. A running recording or rig check keeps it running
    (it says so); **Stop Rezonating Lab** stops it later.
 
 Server log: `%LOCALAPPDATA%\rzlab\serve.log`. The icon is drawn by `launcher\make_icon.py`.
 
+## Home page
+
+The first page: one **Connect** button that becomes the dashboard (radar, device health, session, heat map, vibration line,
+tested so far). It finds a plugged-in node by itself; without one it offers the simulation, which always says SIMULATION. The
+health ring counts checks that pass (link, sample rate, lost samples, geophone pair, case position; *save as reference* sets
+the last one). "Tested so far" reads the experiment notes (`50 Experiments/`), so no result is typed into the UI. The eight Lab
+pages are under **Lab**, in three groups: Capture, Data, Test. API: `WEB_API.md` section 16.
+
 ## Locate page
 
-Where a step came from, seen from above: the device in the middle, rings at 1, 2 and 3 m. Each step is a wedge at its
-bearing. A dashed wedge shows the same bearing behind, because two geophones on one line can't tell front from back.
-The big word says LEFT or RIGHT. Maths, limits and sources: `src/rezonating_lab/core/locate.py` and the vault note
-`60 Research/Footstep direction with two geophones.md`. API: `WEB_API.md` section 15.
+Says **LEFT**, **RIGHT** or **FRONT, BACK or FAR** for each step: clearly louder on one side, else clearly heard first on one
+side, else neither. No calibration, angle or distance: two geophones on a line can't tell front from back, and far steps are
+the same on both. If the case is turned round, press *Swap left and right*. *Save as the good state* keeps the rest and quiet
+levels, and the page warns when they move. The rule is in `src/rezonating_lab/core/locate.py`; API: `WEB_API.md` section 15.
 
-- **Calibrate on site** (on a new floor, or after moving the device): press *Calibrate: 1 m left*, then step 5 times
-  1 m straight to the left of the device; then do the same on the right. This measures the floor's wave speed, the
-  timing offset and gain difference between the channels, whether the channels are swapped, and how loud a step is
-  at 1 m (for the distance). It is saved in `%APPDATA%\rzlab\locate.json`.
-- **Before calibrating**, the wave speed is a guess (100 m/s): the wedges are wide, and the distance shows as
-  "not calibrated".
-- **Distance** comes only from loudness, and a heavier step looks closer, so it is shown as a band: near (< 1 m),
-  1–2 m, or far (> 2 m).
+- **Small steps:** the detector compares each 10 ms with the quietest 20 % of the last 5 s.
+- **Skipped steps** are counted, not shown: windows with lost samples, and windows that reached ADC full scale.
+- **Testing it:** record with the protocol `locate-spots-v1` (Record page), twice; only the second round gives an accuracy.
 - **Without hardware:** `rzlab serve --sim-room` (the launcher's default) makes the Simulator connection walk a person
-  in a loop around the device: left, in front, right and behind, at 1 to 2.7 m. The walker never stands still, so
-  calibrating against it gives nonsense. Use the default wave speed (the simulated floor is also 100 m/s).
+  in a loop around the device: left, in front, right and behind, at 1 to 2.7 m. 
   `rzlab sim --room` runs the same walker as a separate process.
 
 ## Install

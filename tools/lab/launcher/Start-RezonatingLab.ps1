@@ -3,7 +3,7 @@
 # The desktop shortcut runs this through start-hidden.vbs (no console). Setup on first run: Setup-RezonatingLab.ps1.
 # Log: %LOCALAPPDATA%\rzlab\serve.log
 param(
-    [string]$Page = 'locate',     # page opened first (live, device, record, review, datasets, experiments, bench, locate)
+    [string]$Page = '',           # page opened first ('' = Home; live, device, record, review, datasets, experiments, bench, locate)
     [int]$Port = 8765,
     [switch]$NoAutoConnect
 )

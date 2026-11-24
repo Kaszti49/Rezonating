@@ -1,0 +1,36 @@
+import numpy as np,os,json
+from scipy import signal
+import rezonating_lab.core.locate as C
+from rezonating_lab.core.ringbuf import SampleRing
+import rezonating_lab.server.locate as S
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures")
+def load(n):
+    d=np.load(os.path.join(D,n)); V=d["V"]; g=np.flatnonzero(V)[0]; return d["X"][g:],float(d["fs"]),int(d["first"])+g,d
+X,fs,first,d=load("floor-2026-11-24-cal3.npz")
+rec=json.loads(str(d["recent"]))["recent"]; mt=os.path.getmtime(os.path.join(os.environ["APPDATA"],"rzlab","locate.json")); last=rec[-1]
+i_cal=int(last["index"]-(last["t"]-mt)*fs); print("cal finished near index",i_cal,"last step",last["index"])
+class M:
+    def __init__(s,r): s.rings={0:r}; s.ev=[]
+    def stream_names(s): return {0:"adc_raw"}
+    def stream_info(s,i): return {"fs_hz":2000.0}
+    def publish(s,e):
+        if e["type"]=="locate_step": s.ev.append(e)
+    def host_log(s,*a): pass
+r=SampleRing(2,int(60*fs)); m=M(r); L=S.Locator(m,None); L.tick()
+for i in range(0,len(X),200): r.write(i,X[i:i+200].astype(np.int32)); L.tick()
+ix=np.array([e["index"] for e in m.ev])+first
+k=np.flatnonzero(ix<=i_cal+700)[-8:]; print("8 cal steps replay med (expect -3.467):",np.median([m.ev[j]["tau_s"]*1e3 for j in k]))
+def xc(i,lo,hi,maxlag_ms,pol,X=X,first=first,pre=100,post=600):
+    w=X[i-first-pre:i-first+post].astype(float); w=(w-np.median(w,0))*np.hanning(len(w))[:,None]; n=2048; s=np.fft.rfft(w,n,axis=0); f=np.fft.rfftfreq(n,1/fs); s[(f<lo)|(f>hi)]=0
+    c=np.fft.irfft(s[:,1]*np.conj(s[:,0]),n*16)*16; nm=np.sqrt((abs(s[:,0])**2).sum()*(abs(s[:,1])**2).sum())*2/n
+    ml=int(maxlag_ms/1e3*fs*16); lag=np.arange(-ml,ml+1); v=c[lag%(n*16)]; a=abs(v) if pol==0 else pol*v; j=int(np.argmax(a)); return lag[j]/16/fs*1e3,v[j]/nm
+for j in k:
+    i=ix[j]; e=m.ev[j]
+    print("idx",i,"amp %d %d ratio %.2f"%(*e["amp"],e["amp"][0]/e["amp"][1])," | 20-60 free ±6.2: %.2f cc %.2f"%xc(i,20,60,6.17,0)," | 20-60 neg ±2.5: %.2f cc %.2f"%xc(i,20,60,2.5,-1)," | 10-200 free ±6.2: %.2f cc %.2f"%xc(i,10,200,6.17,0)," | 10-200 neg ±2.5: %.2f cc %.2f"%xc(i,10,200,2.5,-1))
+# hardware state over time
+for n in ("floor-2026-11-24.npz","floor-2026-11-24-cal2.npz","floor-2026-11-24-cal3.npz"):
+    Y,f2,fi,_=load(n); sos=signal.butter(2,10,'hp',fs=f2,output='sos'); H=signal.sosfilt(sos,Y-Y[0],axis=0); print(n)
+    for m0 in range(0,10,1):
+        seg=H[int(m0*60*f2)+200:int((m0+1)*60*f2)]; b=20; q=np.sqrt((seg[:len(seg)//b*b].reshape(-1,b,2)**2).mean(1)); quiet=q[q.mean(1)<np.percentile(q.mean(1),30)]; loud=q[q.mean(1)>np.percentile(q.mean(1),97)]
+        Sg=Y[int(m0*60*f2)+200:int((m0+1)*60*f2)]
+        print("  min %d quiet rms ch0 %5.0f ch1 %5.0f | loud blocks ch0/ch1 %.2f (10-90%% %.2f-%.2f) | corr all %.3f | DC %d %d"%(m0,*quiet.mean(0),np.median(loud[:,0]/loud[:,1]),*np.percentile(loud[:,0]/loud[:,1],[10,90]),np.corrcoef(seg.T)[0,1],*np.median(Sg,0)))

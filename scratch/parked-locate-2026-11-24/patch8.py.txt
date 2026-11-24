@@ -1,0 +1,202 @@
+import os
+
+os.chdir(r"C:\Users\enterpartner\Rezonating-main\tools\lab")
+OUT = {}
+
+
+def sub(path, pairs):
+    s = open(path, encoding="utf-8", newline="").read()
+    crlf = "\r\n" in s
+    s = s.replace("\r\n", "\n")
+    for a, b in pairs:
+        assert s.count(a) == 1, (path, s.count(a), a[:110])
+        s = s.replace(a, b)
+    OUT[path] = s.replace("\n", "\r\n") if crlf else s
+
+
+sub("src/rezonating_lab/core/locate.py", [
+("MIN_SPAN_S = 0.125e-3", '''# The two geophones must move alike (either polarity) for the timing to mean anything: the good calibration steps of
+# 2026-11-24 had |cc| >= 0.99; after something at the device changed (cause not known) it was <= 0.84.
+MIN_CC = 0.9
+MIN_GOOD_SHARE = 0.75  # of a spot's steps must pass MIN_CC, or the spot is refused
+MAX_SPOT_SIGMA_S = 1.0e-3  # and its timing scatter must be below this (good: 0.38 ms left, 0.09 ms right)
+MIN_SPAN_S = 0.125e-3'''),
+("    version: int = CAL_VERSION\n",
+ "    polarity: int = 0  # sign of cc at the calibration spots (+1, -1); 0: not known, either sign is accepted\n    version: int = CAL_VERSION\n"),
+('''    lag_limited: bool
+
+    def to_dict''', '''    lag_limited: bool
+    agree: bool = True  # False: the geophones do not move alike, so neither side nor bearing is given
+
+    def to_dict'''),
+('''def bearing_resolvable(''', '''def usable(m: StepMeasure, polarity: int = 0) -> bool:
+    """True when the two geophones move alike, with the calibrated polarity if one is known."""
+    if m.lag_limited or abs(m.cc) < MIN_CC:
+        return False
+    return polarity == 0 or (m.cc > 0) == (polarity > 0)
+
+
+def bearing_resolvable('''),
+("    if m.lag_limited or abs(m.cc) < 0.3 or abs(tau) < lead_min:\n",
+ "    agree = usable(m, cal.polarity)\n    if not agree or abs(tau) < lead_min:\n"),
+("    if not m.lag_limited and abs(m.cc) >= 0.3 and abs(s) <= MAX_SIN and", "    if agree and abs(s) <= MAX_SIN and"),
+("    if m.lag_limited:\n        conf *= 0.3\n", "    if not agree:\n        conf *= 0.3\n"),
+("        lag_limited=m.lag_limited,\n    )\n", "        lag_limited=m.lag_limited,\n        agree=agree,\n    )\n"),
+('''        good = [m for m in ms if not m.lag_limited]
+        if not good:
+            notes.append(f"{spot}: no usable step (all timing peaks on the search edge)")
+            continue
+        taus = np.array([m.tau_s for m in good])
+        mid = float(np.median(taus))
+''', '''        sign = 1 if np.median([m.cc for m in ms]) > 0 else -1
+        good = [m for m in ms if usable(m, sign)]
+        if len(good) < max(3, MIN_GOOD_SHARE * len(ms)):
+            notes.append(
+                f"{spot}: NOT used, the geophones moved alike in only {len(good)} of {len(ms)} steps. Check that the case "
+                "stands flat and both geophones are firm in their cups, then redo this spot."
+            )
+            continue
+        taus = np.array([m.tau_s for m in good])
+        mid = float(np.median(taus))
+        # root mean square about the median, not a robust spread: an outlier here is an outlier on the page too
+        sigma = float(np.sqrt(np.sum((taus - mid) ** 2) / (len(good) - 1)))
+        if sigma > MAX_SPOT_SIGMA_S:
+            notes.append(f"{spot}: NOT used, the timing scattered by {sigma * 1e3:.1f} ms. Step in one place and redo it.")
+            continue
+'''),
+('''            # root mean square about the median, not a robust spread: an outlier here is an outlier on the page too
+            "sigma_s": float(np.sqrt(np.sum((taus - mid) ** 2) / (len(good) - 1))) if len(good) >= 3 else None,
+''', '''            "sigma_s": sigma,
+            "polarity": sign,
+'''),
+('''    if left and right:
+        new.swap_sides = left["tau_s"] < right["tau_s"]
+''', '''    signs = {s["polarity"] for s in new.spots.values()}
+    new.polarity = signs.pop() if len(signs) == 1 else 0
+    if left and right and left["polarity"] != right["polarity"]:
+        notes.append("left and right have opposite polarity: something moved between them; redo both.")
+    elif left and right and abs(left["tau_s"] - right["tau_s"]) < 2 * MIN_SPAN_S:
+        notes.append("left and right gave almost the same delay: sides not calibrated; redo both.")
+    elif left and right:
+        new.swap_sides = left["tau_s"] < right["tau_s"]
+'''),
+('''        if span_l >= MIN_SPAN_S:
+''', '''        if min(span_l, span_r) >= MIN_SPAN_S:
+'''),
+('''        spot, t = ("left", left["tau_s"]) if left else ("right", right["tau_s"])
+        if abs(t) > 1e-9:
+            new.c_mps = float(min(2000.0, max(MIN_C_MPS, new.spacing_m / abs(t))))
+            new.swap_sides = (t > 0) != (spot == "left")
+        notes.append("only one spot: the timing offset between the channels is assumed 0; do the other side too")
+''', '''        # one spot never sets the sides or the wave speed: one wrong delay would flip every step
+        notes.append("only one spot: the sides and angles are not calibrated yet; do the other side too")
+'''),
+])
+sub("tests/test_locate.py", [
+('''def test_calibrate_one_spot_sets_speed_and_warns() -> None:
+    new, notes = calibrate({"left": _spot(-1.0, 0.0, 80.0, 0.0, 1.0, False)}, LocateCalibration())
+    assert new.c_mps == pytest.approx(80.0, rel=0.15)
+    assert any("only one spot" in n for n in notes)
+''', '''def test_calibrate_one_spot_warns_and_never_touches_sides_or_speed() -> None:
+    for swap in (False, True):
+        new, notes = calibrate({"left": _spot(-1.0, 0.0, 80.0, 0.0, 1.0, swap)}, LocateCalibration())
+        assert new.c_mps == 100.0
+        assert new.swap_sides is False
+        assert any("only one spot" in n for n in notes)
+
+
+# The 8 left steps of 2026-11-24 09:15 (EP-LAPTOP), after one geophone stopped moving with the other: (tau ms, cc)
+BAD_LEFT = [
+    (6.17, -0.84),
+    (-5.95, 0.66),
+    (-4.16, 0.79),
+    (6.17, -0.73),
+    (6.17, -0.64),
+    (3.66, -0.84),
+    (-2.79, 0.84),
+    (6.17, -0.77),
+]
+
+
+def _bad() -> list[StepMeasure]:
+    return [StepMeasure(t / 1e3, c, (30000.0, 15000.0), abs(t) > 6.1) for t, c in BAD_LEFT]
+
+
+def _good_cal() -> LocateCalibration:
+    cal, _ = calibrate({"left": _at(LEFT_MS), "right": _at(RIGHT_MS), "ahead": _at(AHEAD_MS)}, LocateCalibration())
+    return cal
+
+
+def test_calibration_where_the_geophones_disagree_is_refused_and_changes_nothing() -> None:
+    old = _good_cal()
+    new, notes = calibrate({"left": _bad()}, old)
+    assert any("NOT used" in n for n in notes)
+    assert new.swap_sides is False and new.spots == old.spots and new.calibrated == old.calibrated
+    assert new.span_left_s == old.span_left_s and new.ref_amp == old.ref_amp
+    fresh, _ = calibrate({"left": _bad()}, LocateCalibration())
+    assert fresh.calibrated == [] and fresh.swap_sides is False and fresh.ref_amp is None
+
+
+def test_steps_where_the_geophones_disagree_have_no_side() -> None:
+    cal = _good_cal()
+    for m in _bad():
+        fix = locate(m, cal, FS)
+        assert fix.side == "unsure" and fix.phi_deg is None and fix.agree is False
+
+
+def test_wrong_polarity_is_no_side() -> None:
+    cal = _good_cal()
+    assert cal.polarity == 1
+    fix = locate(measure(pair(0.0, 1.5e-3, a1=-1.0), FS), cal, FS)
+    assert fix.cc < -0.9 and fix.agree is False and fix.side == "unsure"
+
+
+def test_left_and_right_with_the_same_delay_set_no_sides() -> None:
+    new, notes = calibrate({"left": _at([0.3] * 4), "right": _at([0.25] * 4)}, LocateCalibration())
+    assert any("almost the same delay" in n for n in notes)
+    assert new.swap_sides is False and new.span_left_s is None
+
+
+def test_scattered_spot_is_refused() -> None:
+    new, notes = calibrate({"left": _at([-3.0, 3.0, -2.5, 2.5, 0.0, 3.0, -3.0, 2.0])}, LocateCalibration())
+    assert any("scattered by" in n for n in notes)
+    assert new.calibrated == []
+'''),
+("    LocateCalibration,\n    calibrate,", "    LocateCalibration,\n    StepMeasure,\n    calibrate,"),
+])
+sub("web/src/lib/locate.ts", [
+("  lag_limited: boolean;\n",
+ "  lag_limited: boolean;\n  /** False: the geophones did not move alike, so no side or bearing. */\n  agree: boolean;\n"),
+])
+sub("web/src/components/LocatePage.svelte", [
+("  const antiPhase = $derived.by(", '''  const disagree = $derived.by(() => {
+    const recent = steps.slice(-20);
+    return recent.length < 5 ? 0 : recent.filter((s) => !s.agree).length / recent.length;
+  });
+  const antiPhase = $derived.by('''),
+("    if (!s) return '–';\n", "    if (!s) return '–';\n    if (!s.agree) return '?';\n"),
+("              – <span class=\"muted\">side only</span>",
+ "              – <span class=\"muted\">{last.agree ? 'side only' : 'the geophones disagree'}</span>"),
+("      {#each st?.notes ?? [] as n (n)}", '''      {#if disagree > 0.3}
+        <p class="small note">
+          The two geophones do not move alike in {Math.round(disagree * 100)} % of the last steps, so sides can't be
+          trusted. Check that the case stands flat and both geophones are firm in their cups. Don't calibrate until
+          this is gone.
+        </p>
+      {/if}
+      {#each st?.notes ?? [] as n (n)}'''),
+])
+sub("WEB_API.md", [
+("confidence (0..1), lag_limited}`.",
+ "confidence (0..1), lag_limited, agree (false: `|cc| < 0.9` or not the calibrated polarity, so no side\n  and no bearing)}`."),
+("span_left_s, span_right_s (delay", "polarity (+1, -1, 0 = not known), span_left_s, span_right_s (delay"),
+])
+sub("README.md", [
+("- **Side only:**", '''- **Refused spots:** a spot where the two geophones don't move alike, or where the timing scatters by more than 1 ms, is
+  not used and the old one is kept. One spot alone never changes the sides. The page warns when the geophones disagree
+  in more than 30 % of the last steps: check the case and the geophones before calibrating.
+- **Side only:**'''),
+])
+for p, s in OUT.items():
+    open(p, "w", encoding="utf-8", newline="").write(s)
+print("ok", len(OUT))

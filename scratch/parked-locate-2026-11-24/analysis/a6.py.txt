@@ -1,0 +1,21 @@
+import numpy as np,os
+from rezonating_lab.core.locate import *
+p=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures","floor-2026-11-24-cal2.npz"); d=np.load(p); X=d["X"];V=d["V"];fs=float(d["fs"]);first=int(d["first"]);g=np.flatnonzero(V)[0]; X=X[g:]; first+=g
+s=np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),"st2.npz")); ix=s["ix"]
+R=list(range(364,372)); Lw=list(range(402,410)); C=[j for j in range(len(ix)) if 1795000<ix[j]<1825000]
+M={j:measure(X[ix[j]-first-100:ix[j]-first+600],fs) for j in range(len(ix)) if 100<ix[j]-first<len(X)-700}
+for ah in (False,True):
+    ok=0; n=0; ph={"left":[], "right":[]}; uns=0
+    for out in Lw+R:
+        sm={"left":[M[j] for j in Lw if j!=out],"right":[M[j] for j in R if j!=out]}
+        if ah: sm["ahead"]=[M[j] for j in C]
+        c,_=calibrate(sm,LocateCalibration()); f=locate(M[out],c,fs); true="left" if out in Lw else "right"
+        ok+=f.side==true; uns+=f.side=="unsure"; n+=1; ph[true].append(None if f.phi_deg is None else round(f.phi_deg))
+    print("ahead spot" if ah else "no ahead spot","| leave-one-out side right %d/%d (unsure %d)"%(ok,n,uns),"| angles, true left -90:",ph["left"]," true right 90:",ph["right"])
+sm={"left":[M[j] for j in Lw],"right":[M[j] for j in R]}
+for ah in (False,True):
+    if ah: sm["ahead"]=[M[j] for j in C]
+    c,notes=calibrate(sm,LocateCalibration()); print("\n",notes,"tau0 %.2f"%(c.tau0_s*1e3))
+    W=[j for j in range(len(ix)) if ix[j]>1666400 and j in M]; F=[locate(M[j],c,fs) for j in W]
+    import collections; print("after calibration n",len(F),collections.Counter(f.side for f in F),"angle shown %.0f%%"%(100*np.mean([f.phi_deg is not None for f in F])),"median wedge half-width %.0f deg"%np.median([f.phi_sigma_deg for f in F if f.phi_deg is not None]))
+    print([None if f.phi_deg is None else round(f.phi_deg) for f in F][-60:])

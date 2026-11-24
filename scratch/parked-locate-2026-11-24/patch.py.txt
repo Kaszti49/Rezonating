@@ -1,0 +1,322 @@
+import os
+
+os.chdir(r"C:\Users\enterpartner\Rezonating-main\tools\lab")
+
+
+def sub(path, pairs):
+    s = open(path, encoding="utf-8", newline="").read()
+    crlf = "\r\n" in s
+    s = s.replace("\r\n", "\n")
+    for a, b in pairs:
+        assert s.count(a) == 1, (path, s.count(a), a[:90])
+        s = s.replace(a, b)
+    return path, s.replace("\n", "\r\n") if crlf else s
+
+
+core = sub("src/rezonating_lab/core/locate.py", [
+("""   at 1 m, gives the distance: ``r = r_ref * (a_ref / a) ** (1 / n)``. A step's strength changes from person to person,
+   so this is a band (near / mid / far), not a measurement.
+""",
+"""   at 1 m, gives the distance: ``r = r_ref * (a_ref / a) ** (1 / n)``. A step's strength changes from step to step
+   (about 7.6 dB on the real floor, 2026-11-24: a factor 2.4 in distance), so the server uses the median loudness of
+   several steps of one walk and the page shows a band (near / mid / far), never metres.
+"""),
+("NEAR_M = 1.0\n",
+"""NEAR_M = 1.0
+TAU_SIGMA_MIN = 0.1  # samples: timing scatter assumed before a calibration, and its floor after one
+# No bearing when one sigma of the step-to-step timing scatter moves sin(phi) by more than this: only the side is left.
+MAX_SIN_SIGMA = 0.35
+"""),
+("    decay_n: float = DEFAULT_DECAY_N\n",
+"""    decay_n: float = DEFAULT_DECAY_N
+    tau_sigma_s: float | None = None  # step-to-step timing scatter at the calibration spots; None: not measured
+"""),
+('''def locate(m: StepMeasure, cal: LocateCalibration, fs_hz: float) -> StepFix:
+    """Turn a measurement into side, bearing and distance with the current calibration."""
+''',
+'''def bearing_resolvable(cal: LocateCalibration) -> bool:
+    """False when the timing scatter measured at calibration is too big against the delay a bearing needs."""
+    return cal.tau_sigma_s is None or cal.c_mps * cal.tau_sigma_s / cal.spacing_m <= MAX_SIN_SIGMA
+
+
+def locate(m: StepMeasure, cal: LocateCalibration, fs_hz: float, walk_amp: float | None = None) -> StepFix:
+    """Turn a measurement into side, bearing and distance with the current calibration.
+
+    ``walk_amp``: the loudness to use for the distance (median of the walk's last steps); default this step's own."""
+'''),
+("    if not m.lag_limited and abs(m.cc) >= 0.3 and abs(s) <= 1.3:\n",
+ "    if not m.lag_limited and abs(m.cc) >= 0.3 and abs(s) <= 1.3 and bearing_resolvable(cal):\n"),
+("""        # 0.1 sample timing error and a 20 % wave-speed error, propagated through asin
+        ds = math.hypot(cal.c_mps * (0.1 / fs_hz) / d, 0.2 * abs(s_c))
+""",
+"""        # the timing scatter and a 20 % wave-speed error, propagated through asin
+        tau_sigma = max(cal.tau_sigma_s or 0.0, TAU_SIGMA_MIN / fs_hz)
+        ds = math.hypot(cal.c_mps * tau_sigma / d, 0.2 * abs(s_c))
+"""),
+("    amp = 0.5 * (m.amp[0] + m.amp[1])\n    if cal.ref_amp",
+ "    amp = 0.5 * (m.amp[0] + m.amp[1]) if walk_amp is None else walk_amp\n    if cal.ref_amp"),
+("    med: dict[str, tuple[float, float, float]] = {}",
+ "    dev: list[float] = []  # timing of each step against its own spot's median\n    med: dict[str, tuple[float, float, float]] = {}"),
+("        if spot not in new.calibrated:\n",
+ "        dev += [m.tau_s - med[spot][0] for m in good]\n        if spot not in new.calibrated:\n"),
+("        new.ref_amp = float(np.median(amps))\n",
+'''        new.ref_amp = float(np.median(amps))
+        # root mean square, not a robust spread: an outlier here would be an outlier on the page too
+        new.tau_sigma_s = float(np.sqrt(np.mean(np.square(dev)))) if len(dev) >= 3 else None
+        if new.tau_sigma_s is not None:
+            notes.append(
+                f"Wave speed {new.c_mps:.0f} m/s: full left/right delay ±{new.spacing_m / new.c_mps * 1e3:.2f} ms, "
+                f"step-to-step scatter {new.tau_sigma_s * 1e3:.2f} ms."
+            )
+        if not bearing_resolvable(new):
+            notes.append("The scatter is too big for an angle on this floor: only the side is shown.")
+'''),
+])
+
+srv = sub("src/rezonating_lab/server/locate.py", [
+("""REFRACTORY_S = 0.30  # one step per this much time (walking: ~0.55 s between steps)
+TRIGGER_K = 5.0  # block rms over the noise floor
+""",
+"""REFRACTORY_S = 0.35  # one step per this much time (walking: ~0.55 s between steps)
+TRIGGER_K = 5.0  # block rms over the noise floor
+RISE_K = 4.0  # block rms over the median of the blocks just before it: the tail of a step is no new step
+RISE_BLOCKS = 14  # how many blocks before it (the newest one is left out: it may hold the step's own rise)
+HP_HZ = 10.0  # detector high-pass (2nd-order Butterworth): slow drift is no step
+"""),
+("DC_ALPHA = 0.02\n",
+"""FULL_SCALE = 2**23  # codes; a window that touches it is clipped
+WALK_GAP_S = 2.0  # steps closer than this belong to one walk
+WALK_STEPS = 5  # the distance uses the median loudness of the walk's last steps ...
+WALK_MIN_STEPS = 3  # ... and needs at least this many
+"""),
+('''    """Online step onsets on two channels: 10 ms blocks, rms of the DC-removed data against a slow noise floor."""
+''',
+'''    """Online step onsets on two channels: 10 ms blocks, rms of the high-passed data against a slow noise floor and
+    against the 140 ms before it (a step rises out of what came before; ringing and handling noise don't)."""
+'''),
+("        self.k = k\n        self.reset()\n",
+"""        self.k = k
+        w0 = 2 * math.pi * HP_HZ / fs_hz
+        alpha, cw = math.sin(w0) / math.sqrt(2.0), math.cos(w0)
+        a0 = 1 + alpha
+        self._b = ((1 + cw) / 2 / a0, -(1 + cw) / a0, (1 + cw) / 2 / a0)
+        self._a = (-2 * cw / a0, (1 - alpha) / a0)
+        self.reset()
+"""),
+("        self._dc: np.ndarray | None = None\n",
+"""        self._z: list[list[float]] | None = None  # filter state per channel (transposed direct form II)
+        self._hist: deque[float] = deque(maxlen=RISE_BLOCKS + 1)
+"""),
+('''not contiguous with the last one (lost samples): drop the partial block."""
+        self._buf = np.zeros((0, 2))
+''',
+'''not contiguous with the last one (lost samples): drop the partial block and restart
+        the filter, so the jump is not a step."""
+        self._buf = np.zeros((0, 2))
+        self._z = None
+        self._hist.clear()
+
+    def _high_pass(self, x: np.ndarray) -> np.ndarray:
+        (b0, b1, b2), (a1, a2) = self._b, self._a
+        if self._z is None:  # settled on the first sample's DC (a high-pass outputs 0 for it)
+            self._z = [[-b0 * v, b2 * v] for v in x[0].tolist()]
+        out = np.empty_like(x)
+        for ch in range(x.shape[1]):
+            z1, z2 = self._z[ch]
+            y = []
+            for v in x[:, ch].tolist():
+                o = b0 * v + z1
+                z1 = b1 * v - a1 * o + z2
+                z2 = b2 * v - a2 * o
+                y.append(o)
+            self._z[ch] = [z1, z2]
+            out[:, ch] = y
+        return out
+'''),
+("        if len(self._buf) == 0:\n            self._buf_first = first\n",
+"""        if len(x) == 0:
+            return []
+        if len(self._buf) == 0:
+            self._buf_first = first
+        x = self._high_pass(x)
+"""),
+("""            mean = blk.mean(axis=0)
+            if self._dc is None:
+                self._dc = mean
+            e = float(np.sqrt(np.mean((blk - self._dc) ** 2)))
+""",
+"""            e = float(np.sqrt(np.mean(blk**2)))
+            before = list(self._hist)[:-1]
+            self._hist.append(e)
+"""),
+("                self._dc = (1 - 0.2) * self._dc + 0.2 * mean\n", ""),
+("            if e > self.k * self._noise and idx - self._last_onset >= refractory:\n",
+"""            rises = not before or e > RISE_K * float(np.median(before))
+            if e > self.k * self._noise and rises and idx - self._last_onset >= refractory:
+"""),
+("                self._dc = (1 - DC_ALPHA) * self._dc + DC_ALPHA * mean\n", ""),
+("        self.skipped_gaps = 0\n",
+"""        self.skipped_gaps = 0
+        self.skipped_clipped = 0
+        self._walk: deque[float] = deque(maxlen=WALK_STEPS)  # loudness of the current walk's last steps
+        self._walk_last = -(10**12)
+"""),
+('                "skipped_gaps": self.skipped_gaps,\n',
+ '                "skipped_gaps": self.skipped_gaps,\n                "skipped_clipped": self.skipped_clipped,\n'),
+("            self._det = StepDetector(fs)\n            self._pending = []\n",
+"""            self._det = StepDetector(fs)
+            self._pending = []
+            self._walk.clear()
+            self._walk_last = -(10**12)
+"""),
+("            self._handle(onset, w[:, :2].astype(np.float64), fs, det.noise_rms)\n",
+"""            if int(np.abs(w[:, :2].astype(np.int64)).max()) >= FULL_SCALE - 1:
+                with self._lock:
+                    self.skipped_clipped += 1
+                self._publish_state()
+                continue
+            self._handle(onset, w[:, :2].astype(np.float64), fs)
+"""),
+("    def _handle(self, onset: int, w: np.ndarray, fs: float, noise: float) -> None:\n",
+'''    def _walk_loudness(self, onset: int, amp: float, fs: float) -> float:
+        """Median loudness of this walk's last steps: one step alone is off by about a factor 2.4 in distance."""
+        if onset - self._walk_last > WALK_GAP_S * fs:
+            self._walk.clear()
+        self._walk_last = onset
+        self._walk.append(amp)
+        return float(np.median(self._walk))
+
+    def _handle(self, onset: int, w: np.ndarray, fs: float) -> None:
+'''),
+("        nr = (noise, noise) if noise > 0 else None\n", ""),
+("gain_ratio=1.0, noise_rms=nr)", "gain_ratio=1.0)"),
+("""        m = measure(w, fs, spacing_m=cal.spacing_m, gain_ratio=cal.gain_ratio, noise_rms=nr)
+        fix = locate(m, self.cal, fs)
+""",
+"""        m = measure(w, fs, spacing_m=cal.spacing_m, gain_ratio=cal.gain_ratio)
+        walk_amp = self._walk_loudness(onset, 0.5 * (m.amp[0] + m.amp[1]), fs)
+        cal_fix = self.cal if len(self._walk) >= WALK_MIN_STEPS else replace(self.cal, ref_amp=None)
+        fix = locate(m, cal_fix, fs, walk_amp=walk_amp)
+"""),
+('            "calibration_step": calib is not None,\n',
+ '            "calibration_step": calib is not None,\n            "distance_steps": len(self._walk),\n'),
+("from dataclasses import dataclass, field\n", "from dataclasses import dataclass, field, replace\n"),
+("never located from patched data.\n",
+"""never located from patched data. The same goes for a window with a clipped sample (``skipped_clipped``): its loudness
+and its timing are wrong.
+"""),
+])
+
+test = sub("tests/test_locate.py", [
+("# ------------------------------------------------------------------------- end to end on the room sim\n",
+'''def test_detector_one_onset_for_a_long_ringing_step() -> None:
+    # the real floor (2026-11-24): the old detector fired again every 0.30 s while a step was still ringing
+    rng = np.random.default_rng(4)
+    n = int(FS * 5)
+    t = np.arange(n) / FS
+    d = np.clip(t - 1.0, 0, None)
+    ring = np.where(t >= 1.0, 2000.0 * np.exp(-d / 0.25) * np.sin(2 * np.pi * 14 * d), 0.0)
+    x = 100.0 + rng.standard_normal((n, 2)) + ring[:, None]
+    det = StepDetector(FS)
+    found = det.feed(0, x)
+    assert len(found) == 1
+    assert abs(found[0] - int(FS)) <= det.block + 2
+
+
+def test_detector_ignores_dc_and_slow_drift_and_a_jump_after_a_gap() -> None:
+    rng = np.random.default_rng(5)
+    n = int(FS * 4)
+    t = np.arange(n) / FS
+    x = 5000.0 + 300.0 * np.sin(2 * np.pi * 0.5 * t)[:, None] + rng.standard_normal((n, 2))
+    det = StepDetector(FS)
+    assert det.feed(0, x) == []
+    det.gap()
+    assert det.feed(n + 100, x[: int(FS)] + 40000.0) == []
+
+
+# ------------------------------------------------------------------------- end to end on the room sim
+'''),
+("def test_locator_counts_steps_with_lost_samples() -> None:\n",
+'''def _feed_steps(loc: Locator, ring: SampleRing, amps: list[float], period_s: float, full_scale: bool = False) -> None:
+    """Steps of the given peak codes every ``period_s`` on both channels, after 1 s of quiet."""
+    n = int(FS * (1.5 + period_s * len(amps)))
+    t = np.arange(n) / FS
+    x = 20.0 * np.random.default_rng(6).standard_normal((n, 2))
+    for i, a in enumerate(amps):
+        x += (a * burst(t - 1.0 - i * period_s))[:, None]
+    if full_scale:
+        x = np.clip(x, -(2**23), 2**23 - 1)
+    loc.tick()
+    for i in range(0, n, 80):
+        ring.write(i, np.round(x[i : i + 80]).astype(np.int32))
+        loc.tick()
+
+
+def test_locator_skips_and_counts_clipped_steps() -> None:
+    ring = SampleRing(2, int(FS * 30))
+    mgr = FakeManager(ring)
+    loc = Locator(mgr, None)
+    _feed_steps(loc, ring, [5e4, 5e7, 5e4], 1.0, full_scale=True)
+    assert loc.skipped_clipped == 1
+    assert loc.steps == 2
+    assert loc.view()["skipped_clipped"] == 1
+
+
+def test_locator_distance_needs_three_steps_of_a_walk_and_uses_their_median() -> None:
+    ring = SampleRing(2, int(FS * 30))
+    mgr = FakeManager(ring)
+    loc = Locator(mgr, None)
+    loc.cal.ref_amp = 1e4
+    _feed_steps(loc, ring, [5e4, 5e4, 1e6, 5e4], 0.7)
+    steps = [e for e in mgr.events if e["type"] == "locate_step"]
+    assert [s["distance_steps"] for s in steps] == [1, 2, 3, 4]
+    assert [s["distance_band"] for s in steps[:2]] == ["unknown", "unknown"]
+    # the third step is 20 times louder; the median keeps the distance of the other two
+    assert steps[2]["distance_m"] == pytest.approx(steps[3]["distance_m"], rel=0.1)
+
+
+def test_locator_new_walk_after_a_pause_starts_the_distance_again() -> None:
+    ring = SampleRing(2, int(FS * 60))
+    mgr = FakeManager(ring)
+    loc = Locator(mgr, None)
+    loc.cal.ref_amp = 1e4
+    _feed_steps(loc, ring, [5e4] * 4, 2.5)
+    steps = [e for e in mgr.events if e["type"] == "locate_step"]
+    assert [s["distance_steps"] for s in steps] == [1, 1, 1, 1]
+
+
+def test_locator_counts_steps_with_lost_samples() -> None:
+'''),
+("# ------------------------------------------------------------------------------------- step detector\n",
+'''def _scattered(scatter_s: float, c: float = 374.0) -> dict:
+    rng = np.random.default_rng(7)
+    out = {}
+    for spot, sign in (("left", 1.0), ("right", -1.0)):
+        taus = sign * SPACING_M / c + scatter_s * rng.standard_normal(8)
+        out[spot] = [measure(pair(0.0, float(v), noise=0.003, seed=i), FS) for i, v in enumerate(taus)]
+    return out
+
+
+def test_calibrate_with_large_scatter_shows_only_the_side() -> None:
+    # EP-LAPTOP floor 2026-11-24: 374 m/s (full delay +-0.33 ms) with 0.16 ms scatter from step to step
+    new, notes = calibrate(_scattered(0.16e-3), LocateCalibration())
+    assert new.tau_sigma_s == pytest.approx(0.16e-3, rel=0.5)
+    assert any("only the side" in n for n in notes)
+    fix = locate(measure(pair(0.0, SPACING_M / 374.0), FS), new, FS)
+    assert fix.phi_deg is None
+    assert fix.side == "left"
+
+
+def test_calibrate_with_small_scatter_keeps_the_bearing() -> None:
+    new, notes = calibrate(_scattered(0.01e-3, c=100.0), LocateCalibration())
+    assert not any("only the side" in n for n in notes)
+    assert locate(measure(pair(0.0, 0.5e-3), FS), new, FS).phi_deg is not None
+    assert LocateCalibration.from_dict(new.to_dict()).tau_sigma_s == new.tau_sigma_s
+
+
+# ------------------------------------------------------------------------------------- step detector
+'''),
+])
+for p, s in (core, srv, test):
+    open(p, "w", encoding="utf-8", newline="").write(s)
+print("ok")

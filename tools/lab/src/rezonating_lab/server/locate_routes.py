@@ -2,23 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
+from ..recorder.recording import RecordError
 from .locate import Locator
 
 
-class CalibrateBody(BaseModel):
-    spot: Literal["left", "right"]
-    steps: int = Field(5, ge=3, le=20)
-
-
 class LocateSettingsBody(BaseModel):
-    c_mps: float | None = Field(None, ge=10.0, le=2000.0)
-    decay_n: float | None = Field(None, ge=0.3, le=2.0)
-    spacing_m: float | None = Field(None, ge=0.02, le=5.0)
+    swap_sides: bool
 
 
 def register_locate_routes(app: FastAPI, loc: Locator) -> None:
@@ -26,21 +18,16 @@ def register_locate_routes(app: FastAPI, loc: Locator) -> None:
     async def locate_view():
         return loc.view()
 
-    @app.post("/api/locate/calibrate")
-    async def locate_calibrate(body: CalibrateBody):
-        return loc.start_calibration(body.spot, body.steps)
-
-    @app.post("/api/locate/calibrate/cancel")
-    async def locate_calibrate_cancel():
-        return loc.cancel_calibration()
-
-    @app.post("/api/locate/calibrate/reset")
-    async def locate_calibrate_reset():
-        return loc.reset_calibration()
-
     @app.post("/api/locate/settings")
     async def locate_settings(body: LocateSettingsBody):
-        return loc.set_values(body.c_mps, body.decay_n, body.spacing_m)
+        return loc.set_swap(body.swap_sides)
+
+    @app.post("/api/locate/baseline")
+    async def locate_baseline():
+        v = loc.save_baseline()
+        if v is None:
+            raise RecordError("no_signal", "No signal yet: connect the node first.", http=409)
+        return v
 
     @app.post("/api/locate/clear")
     async def locate_clear():

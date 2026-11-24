@@ -1,0 +1,330 @@
+import os
+
+os.chdir(r"C:\Users\enterpartner\Rezonating-main\tools\lab")
+OUT = {}
+
+
+def load(path):
+    s = open(path, encoding="utf-8", newline="").read()
+    return s.replace("\r\n", "\n"), "\r\n" in s
+
+
+def sub(path, pairs):
+    s, crlf = load(path)
+    for a, b in pairs:
+        assert s.count(a) == 1, (path, s.count(a), a[:100])
+        s = s.replace(a, b)
+    OUT[path] = s.replace("\n", "\r\n") if crlf else s
+
+
+def between(path, start, end, new, pairs=()):
+    s, crlf = load(path)
+    for a, b in pairs:
+        assert s.count(a) == 1, (path, s.count(a), a[:100])
+        s = s.replace(a, b)
+    i = s.index(start)
+    j = s.index(end, i) if end else len(s)
+    s = s[:i] + new + s[j:]
+    OUT[path] = s.replace("\n", "\r\n") if crlf else s
+
+
+CAL = '''def calibrate(
+    spot_measures: dict[str, list[StepMeasure]],
+    cal: LocateCalibration,
+    ref_m: float = 1.0,
+) -> tuple[LocateCalibration, list[str]]:
+    """New calibration from steps at known spots, ``ref_m`` straight left, right and/or ahead of the device.
+
+    Spots done earlier are kept in ``cal.spots``, so one spot can be redone on its own. Left and right give the delay of
+    a step straight to each side (``span_left_s``, ``span_right_s``: a real floor is not symmetric), its scatter,
+    ``swap_sides`` and the gain ratio. Ahead gives the zero point ``tau0_s``; without it, the middle of left and right.
+    Returns the new calibration and notes for the UI."""
+    notes: list[str] = []
+    new = LocateCalibration(**{**cal.to_dict(), "calibrated": list(cal.calibrated), "spots": dict(cal.spots)})
+    new.ref_m = ref_m
+    for spot, ms in spot_measures.items():
+        good = [m for m in ms if not m.lag_limited]
+        if not good:
+            notes.append(f"{spot}: no usable step (all timing peaks on the search edge)")
+            continue
+        taus = np.array([m.tau_s for m in good])
+        mid = float(np.median(taus))
+        new.spots[spot] = {
+            "tau_s": mid,
+            "amp0": float(np.median([m.amp[0] for m in good])),
+            "amp1": float(np.median([m.amp[1] for m in good])),
+            # root mean square about the median, not a robust spread: an outlier here is an outlier on the page too
+            "sigma_s": float(np.sqrt(np.sum((taus - mid) ** 2) / (len(good) - 1))) if len(good) >= 3 else None,
+        }
+    new.calibrated = [s for s in SPOTS if s in new.spots]
+    left, right, ahead = (new.spots.get(s) for s in SPOTS)
+    new.span_left_s = new.span_right_s = new.sigma_left_s = new.sigma_right_s = None
+    if left and right:
+        new.swap_sides = left["tau_s"] < right["tau_s"]
+        if new.swap_sides:
+            notes.append("the left spot reached channel 1 first: channel 0 is on the right; sides swapped")
+        sign = -1.0 if new.swap_sides else 1.0
+        new.tau0_s = ahead["tau_s"] if ahead else (left["tau_s"] + right["tau_s"]) / 2.0
+        span_l, span_r = sign * (left["tau_s"] - new.tau0_s), sign * (new.tau0_s - right["tau_s"])
+        if min(span_l, span_r) < MIN_SPAN_S:
+            notes.append("Straight ahead did not come out between left and right: redo the spots. The midpoint is used.")
+            new.tau0_s = (left["tau_s"] + right["tau_s"]) / 2.0
+            span_l = span_r = abs(left["tau_s"] - right["tau_s"]) / 2.0
+        elif not ahead:
+            notes.append("Do the straight-ahead spot too: until then, the zero is the middle of left and right.")
+        if span_l >= MIN_SPAN_S:
+            new.span_left_s, new.span_right_s = span_l, span_r
+            new.sigma_left_s, new.sigma_right_s = left["sigma_s"], right["sigma_s"]
+            new.c_mps = float(min(2000.0, max(MIN_C_MPS, new.spacing_m / ((span_l + span_r) / 2.0))))
+        else:
+            notes.append("left and right gave the same delay: wave speed not changed")
+        rl = left["amp0"] / max(left["amp1"], 1e-12)
+        rr = right["amp0"] / max(right["amp1"], 1e-12)
+        new.gain_ratio = float(1.0 / math.sqrt(rl * rr)) if rl > 0 and rr > 0 else 1.0
+        for name, span, sigma in (
+            ("Left", new.span_left_s, new.sigma_left_s),
+            ("Right", new.span_right_s, new.sigma_right_s),
+        ):
+            if span and sigma is not None:
+                word = "" if bearing_resolvable(new, name.lower()) else ": too much for an angle, side only"
+                notes.append(f"{name}: delay {span * 1e3:.2f} ms, scatter {sigma * 1e3:.2f} ms{word}.")
+    elif left or right:
+        spot, t = ("left", left["tau_s"]) if left else ("right", right["tau_s"])
+        if abs(t) > 1e-9:
+            new.c_mps = float(min(2000.0, max(MIN_C_MPS, new.spacing_m / abs(t))))
+            new.swap_sides = (t > 0) != (spot == "left")
+        notes.append("only one spot: the timing offset between the channels is assumed 0; do the other side too")
+    if left or right:
+        sides = [s for s in (left, right) if s]
+        new.ref_amp = float(np.median([0.5 * (s["amp0"] + s["amp1"] / new.gain_ratio) for s in sides]))
+    return new, notes
+'''
+
+between("src/rezonating_lab/core/locate.py", "def calibrate(\n", None, CAL, [
+('''1. ``tau`` = arrival at channel 1 minus arrival at channel 0, from a band-limited cross-correlation upsampled in the
+''', '''1. ``tau`` = arrival at channel 1 minus arrival at channel 0, from a 20-60 Hz cross-correlation upsampled in the
+'''),
+('''2. ``sin(phi) = -c * (tau - tau0) / d``. ``c`` (floor wave speed) and ``tau0`` (fixed timing offset between the
+   channels) come from the two-spot calibration.
+''', '''2. ``sin(phi) = -(tau - tau0) / span``: ``tau0`` is the delay of a step straight ahead, ``span`` the extra delay of a
+   step straight to that side. Both come from the calibration (left, right, ahead); before it, ``span = d / c``.
+'''),
+("UPSAMPLE = 16 ", '''# Timing band. On the 16 calibration steps of 2026-11-24 (EP-LAPTOP floor) the scatter over the delay was 0.31 left and
+# 0.07 right here, against 0.76 and 0.17 in 10-200 Hz. Picked on those same steps, so expect a bit worse.
+TIMING_BAND_HZ = (20.0, 60.0)
+CAL_VERSION = 2  # 2: timing in TIMING_BAND_HZ, three spots; an older file is not used (its delays mean something else)
+SPOTS = ("left", "right", "ahead")
+MIN_SPAN_S = 0.125e-3  # a side whose delay is smaller than this (a quarter sample) is not told from straight ahead
+UPSAMPLE = 16 '''),
+("MAX_SIN_SIGMA = 0.25\n", "MAX_SIN_SIGMA = 0.5\n"),
+("# No bearing when one sigma of the step-to-step timing scatter moves sin(phi) by more than this: only the side is left.\n",
+ "# No bearing on a side when one sigma of its timing scatter moves sin(phi) by more than this: only the side is left.\n"),
+('''    tau_sigma_s: float | None = None  # step-to-step timing scatter at the calibration spots; None: not measured
+    calibrated: list[str] = field(default_factory=list)  # spots done: "left", "right"
+''', '''    span_left_s: float | None = None  # delay of a step straight left, from tau0 (positive); None: d / c
+    span_right_s: float | None = None
+    sigma_left_s: float | None = None  # step-to-step timing scatter at that spot; None: not measured
+    sigma_right_s: float | None = None
+    calibrated: list[str] = field(default_factory=list)  # spots done: "left", "right", "ahead"
+    spots: dict = field(default_factory=dict)  # spot -> {tau_s, amp0, amp1, sigma_s}, without gain correction
+    version: int = CAL_VERSION
+'''),
+('''        known = {k: d[k] for k in cls.__dataclass_fields__ if k in d}
+''', '''        if d.get("version") != CAL_VERSION:
+            return cls(spacing_m=float(d.get("spacing_m", SPACING_M)))
+        known = {k: d[k] for k in cls.__dataclass_fields__ if k in d}
+'''),
+('''    cross = s1 * np.conj(s0)
+''', '''    t_mask = _band_mask(nfft, fs_hz, timing_band_hz)
+    s0, s1 = np.where(t_mask, s0, 0.0), np.where(t_mask, s1, 0.0)
+    cross = s1 * np.conj(s0)
+'''),
+('''    band_hz: tuple[float, float] = BAND_HZ,
+''', '''    band_hz: tuple[float, float] = BAND_HZ,
+    timing_band_hz: tuple[float, float] = TIMING_BAND_HZ,
+'''),
+('''def bearing_resolvable(cal: LocateCalibration) -> bool:
+    """False when the timing scatter measured at calibration is too big against the delay a bearing needs."""
+    return cal.tau_sigma_s is None or cal.c_mps * cal.tau_sigma_s / cal.spacing_m <= MAX_SIN_SIGMA
+''', '''def _side_cal(cal: LocateCalibration, side: str) -> tuple[float, float | None]:
+    """(delay of a step straight to that side, its scatter or None)."""
+    span, sigma = (cal.span_left_s, cal.sigma_left_s) if side == "left" else (cal.span_right_s, cal.sigma_right_s)
+    return (span if span else cal.spacing_m / cal.c_mps), sigma
+
+
+def bearing_resolvable(cal: LocateCalibration, side: str) -> bool:
+    """False when the timing scatter at that side's calibration spot is too big against the delay a bearing needs."""
+    span, sigma = _side_cal(cal, side)
+    return sigma is None or sigma / span <= MAX_SIN_SIGMA
+'''),
+('''    if t_vote != "none" and (a_vote == t_vote or a_vote == "none"):
+        side = t_vote
+    elif t_vote == "none" and a_vote != "none":
+        side = a_vote
+    else:
+        side = "unsure"
+''', '''    # Timing decides: 16 of 16 calibration steps right on 2026-11-24. Loudness is only shown: the two geophones differ by
+    # 10 % at 10 Hz and 0 % at 50 Hz, so its vote flips with the kind of step.
+    side = t_vote if t_vote != "none" else "unsure"
+'''),
+('''    s = -cal.c_mps * tau / d
+    if not m.lag_limited and abs(m.cc) >= 0.3 and abs(s) <= 1.3 and bearing_resolvable(cal):
+''', '''    lean = "left" if tau > 0 else "right"
+    span, sigma_s = _side_cal(cal, lean)
+    s = -tau / span
+    if not m.lag_limited and abs(m.cc) >= 0.3 and abs(s) <= MAX_SIN and bearing_resolvable(cal, lean):
+'''),
+('''        # the timing scatter and a 20 % wave-speed error, propagated through asin
+        tau_sigma = max(cal.tau_sigma_s or 0.0, TAU_SIGMA_MIN / fs_hz)
+        ds = math.hypot(cal.c_mps * tau_sigma / d, 0.2 * abs(s_c))
+''', '''        # the timing scatter and a 20 % error of the delay scale, propagated through asin
+        ds = math.hypot(max(sigma_s or 0.0, TAU_SIGMA_MIN / fs_hz) / span, 0.2 * abs(s_c))
+'''),
+("MIN_SPAN_S = ", "MAX_SIN = 2.0  # a larger delay than calibrated is drawn straight to that side, up to this many times; beyond: no bearing\nMIN_SPAN_S = "),
+('''    d = cal.spacing_m
+    sign = -1.0''', '''    sign = -1.0'''),
+('''    if t_vote != "none" and a_vote != "none" and t_vote != a_vote:
+        conf *= 0.5
+''', ''),
+])
+
+sub("src/rezonating_lab/server/locate.py", [
+('''            self._notes = [f"Step {steps} times at 1 m straight {spot} of the device."]
+''', '''            where = "straight ahead" if spot == "ahead" else f"straight {spot}"
+            self._notes = [f"Step {steps} times at 1 m {where} of the device."]
+'''),
+('''            self.cal = LocateCalibration(spacing_m=self.cal.spacing_m)
+            self._cal_done = {}
+''', '''            self.cal = LocateCalibration(spacing_m=self.cal.spacing_m)
+'''),
+('''        self._cal_done: dict[str, list[StepMeasure]] = {}
+''', ''),
+('''                        self._cal_done[calib.spot] = list(calib.got)
+                        done = dict(self._cal_done)
+                        self._calib = None
+''', '''                        done = {calib.spot: list(calib.got)}  # the other spots are kept in the calibration
+                        self._calib = None
+'''),
+('''                self.cal.c_mps = c_mps
+''', '''                self.cal.c_mps = c_mps  # a speed set by hand replaces the calibrated delays
+                self.cal.span_left_s = self.cal.span_right_s = None
+                self.cal.sigma_left_s = self.cal.sigma_right_s = None
+'''),
+])
+sub("src/rezonating_lab/server/locate_routes.py", [
+('Literal["left", "right"]', 'Literal["left", "right", "ahead"]'),
+])
+
+sub("web/src/lib/locate.ts", [
+("  tau_sigma_s: number | null;\n", "  span_left_s: number | null;\n  span_right_s: number | null;\n  sigma_left_s: number | null;\n  sigma_right_s: number | null;\n"),
+("  calibrating: { spot: 'left' | 'right'; got", "  calibrating: { spot: Spot; got"),
+("export interface LocateCalibration {\n", "export type Spot = 'left' | 'right' | 'ahead';\n\nexport interface LocateCalibration {\n"),
+("calibrate: (spot: 'left' | 'right', steps", "calibrate: (spot: Spot, steps"),
+])
+sub("web/src/components/LocatePage.svelte", [
+("type LocateStep } from '../lib/locate'", "type LocateStep, type Spot } from '../lib/locate'"),
+("async function calibrate(spot: 'left' | 'right')", "async function calibrate(spot: Spot)"),
+('''  function sideWord(sd: string | undefined): string {
+    return sd === 'left' ? 'LEFT' : sd === 'right' ? 'RIGHT' : sd === 'unsure' ? '?' : '–';
+  }
+''', '''  function sideWord(s: LocateStep | null): string {
+    if (!s) return '–';
+    if (s.side === 'left') return 'LEFT';
+    if (s.side === 'right') return 'RIGHT';
+    return s.phi_deg !== null && cal?.calibrated.includes('ahead') ? 'AHEAD or BEHIND' : '?';
+  }
+'''),
+("{sideWord(last?.side)}", "{sideWord(last)}"),
+("at <b>1 m straight {st.calibrating.spot}</b> of the device:", "at <b>1 m straight {st.calibrating.spot}</b>{st.calibrating.spot === 'ahead' ? '' : ' of the device'}:"),
+('''          <button class="primary" onclick={() => calibrate('right')} disabled={!connected}>Calibrate: 1 m right</button>
+''', '''          <button class="primary" onclick={() => calibrate('right')} disabled={!connected}>Calibrate: 1 m right</button>
+          <button class="primary" onclick={() => calibrate('ahead')} disabled={!connected}>Calibrate: 1 m ahead</button>
+'''),
+("Do both: left then right. Stand still between steps, one foot at the spot.", "Do all three: left, right, ahead. Press the button when you stand at the spot, then step in place."),
+])
+sub("WEB_API.md", [
+("ref_amp, ref_m, decay_n, tau_sigma_s (step-to-step timing scatter, null until calibrated), calibrated: [\"left\", \"right\"]}`.",
+ "ref_amp, ref_m, decay_n, span_left_s, span_right_s (delay of a step straight to that side), sigma_left_s, sigma_right_s\n  (its step-to-step scatter; all four null until calibrated), calibrated: [\"left\", \"right\", \"ahead\"], spots, version}`."),
+("`null` or `{spot: \"left\"|\"right\", got, want}`", "`null` or `{spot: \"left\"|\"right\"|\"ahead\", got, want}`"),
+("or when `c_mps * tau_sigma_s / spacing_m > 0.25`: too much scatter for an\n  angle)", "or when that side's `sigma / span > 0.5`: too much scatter for an\n  angle)"),
+("`{spot: \"left\"\\|\"right\", steps", "`{spot: \"left\"\\|\"right\"\\|\"ahead\", steps"),
+("as standing 1 m straight to that side |", "as standing 1 m straight to that side (or straight ahead) |"),
+("With both spots\ndone it sets", "A file from an older\nversion is ignored. With left and right done it sets"),
+])
+sub("README.md", [
+("press *Calibrate: 1 m left*, then step 8 times\n  1 m straight to the left of the device; then do the same on the right. This measures the floor's wave speed, the\n  timing offset and gain difference between the channels,",
+ "stand 1 m straight to the left of the device,\n  press *Calibrate: 1 m left* and step in place 8 times; then do the same on the right and straight ahead. This measures\n  the delay of each side, the zero point (ahead), the gain difference between the channels,"),
+("the calibration also measures how much the timing scatters from step to step. If that is too much for an\n  angle (a fast floor makes the delay tiny), the page says so and shows only the side, as a half circle.",
+ "the calibration also measures, per side, how much the timing scatters from step to step. If that is too much\n  for an angle, the page says so and shows only the side for that half, as a half circle."),
+])
+
+TEST_OLD_START = "def test_calibrate_one_spot_sets_speed_and_warns"
+between("tests/test_locate.py", "def _scattered(", "# ------------------------------------------------------------------------------------- step detector", '''def _at(tau_ms: list[float]) -> list:
+    return [measure(pair(0.0, v / 1e3, noise=0.003, seed=i), FS) for i, v in enumerate(tau_ms)]
+
+
+# the timing (20-60 Hz) of the real floor, 2026-11-24: the two sides are not mirror images
+LEFT_MS = [1.2, 1.5, 1.6, 1.7, 1.75, 1.9, 2.1, 2.4]
+RIGHT_MS = [-0.65, -0.7, -0.72, -0.75, -0.75, -0.78, -0.8, -0.85]
+AHEAD_MS = [-0.14, -0.12, -0.1, -0.1, -0.1, -0.1, -0.08, -0.06]
+
+
+def test_calibrate_three_spots_handles_unequal_sides() -> None:
+    new, _ = calibrate({"left": _at(LEFT_MS), "right": _at(RIGHT_MS), "ahead": _at(AHEAD_MS)}, LocateCalibration())
+    assert new.calibrated == ["left", "right", "ahead"]
+    assert new.tau0_s == pytest.approx(-0.1e-3, abs=0.03e-3)
+    assert new.span_left_s == pytest.approx(1.83e-3, rel=0.05)
+    assert new.span_right_s == pytest.approx(0.65e-3, rel=0.08)
+
+    def at(ms: float):
+        return locate(measure(pair(0.0, ms / 1e3), FS), new, FS)
+
+    assert at(-0.1).side == "unsure"
+    assert at(-0.1).phi_deg == pytest.approx(0, abs=5)  # straight ahead (or behind), not "right"
+    assert at(-0.1 + 1.83 / 2).phi_deg == pytest.approx(-30, abs=6)
+    assert at(-0.1 - 0.65 / 2).phi_deg == pytest.approx(30, abs=6)
+    assert at(1.73).side == "left" and at(-0.75).side == "right"
+    assert at(-0.75 * 1.4).phi_deg == pytest.approx(90, abs=1)  # past the calibrated delay: straight to the side
+
+
+def test_one_noisy_side_does_not_hide_the_bearing_of_the_other() -> None:
+    noisy = [0.2, 3.0, 0.4, 2.8, 0.3, 2.9, 1.7, 1.6]
+    new, notes = calibrate({"left": _at(noisy), "right": _at(RIGHT_MS), "ahead": _at(AHEAD_MS)}, LocateCalibration())
+    assert any(n.startswith("Left") and "side only" in n for n in notes)
+    left = locate(measure(pair(0.0, 1.2e-3), FS), new, FS)
+    right = locate(measure(pair(0.0, -0.5e-3), FS), new, FS)
+    assert left.side == "left" and left.phi_deg is None
+    assert right.side == "right" and right.phi_deg is not None
+
+
+def test_spots_are_kept_so_one_can_be_redone(tmp_path) -> None:
+    cal, _ = calibrate({"left": _at(LEFT_MS)}, LocateCalibration())
+    cal = LocateCalibration.from_dict(cal.to_dict())  # a restart
+    cal, _ = calibrate({"right": _at(RIGHT_MS)}, cal)
+    cal, _ = calibrate({"ahead": _at(AHEAD_MS)}, cal)
+    assert cal.span_left_s == pytest.approx(1.83e-3, rel=0.05)
+    assert cal.calibrated == ["left", "right", "ahead"]
+
+
+def test_ahead_outside_left_and_right_falls_back_to_the_midpoint() -> None:
+    new, notes = calibrate({"left": _at([0.5] * 4), "right": _at([-0.5] * 4), "ahead": _at([2.0] * 4)}, LocateCalibration())
+    assert new.tau0_s == pytest.approx(0.0, abs=0.05e-3)
+    assert any("redo the spots" in n for n in notes)
+
+
+def test_old_calibration_file_is_not_used() -> None:
+    cal = LocateCalibration.from_dict({"spacing_m": 0.2, "c_mps": 210.2, "tau0_s": 1e-4, "calibrated": ["left"]})
+    assert cal.calibrated == [] and cal.tau0_s == 0.0 and cal.c_mps == 100.0
+    assert cal.spacing_m == 0.2
+
+
+def test_loudness_does_not_overrule_timing() -> None:
+    fix = locate(measure(pair(0.0, -0.8e-3, 1.2, 1.0), FS), LocateCalibration(), FS)
+    assert fix.side_votes == {"timing": "right", "amplitude": "left"}
+    assert fix.side == "right"
+
+
+''')
+for p, s in OUT.items():
+    open(p, "w", encoding="utf-8", newline="").write(s)
+print("ok", len(OUT))

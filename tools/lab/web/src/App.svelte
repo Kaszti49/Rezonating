@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import StatusStrip from './components/StatusStrip.svelte';
   import Toasts from './components/Toasts.svelte';
+  import HomePage from './components/HomePage.svelte';
   import LivePage from './components/LivePage.svelte';
   import DevicePage from './components/DevicePage.svelte';
   import RecordPage from './components/RecordPage.svelte';
@@ -12,8 +13,33 @@
   import LocatePage from './components/LocatePage.svelte';
   import { app } from './lib/store.svelte';
 
-  type Path = '/live' | '/device' | '/record' | '/review' | '/datasets' | '/experiments' | '/bench' | '/locate';
+  type Path = '/' | '/live' | '/device' | '/record' | '/review' | '/datasets' | '/experiments' | '/bench' | '/locate';
   const LATER: string[] = [];
+  const GROUPS: { name: string; pages: { path: Path; label: string }[] }[] = [
+    {
+      name: 'Capture',
+      pages: [
+        { path: '/live', label: 'Live' },
+        { path: '/device', label: 'Device' },
+        { path: '/record', label: 'Record' },
+      ],
+    },
+    {
+      name: 'Data',
+      pages: [
+        { path: '/review', label: 'Review' },
+        { path: '/datasets', label: 'Datasets' },
+        { path: '/experiments', label: 'Experiments' },
+      ],
+    },
+    {
+      name: 'Test',
+      pages: [
+        { path: '/bench', label: 'Bench' },
+        { path: '/locate', label: 'Locate' },
+      ],
+    },
+  ];
 
   let path = $state(normalise(location.pathname));
 
@@ -25,7 +51,8 @@
     if (p.startsWith('/bench')) return '/bench';
     if (p.startsWith('/experiments')) return '/experiments';
     if (p.startsWith('/locate')) return '/locate';
-    return '/live';
+    if (p.startsWith('/live')) return '/live';
+    return '/';
   }
 
   const LEAVE_REVIEW = 'The Review page has unsaved label changes. Leave the page and lose them?';
@@ -36,6 +63,14 @@
     if (!confirm(LEAVE_REVIEW)) return false;
     app.reviewDirty = false;
     return true;
+  }
+
+  function goTo(to: string): void {
+    const p = normalise(to);
+    if (!mayLeave(p)) return;
+    if (path !== p) history.pushState({}, '', p);
+    path = p;
+    here = location.pathname + location.search;
   }
 
   function go(e: MouseEvent, to: Path): void {
@@ -72,6 +107,9 @@
   });
 </script>
 
+{#if path === '/'}
+  <HomePage onGo={goTo} groups={GROUPS} />
+{:else}
 <div class="shell">
   <nav class="rail" aria-label="Pages">
     <div class="brand">
@@ -81,16 +119,15 @@
       </svg>
       <span>Rezonating Lab</span>
     </div>
-    <a href="/live" class:active={path === '/live'} onclick={(e) => go(e, '/live')} aria-current={path === '/live' ? 'page' : undefined}>Live</a>
-    <a href="/device" class:active={path === '/device'} onclick={(e) => go(e, '/device')} aria-current={path === '/device' ? 'page' : undefined}>Device</a>
-    <a href="/record" class:active={path === '/record'} onclick={(e) => go(e, '/record')} aria-current={path === '/record' ? 'page' : undefined}>
-      Record{#if app.recActive}<span class="dot rec on" style="margin-left:8px" aria-label="recording"></span>{/if}
-    </a>
-    <a href="/review" class:active={path === '/review'} onclick={(e) => go(e, '/review')} aria-current={path === '/review' ? 'page' : undefined}>Review</a>
-    <a href="/datasets" class:active={path === '/datasets'} onclick={(e) => go(e, '/datasets')} aria-current={path === '/datasets' ? 'page' : undefined}>Datasets</a>
-    <a href="/experiments" class:active={path === '/experiments'} onclick={(e) => go(e, '/experiments')} aria-current={path === '/experiments' ? 'page' : undefined}>Experiments</a>
-    <a href="/bench" class:active={path === '/bench'} onclick={(e) => go(e, '/bench')} aria-current={path === '/bench' ? 'page' : undefined}>Bench</a>
-    <a href="/locate" class:active={path === '/locate'} onclick={(e) => go(e, '/locate')} aria-current={path === '/locate' ? 'page' : undefined}>Locate</a>
+    <a href="/" onclick={(e) => go(e, '/')}>Home</a>
+    {#each GROUPS as grp (grp.name)}
+      <span class="group">{grp.name}</span>
+      {#each grp.pages as p (p.path)}
+        <a href={p.path} class:active={path === p.path} onclick={(e) => go(e, p.path)} aria-current={path === p.path ? 'page' : undefined}>
+          {p.label}{#if p.path === '/record' && app.recActive}<span class="dot rec on" style="margin-left:8px" aria-label="recording"></span>{/if}
+        </a>
+      {/each}
+    {/each}
     {#each LATER as name (name)}
       <span class="soon" aria-disabled="true" title="Coming in a later phase">{name}<small>coming</small></span>
     {/each}
@@ -122,4 +159,5 @@
     </main>
   </div>
 </div>
+{/if}
 <Toasts />

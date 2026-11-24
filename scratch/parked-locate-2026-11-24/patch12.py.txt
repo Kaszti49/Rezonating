@@ -1,0 +1,554 @@
+import os
+import re
+
+os.chdir(r"C:\Users\enterpartner\Rezonating-main\tools\lab")
+OUT = {}
+
+
+def load(path):
+    s = open(path, encoding="utf-8", newline="").read()
+    return s.replace("\r\n", "\n"), "\r\n" in s
+
+
+def put(path, s, crlf):
+    OUT[path] = s.replace("\n", "\r\n") if crlf else s
+
+
+# ---------------------------------------------------------------- server/locate.py
+p = "src/rezonating_lab/server/locate.py"
+s, crlf = load(p)
+i = s.index('"""The Locate page')
+j = s.index("class StepDetector:")
+head = s[i:j]
+# keep the detector constants, drop the calibration and walk ones
+consts = "\n".join(
+    line for line in head.split("\n")
+    if not line.startswith(("CAL_STEPS", "WALK_", "@dataclass", "class _Cal", "    spot", "    want", "    got"))
+)
+consts = re.sub(
+    r'""".*?"""',
+    '''"""The Locate page's server side: follows the ``adc_raw`` ring, finds steps, says left / right / same for each
+(``core/locate.py``) and publishes them. Contract: WEB_API.md section 15.
+
+Events (WebSocket, JSON):
+- ``locate`` (cached, part of the snapshot): the sides switch and counters.
+- ``locate_step``: one step.
+
+Display maths only (D-017). Every step window that holds a lost sample is skipped and counted (``skipped_gaps``). A
+window with a clipped sample is too (``skipped_clipped``): its loudness and its timing are wrong.
+"""''',
+    consts, count=1, flags=re.S,
+)
+consts = consts.replace(
+    "from dataclasses import dataclass, field, replace\n", "",
+).replace(
+    "from ..core.locate import LocateCalibration, StepMeasure, calibrate, locate, measure\n",
+    "from ..core.locate import decide, measure\n",
+)
+body = s[j:]
+a = body.index("class Locator:")
+det = body[:a]
+LOC = '''class Locator:
+    """Owns the detector, the sides switch and the recent steps. ``tick()`` is called about 10 times a second."""
+
+    def __init__(self, mgr: Any, state_path: Path | None = None) -> None:
+        self.mgr = mgr
+        self.state_path = state_path
+        self.swap_sides = self._load()
+        self._lock = threading.Lock()
+        self._ring: Any = None
+        self._epoch = -1
+        self._cursor = 0
+        self._det: StepDetector | None = None
+        self._pending: list[int] = []
+        self.recent: deque[dict] = deque(maxlen=RECENT_KEPT)
+        self.steps = 0
+        self.skipped_gaps = 0
+        self.skipped_clipped = 0
+        self._next_id = 1
+
+    # ---------------------------------------------------------------------------------- persistence
+
+    def _load(self) -> bool:
+        """Only the sides switch is kept. Files written by the old calibration (no ``version`` 4) are not read."""
+        if self.state_path is not None and self.state_path.is_file():
+            try:
+                d = json.loads(self.state_path.read_text(encoding="utf-8"))
+                return d.get("version") == 4 and bool(d.get("swap_sides"))
+            except (OSError, ValueError, AttributeError):
+                pass
+        return False
+
+    def _save(self) -> None:
+        if self.state_path is None:
+            return
+        try:
+            self.state_path.parent.mkdir(parents=True, exist_ok=True)
+            self.state_path.write_text(json.dumps({"version": 4, "swap_sides": self.swap_sides}, indent=2), encoding="utf-8")
+        except OSError as exc:
+            self.mgr.host_log(f"locate: cannot save the sides to {self.state_path}: {exc}", 2)
+
+    # ---------------------------------------------------------------------------------------- views
+
+    def view(self) -> dict:
+        with self._lock:
+            return {
+                "type": "locate",
+                "swap_sides": self.swap_sides,
+                "steps": self.steps,
+                "skipped_gaps": self.skipped_gaps,
+                "skipped_clipped": self.skipped_clipped,
+                "noise_rms": self._det.noise_rms if self._det else None,
+                "fs_hz": self._det.fs_hz if self._det else None,
+                "recent": list(self.recent),
+            }
+
+    def _publish_state(self) -> None:
+        v = self.view()
+        v.pop("recent")
+        self.mgr.publish(v)
+
+    # -------------------------------------------------------------------------------------- commands
+
+    def set_swap(self, swap_sides: bool) -> dict:
+        with self._lock:
+            self.swap_sides = swap_sides
+        self._save()
+        self._publish_state()
+        return self.view()
+
+    def clear(self) -> dict:
+        with self._lock:
+            self.recent.clear()
+        self._publish_state()
+        return self.view()
+
+    # ------------------------------------------------------------------------------------------ work
+
+'''
+rest = body[a:]
+work = rest[rest.index("    def _adc_raw(self)"):]
+work = work.replace('''            self._det = StepDetector(fs)
+            self._pending = []
+            self._walk.clear()
+            self._walk_last = -(10**12)
+''', '''            self._det = StepDetector(fs)
+            self._pending = []
+''')
+k = work.index("    def _walk_loudness") if "    def _walk_loudness" in work else work.index("    def _handle")
+work = work[:k]
+tail = '''    def _handle(self, onset: int, w: np.ndarray, fs: float) -> None:
+        fix = decide(measure(w, fs), self.swap_sides)
+        ev = {
+            "type": "locate_step",
+            "id": self._next_id,
+            "index": onset,
+            "epoch": self._epoch,
+            **_finite(fix.to_dict()),
+        }
+        with self._lock:
+            self._next_id += 1
+            self.steps += 1
+            self.recent.append(ev)
+        self.mgr.publish(ev)
+        self._publish_state()  # the counters (about two a second while someone walks)
+
+
+'''
+fin = rest[rest.index("def _finite("):]
+put(p, consts.rstrip("\n") + "\n\n\n" + det + LOC + work + tail + fin, crlf)
+
+# ---------------------------------------------------------------- routes
+p = "src/rezonating_lab/server/locate_routes.py"
+s, crlf = load(p)
+put(p, '''"""REST for the Locate page (WEB_API.md section 15). Steps and state go out as WebSocket events."""
+
+from __future__ import annotations
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from .locate import Locator
+
+
+class LocateSettingsBody(BaseModel):
+    swap_sides: bool
+
+
+def register_locate_routes(app: FastAPI, loc: Locator) -> None:
+    @app.get("/api/locate")
+    async def locate_view():
+        return loc.view()
+
+    @app.post("/api/locate/settings")
+    async def locate_settings(body: LocateSettingsBody):
+        return loc.set_swap(body.swap_sides)
+
+    @app.post("/api/locate/clear")
+    async def locate_clear():
+        return loc.clear()
+''', crlf)
+
+# ---------------------------------------------------------------- docs
+p = "WEB_API.md"
+s, crlf = load(p)
+i = s.index("## 15. Locate")
+NEW = '''## 15. Locate (which side a step came from)
+
+The Locate page finds steps on `adc_raw` (both ADC channels) and says for each one **left**, **right** or **same** (front
+or back): the geophone that heard it first, else the one that heard it louder, else the same. No calibration, angle or
+distance. `core/locate.py` has the rule. Display maths only (D-017): no pack uses it. Channel 0 is the left geophone,
+channel 1 the right one, unless `swap_sides` is on.
+
+A step window (50 ms before the onset to 300 ms after) that holds a lost sample is not located: it is counted in
+`skipped_gaps`. A window with a clipped sample (ADC full scale) is not located either: `skipped_clipped`.
+
+### Events (WebSocket)
+
+- `locate` (cached, in the snapshot): `{type, swap_sides, steps, skipped_gaps, skipped_clipped, noise_rms, fs_hz}`. Sent
+  at start-up, after every step and after every command.
+- `locate_step`: `{type, id, index (adc_raw sample index of the onset block), epoch, side: "left"|"right"|"same",
+  reason: "first"|"louder"|"same", tau_s (arrival ch1 - ch0), cc (-1..1; negative = channels in anti-phase), amp: [ch0, ch1]
+  (band rms, codes), ratio (ch0 / ch1), agree (the geophones move alike; false: only the loudness was used)}`.
+
+### REST
+
+| Method and path | Body | Answer |
+| --- | --- | --- |
+| `GET /api/locate` | | the `locate` view plus `recent` (the last 60 `locate_step` events) |
+| `POST /api/locate/settings` | `{swap_sides: bool}` | the view |
+| `POST /api/locate/clear` | | the view with an empty `recent` |
+
+`swap_sides` is kept in `locate.json` next to the Lab's `config.toml` (`%APPDATA%\\rzlab\\` on Windows).
+'''
+put(p, s[:i] + NEW, crlf)
+
+p = "README.md"
+s, crlf = load(p)
+i = s.index("## Locate page")
+j = s.index("- **Without hardware:**")
+s = s[:i] + '''## Locate page
+
+Says **LEFT**, **RIGHT** or **FRONT or BACK** for each step: the geophone that heard it first, else the one that heard it
+louder, else the same. No calibration, angle or distance. Front and back look the same to two geophones on a line. If the
+case is turned round, press *Swap left and right*. The rule and its two fixed offsets are in
+`src/rezonating_lab/core/locate.py`; API: `WEB_API.md` section 15.
+
+- **Small steps:** the detector compares each 10 ms with the quietest 20 % of the last 5 s.
+- **Skipped steps** are counted, not shown: windows with lost samples, and windows that reached ADC full scale.
+''' + s[j:]
+# the calibration advice in the simulator bullet no longer applies
+s = s.replace("The walker never stands still, so\n  calibrating against it gives nonsense. Use the default wave speed (the simulated floor is also 100 m/s).\n",
+              "\n") if "calibrating against it gives nonsense" in s else s
+put(p, s, crlf)
+
+# ---------------------------------------------------------------- web
+p = "web/src/lib/locate.ts"
+s, crlf = load(p)
+put(p, '''// Locate page (WEB_API.md section 15): types and REST calls. Steps arrive as `locate_step` WebSocket events,
+// the state as the cached `locate` event.
+import { request } from './api';
+
+export interface LocateState {
+  type: 'locate';
+  swap_sides: boolean;
+  steps: number;
+  skipped_gaps: number;
+  skipped_clipped: number;
+  noise_rms: number | null;
+  fs_hz: number | null;
+  recent?: LocateStep[];
+}
+
+/** `same`: the step came from the front or the back. */
+export type Side = 'left' | 'right' | 'same';
+
+export interface LocateStep {
+  type: 'locate_step';
+  id: number;
+  index: number;
+  epoch: number;
+  side: Side;
+  reason: 'first' | 'louder' | 'same';
+  tau_s: number;
+  cc: number;
+  amp: [number, number];
+  ratio: number;
+  /** False: the geophones did not move alike, so only the loudness was used. */
+  agree: boolean;
+  t?: number;
+}
+
+export const locateApi = {
+  view: () => request<LocateState>('GET', '/api/locate'),
+  swap: (swap_sides: boolean) => request<LocateState>('POST', '/api/locate/settings', { swap_sides }),
+  clear: () => request<LocateState>('POST', '/api/locate/clear', {}),
+};
+''', crlf)
+
+p = "web/src/components/LocatePage.svelte"
+s, crlf = load(p)
+style = s[s.index("<style>"):]
+style = re.sub(r"  \.calnow \{.*?\}\n", "", style, flags=re.S)
+put(p, '''<script lang="ts">
+  // Locate: which side did a step come from? LEFT, RIGHT, or FRONT or BACK (the same to two geophones on one line):
+  // the geophone that heard it first, else the one that heard it louder. WEB_API.md section 15.
+  import { onMount } from 'svelte';
+  import { app } from '../lib/store.svelte';
+  import { locateApi, type LocateStep, type Side } from '../lib/locate';
+
+  const RIPPLE_MS = 2600; // rings spread from the side of the step, like a drop hitting water (a picture, not a position)
+  const RIPPLE_RINGS = 3;
+  const FADE_MS = 9000;
+
+  let canvas: HTMLCanvasElement;
+  let box: HTMLDivElement;
+  let showRipples = $state(true);
+
+  /** When each step arrived in this page (performance.now()), for the fade. */
+  const seenAt = new Map<number, number>();
+
+  const st = $derived(app.locate);
+  const steps = $derived(app.locateSteps);
+  const last = $derived(steps.length ? steps[steps.length - 1] : null);
+  const connected = $derived(app.connection?.state === 'connected');
+  const counts = $derived.by(() => {
+    const c = { left: 0, right: 0, same: 0 };
+    for (const s of steps.slice(-20)) c[s.side]++;
+    return c;
+  });
+  /** Only the loudness was used: the geophones did not move alike. */
+  const disagree = $derived.by(() => {
+    const recent = steps.slice(-20);
+    return recent.length < 5 ? 0 : recent.filter((s) => !s.agree).length / recent.length;
+  });
+
+  onMount(() => {
+    const now = performance.now();
+    void locateApi
+      .view()
+      .then((v) => {
+        app.locate = { ...v, recent: undefined };
+        if (!app.locateSteps.length && v.recent) {
+          for (const s of v.recent) seenAt.set(s.id, now - FADE_MS); // older steps: not shown on the floor
+          app.locateSteps = v.recent;
+        }
+      })
+      .catch(() => {});
+    let raf = 0;
+    const loop = () => {
+      draw();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  });
+
+  function css(name: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
+  }
+
+  /** Where the ripples of a step start: the middle of its side, or of both front and back. */
+  function spots(side: Side, w: number, h: number): [number, number][] {
+    if (side === 'left') return [[w * 0.2, h / 2]];
+    if (side === 'right') return [[w * 0.8, h / 2]];
+    return [
+      [w / 2, h * 0.15],
+      [w / 2, h * 0.85],
+    ];
+  }
+
+  function draw(): void {
+    if (!canvas || !box) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = box.clientWidth;
+    const h = box.clientHeight;
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+    }
+    const g = canvas.getContext('2d');
+    if (!g) return;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const text = css('--text');
+    const muted = css('--muted');
+    const left = css('--ch0');
+    const right = css('--ch1');
+    const colour = (s: Side): string => (s === 'left' ? left : s === 'right' ? right : css('--accent'));
+    const cx = w / 2;
+    const cy = h / 2;
+
+    // the last step lights up its area
+    const age = last ? performance.now() - (seenAt.get(last.id) ?? 0) : Infinity;
+    if (last) {
+      g.globalAlpha = Math.max(0, 0.28 * (1 - age / FADE_MS));
+      g.fillStyle = colour(last.side);
+      if (last.side === 'left') g.fillRect(0, 0, cx, h);
+      else if (last.side === 'right') g.fillRect(cx, 0, w - cx, h);
+      else {
+        g.fillRect(0, 0, w, cy * 0.6);
+        g.fillRect(0, h - cy * 0.6, w, cy * 0.6);
+      }
+      g.globalAlpha = 1;
+    }
+    g.textAlign = 'center';
+    g.font = '600 15px system-ui, sans-serif';
+    for (const [t, x, y, col] of [
+      ['LEFT', 60, cy, left],
+      ['RIGHT', w - 60, cy, right],
+      ['FRONT', cx, 26, muted],
+      ['BACK', cx, h - 14, muted],
+    ] as const) {
+      g.fillStyle = col;
+      g.fillText(t, x, y);
+    }
+
+    if (showRipples) {
+      const now = performance.now();
+      for (const s of steps) {
+        if (!seenAt.has(s.id)) seenAt.set(s.id, now);
+        const a = now - (seenAt.get(s.id) ?? now);
+        if (a >= RIPPLE_MS) continue;
+        drawRipples(g, s, w, h, colour(s.side), a);
+      }
+    }
+    for (const id of seenAt.keys()) if (!steps.some((x) => x.id === id)) seenAt.delete(id);
+
+    // the device with its two geophones
+    const dr = Math.min(w, h) * 0.09;
+    g.beginPath();
+    g.arc(cx, cy, dr, 0, Math.PI * 2);
+    g.fillStyle = css('--panel2');
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = css('--accent');
+    g.stroke();
+    const swap = st?.swap_sides ?? false;
+    for (const [x, ch] of [
+      [-dr * 0.5, swap ? 1 : 0],
+      [dr * 0.5, swap ? 0 : 1],
+    ] as const) {
+      g.beginPath();
+      g.arc(cx + x, cy, dr * 0.2, 0, Math.PI * 2);
+      g.fillStyle = x < 0 ? left : right;
+      g.fill();
+      g.fillStyle = text;
+      g.font = '11px system-ui, sans-serif';
+      g.fillText(`ch${ch}`, cx + x, cy + dr + 14);
+    }
+  }
+
+  function drawRipples(g: CanvasRenderingContext2D, s: LocateStep, w: number, h: number, col: string, ageMs: number): void {
+    const t = ageMs / RIPPLE_MS;
+    const maxR = Math.min(w, h) * 0.3;
+    g.save();
+    g.strokeStyle = col;
+    for (const [x, y] of spots(s.side, w, h)) {
+      if (t < 0.25) {
+        g.globalAlpha = (1 - t / 0.25) * 0.9;
+        g.beginPath();
+        g.arc(x, y, 6, 0, Math.PI * 2);
+        g.fillStyle = col;
+        g.fill();
+      }
+      for (let k = 0; k < RIPPLE_RINGS; k++) {
+        const tk = t - k * 0.18;
+        if (tk <= 0 || tk >= 1) continue;
+        const ease = 1 - (1 - tk) * (1 - tk); // fast at first, then slowing, like water
+        g.globalAlpha = (1 - tk) * 0.85;
+        g.lineWidth = 2 * (1 - tk) + 0.5;
+        g.beginPath();
+        g.arc(x, y, Math.max(1, ease * maxR), 0, Math.PI * 2);
+        g.stroke();
+      }
+    }
+    g.restore();
+  }
+
+  const word: Record<Side, string> = { left: 'LEFT', right: 'RIGHT', same: 'FRONT or BACK' };
+  const why: Record<string, string> = {
+    first: 'heard first on that side',
+    louder: 'heard louder on that side',
+    same: 'both the same',
+  };
+
+  async function swapSides(): Promise<void> {
+    await app.run('locate', async () => (app.locate = await locateApi.swap(!(st?.swap_sides ?? false))));
+  }
+  async function clearTrail(): Promise<void> {
+    await app.run('locate', async () => (app.locate = await locateApi.clear()));
+    app.locateSteps = [];
+  }
+</script>
+
+<section class="locate">
+  <div class="radar" bind:this={box}>
+    <canvas bind:this={canvas} aria-label="Top view of the device and the side of the last step"></canvas>
+    {#if !connected}
+      <div class="overlay">
+        <p>No node connected.</p>
+        <p class="muted">Connect on the Device page: the S3 rig on its USB port, or the Simulator (a person walking around the device).</p>
+      </div>
+    {/if}
+  </div>
+
+  <aside class="side">
+    <div class="card big">
+      <div class="sideword" class:l={last?.side === 'left'} class:r={last?.side === 'right'} class:two={last?.side === 'same'}>
+        {last ? word[last.side] : '–'}
+      </div>
+      {#if last}
+        <dl>
+          <dt>Why</dt>
+          <dd>{why[last.reason]}</dd>
+          <dt>Time gap</dt>
+          <dd>{Math.round(last.tau_s * 1e6)} µs</dd>
+          <dt>Loudness</dt>
+          <dd>ch0 {Math.round(last.amp[0])}, ch1 {Math.round(last.amp[1])} (ratio {last.ratio.toFixed(2)})</dd>
+        </dl>
+      {:else}
+        <p class="muted">Waiting for a step…</p>
+      {/if}
+    </div>
+
+    <div class="card">
+      <header><h2>Last 20 steps</h2></header>
+      <p class="small">LEFT {counts.left} · RIGHT {counts.right} · FRONT or BACK {counts.same}</p>
+      {#if disagree > 0.3}
+        <p class="small note">
+          The geophones do not move alike in {Math.round(disagree * 100)} % of them, so only the loudness is used. Check that the
+          case stands flat and both geophones are firm in their cups.
+        </p>
+      {/if}
+    </div>
+
+    <div class="card">
+      <header><h2>Settings</h2></header>
+      <div class="row">
+        <button onclick={swapSides}>Swap left and right{st?.swap_sides ? ' (on)' : ''}</button>
+        <label><input type="checkbox" bind:checked={showRipples} /> ripples</label>
+        <button onclick={clearTrail}>Clear</button>
+      </div>
+      <p class="small muted">
+        First or louder on the left: LEFT. On the right: RIGHT. The same: FRONT or BACK (two geophones on one line can't
+        tell which). Swap if the case is turned round.
+      </p>
+    </div>
+
+    <div class="card">
+      <header><h2>Counts</h2></header>
+      <p class="small">
+        Steps {st?.steps ?? 0} · skipped: lost samples {st?.skipped_gaps ?? 0}, clipped {st?.skipped_clipped ?? 0}
+      </p>
+    </div>
+  </aside>
+</section>
+
+''' + style.replace("  .sideword.r {", "  .sideword.two {\n    font-size: 36px;\n  }\n  .sideword.r {"), crlf)
+
+for path, txt in OUT.items():
+    open(path, "w", encoding="utf-8", newline="").write(txt)
+print("ok", len(OUT))

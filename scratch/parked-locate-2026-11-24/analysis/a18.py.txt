@@ -1,0 +1,58 @@
+import numpy as np,os
+from rezonating_lab.core.locate import measure,decide
+D=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures")
+def load(n):
+    z=np.load(os.path.join(D,n)); V=z["V"]; g=np.flatnonzero(V)[0]; return np.nan_to_num(z["X"][g:]).astype(float),float(z["fs"]),int(z["first"])+g
+st=np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),"st2.npz"))
+X2,f2,o2=load("floor-2026-11-24-cal2.npz"); X3,f3,o3=load("floor-2026-11-24-cal3.npz"); X5,f5,o5=load("floor-2026-11-24-cal5.npz")
+import rezonating_lab.server.locate as S
+from rezonating_lab.core.ringbuf import SampleRing
+class M:
+    def __init__(s,r): s.rings={0:r}; s.ev=[]
+    def stream_names(s): return {0:"adc_raw"}
+    def stream_info(s,i): return {"fs_hz":f5}
+    def publish(s,e):
+        if e["type"]=="locate_step": s.ev.append(e)
+    def host_log(s,*a): pass
+r=SampleRing(2,int(60*f5)); m=M(r); L=S.Locator(m,None); L.tick(); Xi=X5.astype(np.int32)
+for i in range(0,len(Xi),200): r.write(i,Xi[i:i+200]); L.tick()
+ix5=np.array([e["index"] for e in m.ev])+o5
+sets={"L0853":("left",X2,f2,o2,[st["ix"][j] for j in range(402,410)]),"R0853":("right",X2,f2,o2,[st["ix"][j] for j in range(364,372)]),"L0915":("left",X3,f3,o3,[1446042,1447702,1449202,1450642,1452042,1453482,1454982,1456562]),"R0940":("right",X5,f5,o5,ix5[194:202])}
+BANDS=[(8,14),(14,20),(20,30),(30,45),(45,65),(65,100),(100,160)]
+def win(X,o,i,pre=100,post=600): w=X[i-o-pre:i-o+post].copy(); return w-np.median(w,0)
+def feats(X,f,o,i,kind):
+    w=win(X,o,i)*np.hanning(700)[:,None]; s=np.fft.rfft(w,2048,axis=0); fr=np.fft.rfftfreq(2048,1/f); v=[]
+    for lo,hi in BANDS:
+        k=(fr>=lo)&(fr<hi); c=(s[k,1]*np.conj(s[k,0])).sum(); a=np.sqrt((abs(s[k,0])**2).sum()*(abs(s[k,1])**2).sum()); v+= [np.log((abs(s[k,0])**2).sum()/(abs(s[k,1])**2).sum()), (c/a).real, (c/a).imag]
+    if kind=="raw":
+        x=win(X,o,i,20,180); x=x/np.abs(x).max(); return np.r_[np.array(v), (x[:,0][::4]),(x[:,1][::4])]
+    return np.array(v)
+def build(kind): return {k:np.array([feats(X,f,o,i,kind) for i in ix]) for k,(s,X,f,o,ix) in sets.items()}
+def nearest(tr,trl,te):
+    mu,sd=tr.mean(0),tr.std(0)+1e-9; cl=sorted(set(trl)); cen={c:((tr[np.array(trl)==c]-mu)/sd).mean(0) for c in cl}
+    return [min(cl,key=lambda c:np.sum(((t-mu)/sd-cen[c])**2)) for t in te]
+for kind in ("bands","raw"):
+    F=build(kind); tr=np.r_[F["L0853"],F["R0853"]]; tl=["left"]*8+["right"]*8
+    for n in ("L0915","R0940"):
+        g=nearest(tr,tl,F[n]); print(f"learned ({kind}, train on 08:53 only) -> {n}: right {sum(x==sets[n][0] for x in g)}/8 ", end="")
+    print()
+    # same-session check (leave one out), the flattering number
+    ok=0; al=np.r_[tr]; 
+    for q in range(16):
+        keep=[k for k in range(16) if k!=q]; ok+=nearest(tr[keep],[tl[k] for k in keep],tr[q:q+1])[0]==tl[q]
+    print(f"   same-session leave-one-out on 08:53: {ok}/16")
+    # train on everything except one session
+    for hold in sets:
+        rest=[k for k in sets if k!=hold]; T=np.concatenate([F[k] for k in rest]); TL=sum([[sets[k][0]]*8 for k in rest],[]); g=nearest(T,TL,F[hold]); print(f"   trained on the other three sets, tested on {hold}: {sum(x==sets[hold][0] for x in g)}/8")
+print("simple rule (what ships now), same test sets:", {n:sum(decide(measure(X[i-o-100:i-o+600],f)).side==s for i in ix) for n,(s,X,f,o,ix) in sets.items()})
+# how fast does the side signal fade with loudness? (all replayed steps, 08:53-09:43 file)
+all_=[]
+for X,f,o,IX in ((X2,f2,o2,st["ix"]),(X5,f5,o5,ix5)):
+    for i in IX:
+        if i-o<150 or i-o>len(X)-700: continue
+        mm=measure(X[i-o-100:i-o+600],f); d=decide(mm); all_.append((np.mean(mm.amp),d.side))
+all_=np.array(all_,dtype=object); lv=all_[:,0].astype(float)
+print("steps by loudness -> share that comes out FRONT or BACK:")
+for a,b in ((0,1500),(1500,4000),(4000,1e4),(1e4,3e4),(3e4,1e5),(1e5,1e9)):
+    k=(lv>=a)&(lv<b); 
+    if k.any(): print(f"   {a:>6.0f}-{b:<8.0f} n={k.sum():4d}  front/back {100*np.mean(all_[k,1]=='same'):.0f}%")

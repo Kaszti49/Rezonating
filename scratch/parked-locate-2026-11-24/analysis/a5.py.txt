@@ -1,0 +1,28 @@
+import numpy as np,os
+from rezonating_lab.core.locate import measure
+p=os.path.join(os.environ["LOCALAPPDATA"],"rzlab","captures","floor-2026-11-24-cal2.npz"); d=np.load(p); X=d["X"];V=d["V"];fs=float(d["fs"]);first=int(d["first"]);g=np.flatnonzero(V)[0]; X=X[g:]; first+=g
+s=np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),"st2.npz")); ix=s["ix"]; tau=s["tau"]; a=s["a"]
+R=list(range(364,372)); Lw=list(range(402,410)); C=[j for j in range(len(ix)) if 1795000<ix[j]<1825000]
+print("left 402..409:",[(int(ix[j]),round(float(tau[j]),3),round(float(a[j,0]/a[j,1]),3)) for j in Lw])
+print("tight cluster n",len(C),"tau med %.3f sd %.3f ratio med %.3f sd %.3f"%(np.median(tau[C]),tau[C].std(),np.median(a[C,0]/a[C,1]),(a[C,0]/a[C,1]).std()))
+def rob(v): return 1.4826*np.median(abs(v-np.median(v)))
+# LS estimator: rho = a h + b dh/dt, band limited
+def ls(i,pre,post,lo,hi):
+    w=X[i-pre:i+post].astype(float); w=w-np.median(w,0); w=w*np.hanning(len(w))[:,None]; n=2048
+    S=np.fft.rfft(w,n,axis=0); f=np.fft.rfftfreq(n,1/fs); m=(f>=lo)&(f<=hi); x0,x1=S[m,0],-S[m,1]; h=(x0+x1)/2; r=(x0-x1)/2; D=2j*np.pi*f[m]*h
+    A=np.c_[np.r_[h.real,h.imag],np.r_[D.real,D.imag]]; y=np.r_[r.real,r.imag]; sol=np.linalg.lstsq(A,y,rcond=None)[0]
+    return sol[1]*2e3, sol[0]
+def show(name,f):
+    r=np.array([f(ix[j]-first) for j in R]); l=np.array([f(ix[j]-first) for j in Lw]); c=np.array([f(ix[j]-first) for j in C])
+    half=(np.median(l)-np.median(r))/2; mid=(np.median(l)+np.median(r))/2
+    sg=[np.sqrt(((v-np.median(v))**2).sum()/7) for v in (l,r)]
+    print(f"{name:38s} L {np.median(l):6.2f} R {np.median(r):6.2f} mid {mid:6.2f} cluster {np.median(c):6.2f} | sin-sigma rms L {sg[0]/half:5.2f} R {sg[1]/half:5.2f}  robust L {rob(l)/half:5.2f} R {rob(r)/half:5.2f} | side ok {(l>mid).sum()+(r<mid).sum()}/16")
+for pre,post in ((100,600),(40,80),(20,160)):
+    for lo,hi in ((10,200),(10,25),(20,60),(40,100),(60,150)):
+        show(f"xcorr -{pre}/+{post} {lo}-{hi}Hz",lambda i:measure(X[i-pre:i+post],fs,band_hz=(lo,hi)).tau_s*1e3)
+for pre,post in ((100,600),(20,160)):
+    for lo,hi in ((10,200),(10,60),(20,80)):
+        show(f"LS   -{pre}/+{post} {lo}-{hi}Hz",lambda i:ls(i,pre,post,lo,hi)[0])
+def lr(i,lo,hi): m=measure(X[i-100:i+600],fs,band_hz=(lo,hi)); return np.log(m.amp[0]/m.amp[1])
+for lo,hi in ((10,200),(10,25),(20,60),(40,100)): show(f"log loudness ratio {lo}-{hi}Hz",lambda i:lr(i,lo,hi))
+amp=np.mean(a,1); print("loudness at 1 m: L med %.0f (sd %.1f dB) R med %.0f (sd %.1f dB)"%(np.median(amp[Lw]),np.std(20*np.log10(amp[Lw])),np.median(amp[R]),np.std(20*np.log10(amp[R]))))
