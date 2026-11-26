@@ -203,3 +203,16 @@ Append-only. Newest at the bottom. One entry per Claude session.
 - **Decided with the team:** Kaszti: geophones out of the tight cups and free on the floor; reprint the base; a collar with three pins; one lever for both.
 - **Left open:** the three SM-24 sizes (the model uses the datasheet); a test print; whether free geophones measure better (not tested); the coin test. The FreeCAD MCP tools never loaded in this session; the bridge was driven with a token Kaszti gave.
 - **Next session should:** put the measured sizes into `geo_lock.py`, rerun `geo_lock_build.py`, and print the test lock.
+
+## 2026-11-26 (pc-10, off day)
+- **Did:**
+  - Lab on pc-10: the UI build predated the Home dashboard and the one-click launcher was never installed here. Made `.venv` (Python 3.12, `ml` and `lab`), rebuilt the UI, Kaszti installed the shortcuts.
+  - Recordings with the S3 rig (all in `Recordings`, 0 lost, validated): one-side walks L `_01`, R `_02`, coin test left geophone `_03`, right geophone `_04`, alternating series L `_05`, R `_06`, L `_07`, R `_08` (60 s each, mixed distances up to about 4 m).
+  - Coin test: **ch0 is the right geophone** (ch0 first by 0.83 ms at the right one, ch1 first by 0.62 ms at the left one). Loudness differs only about 15 % even beside a geophone.
+  - Lab Locate rebuilt (Kaszti asked for all three changes): ch0 = right in code, *Swap* also on Home; timing first (> 0.1 ms, |cc| ≥ 0.9), else 1.5 times louder, else same; zero at 0 ms; new step detector (each frequency against its own 3 s median, broadband score, 3 sigma plus an energy check at 1.5 times the quiet level), window −50/+150 ms; the room sim has ch0 on the right too; radar lights the walk's side, shows the walk's steps (solid = clearly first) and "2 of 3". Replay of the six walks: 408 steps, 267 right, 31 wrong, 110 no side (90 % of sided; old rule 52 %), in-sample limits. [[EXP-005 Timing first on one-side walks]]; the "first as the first question" row of [[Locate ideas parked]] marked as brought back.
+  - Launcher fix: a left-over app-window Edge process made the new window exit at once and the launcher stopped its fresh server. Now it closes stale app windows and waits on the whole profile.
+- **Playbooks:** ml-training, vault-conventions, verify, wrap-up. L0 gate: one ruff round on `scratch/steps` (fixed). Verify: **FLAG**, F-261126-77de (med, soak start-up host losses, pre-existing: 888 with the old code, 1371 and 1936 with the new), F-261126-8a18 and F-261126-c36e (low), not fixed. Locate tests 47 passed; full Lab suite 675 passed, 4 known pc-10 failures.
+- **Decided with the team:** Kaszti: one side per recording, 60 s, alternating; timing first, we need the precision; ch0 = right in code with a swap always at hand (the case placement decides the sides); the zero point at 0 ms; make the radar more accurate and clear.
+- **Left open:** the radar not yet looked at by a person; sidecars of `_01` to `_04` give ch0 the left position (written before the coin test); distances not labelled; the 90 % is in-sample; soak flag.
+- **Next session should:** ask Kaszti how the radar looks on the real board, then record a labelled distance series (1 to 4 m, left and right) on another day and score it with today's limits unchanged.
+

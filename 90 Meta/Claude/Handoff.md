@@ -1,39 +1,37 @@
 ---
 type: handoff
-updated: 2026-11-24
+updated: 2026-11-26
 ---
 # Handoff
 
 **Read this first every session.** It's the current state in under a page. Rewrite it at the end of each session; don't append.
 
-## Where we are (2026-11-24, pc-10 after EP-LAPTOP)
-- **Geophone lock modelled, not printed** (`hardware/case-v1/`, [[OTIO case v1]]): the geophones stand on the floor through Ø32 mm holes; one lever lifts and clamps both for travel. 43 CAD checks pass. It uses **datasheet sizes** (Ø25.4 × 32 mm) until Kaszti measures the real SM-24s. Replaces the press-fit cups, so the base must be reprinted.
-- To rebuild: change `G` in `geo_lock.py`, then run `geo_lock_build.py` in FreeCAD (Macro → Execute, or the MCP bridge). It makes its own document and leaves `case_v1` alone.
-- **EP-LAPTOP is a real clone.** Everything is committed and pushed. Other machines: pull, then `rzlab build-ui`.
-- **The Lab opens on Home** (for the OTIO judges): a Connect ring that becomes a bento dashboard: radar, device health, session, heat map, vibration line, tested so far. Results come from `50 Experiments/` (`GET /api/home/results`); simulated data says SIMULATION. The eight pages are under "Lab": Capture, Data, Test.
-- **Locate rule:** louder (1.10 / 0.93), else first, else front, back or far. 26 of 32 known steps, **in-sample** ([[EXP-004 Louder then first on the recorded steps]]). Good at 1 m left and right; front/back at 1 m is weak (12 of 30 in round 1); at 2 m mostly no side.
-- **Rig:** channels in anti-phase, **coin test not done**. The geophone pair did not move alike at about 09:11 and at about 12:10, when the case was probably being built. The health ring shows it. Save the reference (Home → Case position) when the case is in place.
-- **Retro 2026-W48 done:** P-001, P-002, P-003 applied.
+## Where we are (2026-11-26, pc-10, off day)
+- **Locate rebuilt on real walks** ([[EXP-005 Timing first on one-side walks]]). Coin test: **ADC ch0 is the right geophone**; that's now the default in code, and *Swap left and right* is on Home and Locate (the case's placement decides). Rule: **heard first** (> 0.1 ms, |cc| ≥ 0.9), else 1.5 times louder, else front/back/far; zero point 0 ms. New step detector: each frequency against its own 3 s median, broadband score, 3 sigma, plus an energy check (1.5 times quiet). On six one-side walks: **267 of 298 sided steps right (90 %), 110 of 408 no side; the old rule got 52 %**. The limits are in-sample; one person, floor and day; distances not labelled.
+- **The radar** lights the walk's side (2 of the last 3 steps), shows the walk's steps (solid = clearly first, hollow = not) and "2 of 3". Not yet looked at by a person on the board.
+- **pc-10 Lab:** `.venv` (Python 3.12) and the desktop shortcut now exist. Launcher fixed: a left-over app-window Edge process used to make it stop its fresh server.
+- **Recordings 2026-11-26** in `Recordings` (data root), sidecars in `data/`: walks `_01` L, `_02` R, `_05` L, `_06` R, `_07` L, `_08` R; coin taps `_03` (left geophone), `_04` (right). Sidecars `_01` to `_04` give ch0 the **left** position (written before the coin test); `_05` to `_08` are right.
+- **Geophone lock:** lever and cam ring are one printed part now (`out/geo_lock_ring_lever.stl`); the printed base stays. Renders still show the old lever until the macro runs in the FreeCAD GUI.
 - **OTIO Veszprém is Monday 2026-11-30, the next work day.**
 
 ## Next up
 | Who | What |
 | --- | --- |
-| Kaszti | **Geophone lock:** measure the SM-24 (body diameter in two places, bottom shape, smooth height from the bottom); print the test (`fit_test_geo_lock_base.stl`, one cage, one plain ring, one collar), then the base. Thin geophone leads with a slack loop |
-| Kaszti | Case: check the Home health (pair alike?), save the reference. Coin test. Round 2 with `locate-spots-v1` on the Record page (needs a data root, a pseudonym and consent). D-027: side only? Home page feedback or layout template; English or Hungarian for the judges? |
-| Kaszti + Viktor | OTIO: mats 1 m left and right, case fixed, FRONT marked, rehearsal with other people |
+| Kaszti | Look at the radar on the board and say what to change. Save the good state again (Home → Case position): the quiet level is measured differently now. Mark FRONT on the case so swap is never needed at OTIO |
+| Kaszti | A labelled distance series on another day: 1, 2, 3, 4 m, left and right, 60 s each, plus front and back walks (should be "no side") |
+| Kaszti + Viktor | OTIO: mats left and right, case fixed, rehearsal with other people |
 | Viktor | Firmware README pin map vs the hackathon guide. Review `firmware/rig-s3` |
-| Claude | Put the measured sizes into `geo_lock.py` and rebuild. Then compare cups against free geophones on the same marked spots. Score round 2 with limits fixed as they are (EXP-003); convert the captures once consent is given |
+| Claude | Score the distance series with today's limits unchanged (the first held-out number). Ask whether to fix the `_01` to `_04` sidecar positions. Look at F-261126-77de (soak start-up losses) |
 
 ## Open flags
-- `ledger.py list --open`: Lab 4c, sim people, Lab 7 (wait for a re-verify), F-261101-b2c0, F-261102-f78b, F-261103-e4ed, F-261123-dab8.
+- New: F-261126-77de (med, soak loses host samples in its first 2 s; already 888 with the old code, 1371 and 1936 with the new detector), F-261126-8a18 (soak measures the venv stub), F-261126-c36e (re-save the good state), F-261126-26b1 (correction: I started a stale UI build).
+- Older: Lab 4c, sim people, Lab 7, F-261101-b2c0, F-261102-f78b, F-261103-e4ed, F-261123-dab8. `ledger.py retro-due` says a retro is due (a correction): run `retro` at the next natural break.
 
 ## Watch out
-- **FreeCAD bridge (pc-10):** its token changed, so the saved MCP entry is refused until Kaszti updates it. Never write the token in the repo.
-- **Cam ring and rod:** keep x = 24 to 36 mm of the board free, and 6.5 mm of board edge under each ring.
-- `scratch/prefboard.jpg` (7 MB) stays out of git and only on pc-10.
-- The new Stop gate (P-002) works from the next session start on.
-- `python` on PATH is Espressif's 3.11; the Lab runs on `Python312\Scripts\rzlab.exe`. The Lab server stops with the Claude session that started it.
-- Known Lab test failures here: two symlink tests; `test_soak_end_to_end_smoke` only in full runs; `test_runner_produces_90_labelled_passes_per_person` is flaky (1 of 5 also on untouched code).
-- Raw captures: `%LOCALAPPDATA%\rzlab\captures\` (hashes in EXP-002). Removed ideas: [[Locate ideas parked]].
+- After a pull on any machine: `rzlab build-ui` (pc-10 served a UI older than the Home dashboard). Check the static build time against the last `tools/lab/web` commit.
+- The Locate detector needs about 1.7 s of signal after a connect before it reports steps.
+- `!` commands run in Git Bash: use forward slashes in paths.
+- `python` on PATH is Espressif's 3.11; the Lab runs from `.venv` (launcher) or `Python312\Scripts\rzlab.exe`.
+- Known Lab test failures on pc-10: two symlink tests, `test_soak_end_to_end_smoke` (also alone, see the flag), `test_runner_produces_90_labelled_passes_per_person` (flaky); `test_switching_transport_gives_fresh_accounting` failed once in a full run, passed alone 3 of 3.
+- `scratch/prefboard.jpg` (7 MB) stays out of git. FreeCAD bridge token on pc-10 changed: never write it in the repo.
 - Accepted decisions are hook-locked: propose a new one with `supersedes`.
