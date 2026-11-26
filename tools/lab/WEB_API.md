@@ -1391,13 +1391,18 @@ Job errors are reported in the job (`state: "error"`, `error: {code, message}`),
 ## 15. Locate (which side a step came from)
 
 Locate finds steps on `adc_raw` (both ADC channels) and says for each one **left**, **right** or **same** (front, back or
-too far to tell): clearly louder on one side (ch0/ch1 above 1.10 or below 0.93), else clearly heard first on one side (more
-than 0.5 ms), else the same. No calibration, angle or distance. `core/locate.py` has the rule. Display maths only (D-017): no
-pack uses it. Channel 0 is the left geophone, channel 1 the right one, unless `swap_sides` is on.
+too far to tell): clearly heard first on one side (more than 0.1 ms, timing peak |cc| at least 0.9), else much louder on one
+side (ch0/ch1 above 1.5 or below 1/1.5), else the same (2026-11-26, EXP-005). No calibration, angle or distance.
+`core/locate.py` has the rule. Display maths only (D-017): no pack uses it. On the S3 rig channel 0 is the **right**
+geophone and channel 1 the left one (coin test 2026-11-26); `swap_sides` turns them round when the case is placed the
+other way.
 
-A step window (50 ms before the onset to 300 ms after) that holds a lost sample is not located: it is counted in
-`skipped_gaps`, and so is a loud block in the ~60 ms after a gap, where no onset can be told. A window with a clipped
-sample (ADC full scale) is not located either: `skipped_clipped`.
+Steps are found in 32 ms frames every 16 ms: each frequency (20 to 700 Hz) against its own median of the last 3 s, the
+median of those log ratios over the band, summed over both channels; a step is that score 3 robust sigmas above its level
+of the last 0.5 s in a frame at least 1.5 times as strong as the quiet level. The detector needs about 1.7 s of signal after
+a connect or a restart before it reports steps. A step window (50 ms before the onset frame to 150 ms after) that holds a
+lost sample is not located: it is counted in `skipped_gaps`. A window with a clipped sample (ADC full scale) is not
+located either: `skipped_clipped`.
 
 ### Events (WebSocket)
 
@@ -1405,9 +1410,10 @@ sample (ADC full scale) is not located either: `skipped_clipped`.
   skipped_clipped, noise_rms, fs_hz}`. Sent at start-up, once a second while data flows, after every step and command.
   `health`: `{rest: [ch0, ch1] (median codes over 2 s), quiet (noise floor, codes), agree (share of the last 20 steps where
   the geophones move alike, null before 5), agree_n, baseline: null | {rest, quiet, saved}, warnings: [text]}`.
-- `locate_step`: `{type, id, index (adc_raw sample index of the onset block), epoch, side: "left"|"right"|"same",
-  reason: "louder"|"first"|"same", walk_side (majority of the walk's last 3 steps), walk_steps, tau_s (arrival ch1 - ch0),
-  cc (-1..1; negative = channels in anti-phase), amp: [ch0, ch1] (band rms, codes), ratio (ch0 / ch1), agree}`.
+- `locate_step`: `{type, id, index (adc_raw sample index of the onset frame), epoch, side: "left"|"right"|"same",
+  reason: "first"|"louder"|"same", walk_side (majority of the walk's last 3 steps), walk_steps, tau_s (arrival ch1 - ch0;
+  positive: ch0 first), lead_s (how much earlier the side's geophone heard it; 0 unless reason is "first"), cc (-1..1;
+  negative = channels in anti-phase), amp: [ch0, ch1] (band rms, codes), ratio (ch0 / ch1), agree}`.
 
 ### REST
 
@@ -1418,7 +1424,8 @@ sample (ADC full scale) is not located either: `skipped_clipped`.
 | `POST /api/locate/baseline` | | the view; today's rest and quiet levels are kept as the good ones. `409 no_signal` before any data |
 | `POST /api/locate/clear` | | the view with an empty `recent` |
 
-`swap_sides` and the baseline are kept in `locate.json` next to the Lab's `config.toml` (`%APPDATA%zlab\` on Windows).
+`swap_sides` and the baseline are kept in `locate.json` next to the Lab's `config.toml` (`%APPDATA%
+zlab\` on Windows).
 
 ## 16. Home
 

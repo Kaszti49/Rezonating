@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "session": "2026-11-26_office_pc-10_06",
+  "node": "rzn-601aac",
+  "firmware": "bringup-0.3.0",
+  "start_utc": "2026-11-26T10:54:36.772Z",
+  "sample_rate": 1995,
+  "sample_rate_nominal": 2000,
+  "sample_rate_measured": 1994.8852,
+  "stream": "adc_raw",
+  "clock": "ltc6903",
+  "first_sample": 0,
+  "t_dev_us": 2878903446,
+  "loss": {
+    "device": 0,
+    "link": 0,
+    "host": 0
+  },
+  "link": "usb",
+  "kind": "continuous",
+  "channels": [
+    {
+      "ch": 0,
+      "head": "geophone/sm24",
+      "serial": "unknown",
+      "units": "V",
+      "scale": 3.5762788286319847e-08,
+      "gain": 4,
+      "position_m": [
+        0.0615,
+        0.0
+      ]
+    },
+    {
+      "ch": 1,
+      "head": "geophone/sm24",
+      "serial": "unknown",
+      "units": "V",
+      "scale": 3.5762788286319847e-08,
+      "gain": 4,
+      "position_m": [
+        -0.0615,
+        0.0
+      ]
+    }
+  ],
+  "protocol": "walk-pass-v1",
+  "notes": "rzlab: frames=121337; rate_source=fit; ended=stop\nAlternating side series, recording 2 of 4: RIGHT only, 60 s, mixed distances. ch0 = right, ch1 = left (coin test 2026-11-26_03/_04).",
+  "labels": []
+}

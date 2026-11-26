@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Locate: which side did a step come from? Louder, else first, else front/back/far. WEB_API.md section 15.
+  // Locate: which side did a step come from? First, else much louder, else front/back/far. WEB_API.md section 15.
   import { app } from '../lib/store.svelte';
   import { locateApi, REASON_TEXT, SIDE_WORD } from '../lib/locate';
   import LocateRadar from './LocateRadar.svelte';
@@ -47,7 +47,7 @@
           <dt>Loudness</dt>
           <dd>ch0 {Math.round(last.amp[0])}, ch1 {Math.round(last.amp[1])} (ratio {last.ratio.toFixed(2)})</dd>
           <dt>Time gap</dt>
-          <dd>{Math.round(last.tau_s * 1e6)} µs</dd>
+          <dd>{last.reason === 'first' ? `${SIDE_WORD[last.side].toLowerCase()} heard it ${Math.round(last.lead_s * 1e6)} µs first` : `${Math.round(last.tau_s * 1e6)} µs (not clear)`}</dd>
         </dl>
       {:else}
         <p class="muted">Waiting for a step…</p>
@@ -75,8 +75,9 @@
         <button onclick={clearTrail}>Clear</button>
       </div>
       <p class="small muted">
-        Louder on one side: that side. Neither louder, but heard first on one side: that side. Else front, back or too far
-        (two geophones on one line can't tell which). Swap if the case is turned round.
+        Heard first on one side: that side. No clear timing, but 1.5 times louder on one side: that side. Else front, back
+        or too far (two geophones on one line can't tell which). The case decides which side is which: swap when it is
+        turned round. On the radar, solid dots were clearly first, hollow ones were not.
       </p>
     </div>
 

@@ -26,6 +26,15 @@ function Test-Server {
     try { (Invoke-RestMethod "$base/api/health" -TimeoutSec 1).ok -eq $true } catch { $false }
 }
 
+# Browser processes of the Lab's own app-window profile. A new window with this profile is handed to a process that
+# already runs it, and the one we started exits at once (2026-11-26: that stopped the server right after it started).
+$profileDir = Join-Path $state 'app-window'
+function Get-AppWindow {
+    $needle = "--user-data-dir=`"$profileDir`""
+    @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -and $_.CommandLine.Contains($needle) })
+}
+
 # 1. First run on this machine: Python environment and the built UI
 if (-not (Test-Path $py) -or -not (Test-Path $static)) {
     $setup = Join-Path $PSScriptRoot 'Setup-RezonatingLab.ps1'
@@ -36,9 +45,11 @@ if (-not (Test-Path $py) -or -not (Test-Path $static)) {
     }
 }
 
-# 2. The server: reuse one that is already running, otherwise start it hidden
+# 2. The server: reuse one that is already running, otherwise start it hidden. Without a server, a left-over app window
+# shows nothing: close it first, so the new window opens on the new server.
 $ownServer = $null
 if (-not (Test-Server)) {
+    Get-AppWindow | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     "---- $(Get-Date -Format s) start" | Out-File -Append -Encoding utf8 $log
     $ownServer = Start-Process $py -ArgumentList '-m', 'rezonating_lab.cli', 'serve', '--port', "$Port", '--sim-room' `
         -WorkingDirectory $repo -WindowStyle Hidden -PassThru `
@@ -86,9 +97,11 @@ if (-not $browser) {
     Show-Message "Opened the Lab in your browser. The server keeps running; stop it with the 'Stop Rezonating Lab' shortcut."
     exit 0
 }
-$profileDir = Join-Path $state 'app-window'
 $win = Start-Process $browser -ArgumentList "--app=$url", "--user-data-dir=`"$profileDir`"", '--window-size=1500,950', '--no-first-run' -PassThru
 $win.WaitForExit()
+# the window may live in another process of the same profile: wait until none is left
+Start-Sleep -Seconds 3
+while ((Get-AppWindow).Count -gt 0) { Start-Sleep -Seconds 2 }
 
 # 5. Window closed: stop the server we started (politely: disconnect first). Never while a recording runs.
 if ($ownServer) {

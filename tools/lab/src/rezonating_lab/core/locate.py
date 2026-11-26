@@ -1,17 +1,21 @@
 """Where did a step come from: left, right, or neither (front, back or too far). Two geophones, one simple rule
-(Kaszti, 2026-11-24):
+(Kaszti, 2026-11-26: timing first, we need the precision):
 
-1. The geophone that hears the step clearly **louder** is on that side.
-2. If neither is clearly louder, the geophone that hears it clearly **first** is on that side.
+1. The geophone that hears the step clearly **first** is on that side.
+2. If neither is clearly first, the geophone that hears it **much louder** (1.5 times) is on that side.
 3. Otherwise it is "same": the step came from the front, the back, or too far away to tell. Two geophones on a line
    cannot separate those three.
 
-No position, angle, distance or calibration. Display maths for the Lab: never used by a pack (D-017). ADC channel 0 is
-the left geophone and channel 1 the right one, unless the sides are swapped.
+No position, angle, distance or calibration. Display maths for the Lab: never used by a pack (D-017). On the S3 rig
+ADC channel 0 is the **right** geophone and channel 1 the left one (coin test 2026-11-26). Which side is which depends
+on how the case is placed: *Swap left and right* turns them round.
 
-How the limits were chosen (P-001): on the recorded steps of 2026-11-24 (EXP-004, one person, one floor). The numbers
-they give there are **in-sample**: 26 of 32 steps with a known side right, 1 wrong, 5 "same". Loudness alone gave 19
-of 32, so "first" stays as the second question. Ideas taken out are logged in ``60 Research/Locate ideas parked.md``.
+How the limits were chosen (P-001), on the one-side walks of 2026-11-26 (EXP-005: one person, one floor, six walks of
+60 s, three per side, steps up to about 4 m away): the zero point (0 ms) lies between the left and right walks' medians
+when the limit is picked on the other five walks each time (79 % of 447 steps, leave one walk out). ``FIRST_S`` and
+``LOUDER`` were picked on all 413 steps the live detector found there, so their numbers are **in-sample**: 69 % of the
+steps get a side by timing, 89 % of those right; loudness at 1.10 was right for only 47 % of the rest, at 1.5 for 9
+of 9. The rule of 2026-11-24 (louder, else first) got 52 % of its sided steps right on the same walks.
 """
 
 from __future__ import annotations
@@ -29,11 +33,11 @@ TAPER = 0.1  # Tukey window: flat but for 5 % at each end (a Hann window weighte
 MAX_LAG_S = 6.15e-3  # the cross-correlation searches this far; a peak on the edge is not trusted
 UPSAMPLE = 16  # cross-correlation resolution: 1/16 sample before the parabolic fit
 
-LEFT_ABOVE = 1.10  # ch0/ch1 loudness above this: left
-RIGHT_BELOW = 0.93  # below this: right
-ZERO_TAU_S = -0.2e-3  # ch1 - ch0 arrival of a step that is neither left nor right
-FIRST_S = 0.5e-3  # clearly first: more than this before the other
+CH0_SIDE = "right"  # the S3 rig: ADC channel 0 is the right geophone (coin test 2026-11-26), unless swapped
+ZERO_TAU_S = 0.0  # ch1 - ch0 arrival of a step that is neither left nor right
+FIRST_S = 0.1e-3  # clearly first: more than this before the other
 FIRST_MAX_S = 3.0e-3  # and not more than this: larger is no arrival difference across 123 mm
+LOUDER = 1.5  # much louder: the ch0 / ch1 loudness above this (or below 1 / this) when the timing is not clear
 MIN_CC = 0.9  # the timing peak must be this clear for "first" to mean anything
 ALIKE_MIN = 0.8  # |zero-lag correlation| from here on: the two geophones move alike (rig health)
 WALK_STEPS = 3  # a walk's side is the majority of its last steps
@@ -43,7 +47,7 @@ WALK_STEPS = 3  # a walk's side is the majority of its last steps
 class StepMeasure:
     """Measurements of one step window."""
 
-    tau_s: float  # arrival ch1 - ch0; negative: channel 1 (right) was first
+    tau_s: float  # arrival ch1 - ch0; positive: channel 0 was first
     cc: float  # normalised cross-correlation at that delay, -1..1 (negative: channels in anti-phase)
     amp: tuple[float, float]  # band rms per channel (codes)
     lag_limited: bool  # the peak sat on the search edge
@@ -55,8 +59,9 @@ class StepFix:
     """One step's answer."""
 
     side: str  # "left" | "right" | "same" (front, back or too far)
-    reason: str  # "louder" | "first" | "same"
+    reason: str  # "first" | "louder" | "same"
     tau_s: float
+    lead_s: float  # how much earlier the side's geophone heard it (0 for "same" or "louder")
     cc: float
     amp: tuple[float, float]
     ratio: float  # ch0 / ch1 loudness
@@ -131,14 +136,15 @@ def measure(x: np.ndarray, fs_hz: float) -> StepMeasure:
 
 
 def decide(m: StepMeasure, swap_sides: bool = False) -> StepFix:
-    """Left, right or the same: louder, else first, else the same."""
+    """Left, right or the same: first, else much louder, else the same."""
     ratio = (m.amp[0] + 1e-12) / (m.amp[1] + 1e-12)
-    lead = m.tau_s - ZERO_TAU_S  # positive: channel 0 (left) was first
+    lead = m.tau_s - ZERO_TAU_S  # positive: channel 0 was first
     clear = not m.lag_limited and abs(m.cc) >= MIN_CC and FIRST_S < abs(lead) <= FIRST_MAX_S
-    if ratio > LEFT_ABOVE or ratio < RIGHT_BELOW:
-        side, reason = ("left" if ratio > LEFT_ABOVE else "right"), "louder"
-    elif clear:
-        side, reason = ("left" if lead > 0 else "right"), "first"
+    ch1_side = "left" if CH0_SIDE == "right" else "right"
+    if clear:
+        side, reason = (CH0_SIDE if lead > 0 else ch1_side), "first"
+    elif ratio > LOUDER or ratio < 1.0 / LOUDER:
+        side, reason = (CH0_SIDE if ratio > 1.0 else ch1_side), "louder"
     else:
         side, reason = "same", "same"
     if swap_sides and side != "same":
@@ -147,6 +153,7 @@ def decide(m: StepMeasure, swap_sides: bool = False) -> StepFix:
         side=side,
         reason=reason,
         tau_s=m.tau_s,
+        lead_s=abs(lead) if reason == "first" else 0.0,
         cc=m.cc,
         amp=m.amp,
         ratio=ratio,

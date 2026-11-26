@@ -32,12 +32,20 @@ pages are under **Lab**, in three groups: Capture, Data, Test. API: `WEB_API.md`
 
 ## Locate page
 
-Says **LEFT**, **RIGHT** or **FRONT, BACK or FAR** for each step: clearly louder on one side, else clearly heard first on one
-side, else neither. No calibration, angle or distance: two geophones on a line can't tell front from back, and far steps are
-the same on both. If the case is turned round, press *Swap left and right*. *Save as the good state* keeps the rest and quiet
-levels, and the page warns when they move. The rule is in `src/rezonating_lab/core/locate.py`; API: `WEB_API.md` section 15.
+Says **LEFT**, **RIGHT** or **FRONT, BACK or FAR** for each step: clearly heard first on one side, else much louder (1.5
+times) on one side, else neither. Timing comes first (2026-11-26, EXP-005: on six one-side walks it put 90 % of its sided steps
+on the right side, against 52 % for the old louder-then-first rule). No calibration, angle or distance: two geophones on a
+line can't tell front from back, and far steps are the same on both. On the S3 rig ADC channel 0 is the **right** geophone.
+The case's placement decides which side is which: *Swap left and right* (Home or Locate page) turns them round.
+*Save as the good state* keeps the rest and quiet levels, and the page warns when they move. The rule is in
+`src/rezonating_lab/core/locate.py`; API: `WEB_API.md` section 15.
 
-- **Small steps:** the detector compares each 10 ms with the quietest 20 % of the last 5 s.
+The radar lights the **walk's** side (two of its last three steps agree), which is steadier than one step, and shows the
+walk's steps as dots: solid when that geophone was clearly first (0.3 ms or more), hollow when not.
+
+- **Finding steps in noise:** each frequency is measured against its own usual level of the last 3 s, so steady hum and the
+  geophones' different sensitivity drop out; a step is a knock that lifts most frequencies at once (speech lifts a few) and
+  is at least 1.5 times as strong as the quiet level. It needs about 1.7 s of signal after a connect.
 - **Skipped steps** are counted, not shown: windows with lost samples, and windows that reached ADC full scale.
 - **Testing it:** record with the protocol `locate-spots-v1` (Record page), twice; only the second round gives an accuracy.
 - **Without hardware:** `rzlab serve --sim-room` (the launcher's default) makes the Simulator connection walk a person

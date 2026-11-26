@@ -2,8 +2,9 @@
 ``rzlab serve --sim-room``).
 
 Each step has a position on the floor. Its burst reaches each geophone after ``r / c`` and with an amplitude that
-falls as ``1 / r``; the higher tone fades faster with distance. Geometry as in ``core/locate.py``: channel 0 at
-x = -d/2 (left), channel 1 at +d/2 (right), +y is front. Plausible, not physical: this is test input, not a model.
+falls as ``1 / r``; the higher tone fades faster with distance. Geometry as on the S3 rig (``core/locate.py``):
+channel 0 at x = +d/2 (right), channel 1 at -d/2 (left), +y is front. Plausible, not physical: this is test input,
+not a model.
 The ground truth (``--truth``) carries ``x_m`` and ``y_m`` for every step.
 """
 
@@ -75,7 +76,7 @@ class RoomAdcSignal(AdcSignal):
             if step.t_s > t_b:
                 break
             assert isinstance(step, RoomStep)
-            for ch, (gx, sens) in enumerate(((-half, 1.0), (half, ROOM_CH1_SENS))):
+            for ch, (gx, sens) in enumerate(((half, 1.0), (-half, ROOM_CH1_SENS))):
                 r = max(0.15, math.hypot(step.x_m - gx, step.y_m))
                 dt = t - step.t_s - r / ROOM_C_MPS
                 m = (dt >= 0) & (dt <= BURST_LENGTH_S)

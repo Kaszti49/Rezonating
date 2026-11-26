@@ -5,7 +5,7 @@
   import { api, type ConnectRequest } from '../lib/api';
   import { app } from '../lib/store.svelte';
   import type { PortInfo } from '../lib/types';
-  import { locateApi, SIDE_WORD, REASON_TEXT } from '../lib/locate';
+  import { locateApi, SIDE_WORD, REASON_TEXT, walkAgreement } from '../lib/locate';
   import { deviceChecks, reducedMotion } from '../lib/home';
   import Core from './home/Core.svelte';
   import Counter from './home/Counter.svelte';
@@ -36,7 +36,10 @@
   const steps = $derived(app.locateSteps);
   const last = $derived(steps.length ? steps[steps.length - 1] : null);
   const sides = $derived(app.locate?.sides ?? { left: 0, right: 0, same: 0 });
-  const why = $derived(last ? REASON_TEXT[last.reason] + (last.walk_steps >= 2 ? `, this walk: ${SIDE_WORD[last.walk_side].toLowerCase()}` : '') : '');
+  /** The walk's side once two of its last three steps agree, else the last step's. */
+  const shown = $derived(last ? (last.walk_steps >= 2 && last.walk_side !== 'same' ? last.walk_side : last.side) : null);
+  const why = $derived(last ? [walkAgreement(steps), `last step ${REASON_TEXT[last.reason]}`].filter(Boolean).join(' · ') : '');
+  const swapped = $derived(app.locate?.swap_sides ?? false);
   const total = $derived(sides.left + sides.right + sides.same);
 
   /** Change the layout as one morph: the ring moves from the middle into its tile (View Transitions; else at once). */
@@ -102,6 +105,10 @@
   async function disconnect(): Promise<void> {
     menu = false;
     await app.disconnect();
+  }
+
+  async function swapSides(): Promise<void> {
+    await app.run('locate', async () => (app.locate = await locateApi.swap(!swapped)));
   }
 
   async function saveReference(): Promise<void> {
@@ -180,10 +187,15 @@
   {:else}
     <div class="bento">
       <article class="tile radar" style="--i:0">
-        <h2>Where the step came from</h2>
+        <h2>
+          Where the step came from
+          <button class="save swap" onclick={swapSides} title="The case decides which side is which: swap when it is turned round">
+            {swapped ? 'left and right swapped' : 'swap left and right'}
+          </button>
+        </h2>
         <div class="fill"><LocateRadar /></div>
-        <div class="answer" class:l={last?.side === 'left'} class:r={last?.side === 'right'}>
-          <b>{last ? SIDE_WORD[last.side] : 'Waiting for a step'}</b>
+        <div class="answer" class:l={shown === 'left'} class:r={shown === 'right'}>
+          <b>{shown ? SIDE_WORD[shown] : 'Waiting for a step'}</b>
           <span class="muted">
             {last ? why : 'walk past the device'}
           </span>
@@ -565,6 +577,9 @@
     font-size: 11.5px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .swap {
+    margin-left: auto;
   }
   .save {
     justify-self: end;

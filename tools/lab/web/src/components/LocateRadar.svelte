@@ -1,9 +1,11 @@
 <script lang="ts">
   // The Locate radar: the device in the middle, a left and a right area, and front/back/far. It shows a side, not a
-  // position: the rings and the sweep are a picture. Used by the Home page and the Locate page.
+  // position: the rings and the sweep are a picture. The area that lights up is the walk's side (two of its last
+  // three steps), which is steadier than one step; the walk's steps are dots in their area, solid when the timing was
+  // clear, hollow when it was not. Used by the Home page and the Locate page.
   import { onMount } from 'svelte';
   import { app } from '../lib/store.svelte';
-  import { locateApi, type LocateStep, type Side } from '../lib/locate';
+  import { CLEAR_LEAD_S, locateApi, walkAgreement, walkSteps, type LocateStep, type Side } from '../lib/locate';
   import { reducedMotion } from '../lib/home';
 
   interface Props {
@@ -99,15 +101,26 @@
       g.globalAlpha = 1;
     }
 
-    // the last step lights up its area: left and right are 120 degrees wide, front and back 60
+    // the walk's side lights up its area (left and right are 120 degrees wide, front and back 60); a single step,
+    // or a walk without a majority, only faintly
     const steps = app.locateSteps;
     for (const s of steps) if (!seenAt.has(s.id)) seenAt.set(s.id, now);
     const last = steps.length ? steps[steps.length - 1] : null;
     if (last) {
       const age = now - (seenAt.get(last.id) ?? 0);
       const al = Math.max(0, 1 - age / FADE_MS);
-      if (al > 0) for (const [a0, a1] of sectors(last.side)) sector(g, cx, cy, R, a0, a1, colour(last.side), 0.5 * al);
+      const sure = last.walk_steps >= 2 && last.walk_side !== 'same';
+      const lit: Side = sure ? last.walk_side : last.side;
+      if (al > 0) for (const [a0, a1] of sectors(lit)) sector(g, cx, cy, R, a0, a1, colour(lit), (sure ? 0.55 : 0.25) * al);
     }
+
+    // the walk's steps, oldest first, along an arc in their area
+    const walk = walkSteps(steps);
+    walk.forEach((s, i) => {
+      const age = now - (seenAt.get(s.id) ?? now);
+      const al = Math.max(0.15, 1 - age / (2 * FADE_MS));
+      dot(g, s, i, walk.length, cx, cy, R, colour(s.side), al, i === walk.length - 1);
+    });
 
     if (ripples && !still) {
       for (const s of steps) {
@@ -136,6 +149,23 @@
       g.fill();
     }
 
+    // how sure the walk's side is: "2 of 3 steps" under the device
+    const agreement = walkAgreement(steps);
+    if (agreement && last) {
+      g.font = '600 11px system-ui, sans-serif';
+      g.fillStyle = colour(last.walk_side);
+      g.textAlign = 'center';
+      g.textBaseline = 'top';
+      g.fillText(agreement, cx, cy + dr + 6);
+    }
+    if (app.locate?.swap_sides) {
+      g.font = '600 10px system-ui, sans-serif';
+      g.fillStyle = muted;
+      g.textAlign = 'center';
+      g.textBaseline = 'bottom';
+      g.fillText('left and right swapped', cx, cy - dr - 6);
+    }
+
     if (labels) {
       g.font = '600 11px system-ui, sans-serif';
       g.fillStyle = muted;
@@ -148,6 +178,43 @@
       g.textAlign = 'left';
       g.fillText('RIGHT', cx + R + 8, cy);
     }
+  }
+
+  /** One step of the walk: solid when it was clearly heard first, hollow when it was not (or only louder). */
+  function dot(
+    g: CanvasRenderingContext2D,
+    s: LocateStep,
+    i: number,
+    n: number,
+    cx: number,
+    cy: number,
+    R: number,
+    col: string,
+    alpha: number,
+    newest: boolean,
+  ): void {
+    const d = Math.PI / 180;
+    const spread = 70 * d; // the dots share 70 degrees of their area, oldest at the top
+    const f = n > 1 ? i / (n - 1) - 0.5 : 0;
+    const a = s.side === 'left' ? Math.PI - f * spread : s.side === 'right' ? f * spread : (i % 2 ? 90 : -90) * d;
+    const r = s.side === 'same' ? R * 0.62 : R * 0.72;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    const size = newest ? 7 : 5;
+    const clear = s.reason === 'first' && s.lead_s >= CLEAR_LEAD_S;
+    g.save();
+    g.globalAlpha = alpha;
+    g.beginPath();
+    g.arc(x, y, size, 0, Math.PI * 2);
+    if (clear) {
+      g.fillStyle = col;
+      g.fill();
+    } else {
+      g.lineWidth = 2;
+      g.strokeStyle = col;
+      g.stroke();
+    }
+    g.restore();
   }
 
   function sectors(side: Side): [number, number][] {

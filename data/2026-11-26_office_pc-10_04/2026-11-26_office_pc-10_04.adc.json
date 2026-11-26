@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "session": "2026-11-26_office_pc-10_04",
+  "node": "rzn-601aac",
+  "firmware": "bringup-0.3.0",
+  "start_utc": "2026-11-26T10:47:34.262Z",
+  "sample_rate": 1995,
+  "sample_rate_nominal": 2000,
+  "sample_rate_measured": 1994.8835,
+  "stream": "adc_raw",
+  "clock": "ltc6903",
+  "first_sample": 0,
+  "t_dev_us": 2456401345,
+  "loss": {
+    "device": 0,
+    "link": 0,
+    "host": 0
+  },
+  "link": "usb",
+  "kind": "continuous",
+  "channels": [
+    {
+      "ch": 0,
+      "head": "geophone/sm24",
+      "serial": "unknown",
+      "units": "V",
+      "scale": 3.5762788286319847e-08,
+      "gain": 4,
+      "position_m": [
+        -0.0615,
+        0.0
+      ]
+    },
+    {
+      "ch": 1,
+      "head": "geophone/sm24",
+      "serial": "unknown",
+      "units": "V",
+      "scale": 3.5762788286319847e-08,
+      "gain": 4,
+      "position_m": [
+        0.0615,
+        0.0
+      ]
+    }
+  ],
+  "protocol": "walk-pass-v1",
+  "notes": "rzlab: frames=41580; rate_source=fit; ended=stop\nCoin test: taps right next to the RIGHT geophone only, 20 s.",
+  "labels": []
+}

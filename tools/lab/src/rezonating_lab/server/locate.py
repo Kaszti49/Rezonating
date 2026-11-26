@@ -24,23 +24,10 @@ import numpy as np
 from ..core.locate import decide, measure, walk_side
 from ..link import codec
 
-BLOCK_S = 0.01  # detector block
-PRE_S = 0.05  # window before the onset block
-POST_S = 0.30  # window after it
-REFRACTORY_S = 0.40  # one step per this much time (walking: ~0.55 s between steps)
-TRIGGER_K = 5.0  # block rms over the noise floor
-RISE_K = 2.5  # block rms over the median of the blocks just before it: the tail of a step is no new step
-RISE_BLOCKS = 14  # how many blocks before it (the newest one is left out: it may hold the step's own rise)
-HP_HZ = 10.0  # detector high-pass (2nd-order Butterworth): slow drift is no step
-# Noise floor: a low percentile of the last blocks, so step tails don't lift it (the old average of "quiet" blocks sat
-# 1.6 times (up to 6) above the real floor and missed small steps, 2026-11-24).
-NOISE_PCT = 20.0
-NOISE_WIN_S = 5.0
-NOISE_EVERY = 25  # blocks between two updates of the floor
+PRE_S = 0.05  # step window before the onset frame
+POST_S = 0.15  # and after it (2026-11-26: 0.30 s took in the floor's ringing and blurred the timing)
 FULL_SCALE = 2**23  # codes; a window that touches it is clipped
-WARMUP_BLOCKS = 30
 RECENT_KEPT = 60
-SETTLE_BLOCKS = 5  # blocks to wait after the filter (re)started; a loud block in them is counted (``missed``)
 WALK_GAP_S = 2.0  # steps closer than this belong to one walk
 HEALTH_EVERY_S = 1.0  # the rig health is worked out this often
 HEALTH_WINDOW_S = 2.0  # over this much signal
@@ -49,107 +36,117 @@ REST_SHIFT = 1000.0  # codes: the rest level moved this far from the saved one (
 QUIET_FACTOR = 3.0  # the quiet level against the saved one
 AGREE_MIN = 0.7  # below this share of alike steps: a warning
 
+# Step detector (2026-11-26, EXP-005). A step is a short knock that lifts almost every frequency at once; machines are
+# steady tones and speech lifts a few harmonics. So each frequency is measured against its own usual level first.
+FRAME = 64  # samples per frame (32 ms at 2 kSPS), Hann window
+HOP = 32  # a new frame every 16 ms
+BAND_HZ = (20.0, 700.0)  # the frequencies that vote
+BG_S = 3.0  # each frequency's usual level: the median of its power over this long
+LEVEL_S = 0.5  # the score's local level: its median over this long before the frame
+SIGMA_S = 5.0  # the score's spread (robust sigma) over this long (10 s stayed deaf after loud walking)
+TRIGGER_K = 3.0  # a step: the score this many sigmas above its local level
+ENERGY_K = 1.5  # and the frame's band rms this many times the quiet level: noise lifts the shape, not the energy
+# (k = 3 alone gave 25 false steps a minute on noise with hum; with this, none in 2 min, and 406 of 410 walk steps)
+REFRACTORY_S = 0.25  # one step per this much time (walking: ~0.55 s between steps)
+MIN_BG_FRAMES = 30  # frames before the usual levels mean anything (about 0.5 s)
+BG_EVERY = 4  # the usual levels are worked out again every this many frames (64 ms; they move over seconds)
+MIN_SIGMA_FRAMES = 60  # scores before the spread means anything (about 1 s)
+NOISE_PCT = 20.0  # the quiet level (rig health): this percentile of the frames' band rms
+NOISE_WIN_S = 5.0
+
 
 class StepDetector:
-    """Online step onsets on two channels: 10 ms blocks, rms of the high-passed data against a slow noise floor and
-    against the 140 ms before it (a step rises out of what came before; ringing and handling noise don't)."""
+    """Online step onsets on two channels. Each 32 ms frame: every frequency bin's power over its own median of the
+    last 3 s (steady hum drops out, and so does a difference in the geophones' sensitivity), the median of that log
+    ratio over 20..700 Hz, summed over both channels. A step is that score ``TRIGGER_K`` robust sigmas above its own
+    level of the last 0.5 s, in a frame at least ``ENERGY_K`` times as strong as the quiet level. Needs about 1.7 s
+    of signal first. Returns the first sample of the triggering frame."""
 
     def __init__(self, fs_hz: float, k: float = TRIGGER_K) -> None:
         self.fs_hz = fs_hz
-        self.block = max(4, int(round(BLOCK_S * fs_hz)))
         self.k = k
-        w0 = 2 * math.pi * HP_HZ / fs_hz
-        alpha, cw = math.sin(w0) / math.sqrt(2.0), math.cos(w0)
-        a0 = 1 + alpha
-        self._b = ((1 + cw) / 2 / a0, -(1 + cw) / a0, (1 + cw) / 2 / a0)
-        self._a = (-2 * cw / a0, (1 - alpha) / a0)
+        self.frame = FRAME
+        self.hop = HOP
+        self.block = HOP  # onset resolution in samples
+        f = np.fft.rfftfreq(FRAME, 1.0 / fs_hz)
+        self._bins = (f >= BAND_HZ[0]) & (f <= BAND_HZ[1])
+        self._win = np.hanning(FRAME)[:, None]
+        self._wpow = float(np.sum(np.hanning(FRAME) ** 2))
+        fr = fs_hz / HOP
+        self._n_bg = max(MIN_BG_FRAMES, int(round(BG_S * fr)))
+        self._n_level = max(4, int(round(LEVEL_S * fr)))
+        self._n_sigma = max(MIN_SIGMA_FRAMES, int(round(SIGMA_S * fr)))
+        self._n_noise = max(4, int(round(NOISE_WIN_S * fr)))
         self.reset()
 
     def reset(self) -> None:
         self._buf = np.zeros((0, 2))
         self._buf_first = 0
-        self._z: list[list[float]] | None = None  # filter state per channel (transposed direct form II)
-        self._hist: deque[float] = deque(maxlen=RISE_BLOCKS + 1)
-        self._noise: float | None = None
-        self._warm: list[float] = []
-        self._recent: deque[float] = deque(maxlen=int(round(NOISE_WIN_S / BLOCK_S)))
-        self._since_floor = 0
+        self._bg = np.zeros((self._n_bg, int(self._bins.sum()), 2))  # ring of the last frames' powers
+        self._bg_n = 0  # frames written so far
+        self._usual: np.ndarray | None = None
+        self._level: deque[float] = deque(maxlen=self._n_level)
+        self._spread: deque[float] = deque(maxlen=self._n_sigma)
+        self._rms: deque[float] = deque(maxlen=self._n_noise)
+        self._sigma: float | None = None
         self._last_onset = -(10**12)
-        self._after_gap = False
-        self.missed = 0  # loud blocks right after a gap, where no onset can be told (one per gap at most)
         self.noise_rms = 0.0
 
-    def _floor(self) -> float:
-        return max(float(np.percentile(self._recent, NOISE_PCT)), 1e-9)
-
     def gap(self) -> None:
-        """The next ``feed`` is not contiguous with the last one (lost samples): drop the partial block and restart
-        the filter, so the jump is not a step."""
+        """The next ``feed`` is not contiguous with the last one (lost samples): drop the partial frame, so the jump
+        is not a step. The usual levels stay."""
         self._buf = np.zeros((0, 2))
-        self._z = None
-        self._hist.clear()
-        self._after_gap = True
 
-    def _high_pass(self, x: np.ndarray) -> np.ndarray:
-        (b0, b1, b2), (a1, a2) = self._b, self._a
-        if self._z is None:  # settled on the first sample's DC (a high-pass outputs 0 for it)
-            self._z = [[-b0 * v, b2 * v] for v in x[0].tolist()]
-        out = np.empty_like(x)
-        for ch in range(x.shape[1]):
-            z1, z2 = self._z[ch]
-            y = []
-            for v in x[:, ch].tolist():
-                o = b0 * v + z1
-                z1 = b1 * v - a1 * o + z2
-                z2 = b2 * v - a2 * o
-                y.append(o)
-            self._z[ch] = [z1, z2]
-            out[:, ch] = y
-        return out
+    def _score(self, seg: np.ndarray) -> float | None:
+        seg = seg - seg.mean(axis=0)
+        p = np.abs(np.fft.rfft(seg * self._win, axis=0))[self._bins] ** 2 + 1e-12
+        self._rms.append(float(np.sqrt(p.sum() / (FRAME * self._wpow))))  # band rms, mean of both channels (Parseval)
+        score = None
+        filled = min(self._bg_n, self._n_bg)
+        if filled >= MIN_BG_FRAMES:
+            if self._usual is None or self._bg_n % BG_EVERY == 0:
+                self._usual = np.median(self._bg[:filled], axis=0)
+            score = float(np.median(np.log(p / self._usual), axis=0).sum())
+        self._bg[self._bg_n % self._n_bg] = p
+        self._bg_n += 1
+        return score
 
     def feed(self, first: int, x: np.ndarray) -> list[int]:
-        """Samples ``x`` ((n, 2) float) at indices ``first ...`` (contiguous with the previous call unless reset).
-        Returns onset indices (start of the triggering block)."""
+        """Samples ``x`` ((n, 2) float) at indices ``first ...`` (contiguous with the previous call unless reset or
+        after ``gap``). Returns onset indices."""
         if len(x) == 0:
             return []
         if len(self._buf) == 0:
             self._buf_first = first
-        x = self._high_pass(x)
-        self._buf = np.concatenate([self._buf, x]) if len(self._buf) else x
+        self._buf = np.concatenate([self._buf, x]) if len(self._buf) else np.asarray(x, dtype=np.float64)
         out: list[int] = []
-        b = self.block
         refractory = int(REFRACTORY_S * self.fs_hz)
-        while len(self._buf) >= b:
-            blk, self._buf = self._buf[:b], self._buf[b:]
+        while len(self._buf) >= FRAME:
             idx = self._buf_first
-            self._buf_first += b
-            e = float(np.sqrt(np.mean(blk**2)))
-            before = list(self._hist)[:-1]
-            self._hist.append(e)
-            if self._noise is None:
-                self._warm.append(e)
-                self._recent.append(e)
-                if len(self._warm) >= WARMUP_BLOCKS:
-                    self._noise = self._floor()
+            score = self._score(self._buf[:FRAME])
+            self._buf = self._buf[HOP:]
+            self._buf_first += HOP
+            if score is None:
                 continue
-            self._recent.append(e)
-            self._since_floor += 1
-            if self._since_floor >= NOISE_EVERY:
-                self._since_floor = 0
-                self._noise = self._floor()
-            settled = len(before) >= SETTLE_BLOCKS
-            if self._after_gap:
-                if settled:
-                    self._after_gap = False
-                elif e > self.k * self._noise:
-                    self._after_gap = False
-                    self.missed += 1
-            rises = settled and e > RISE_K * float(np.median(before))
-            if e > self.k * self._noise and rises and idx - self._last_onset >= refractory:
-                self._last_onset = idx
-                out.append(idx)
-            self.noise_rms = self._noise
+            if len(self._level) >= self._n_level // 2:
+                rel = score - float(np.median(self._level))
+                if len(self._spread) >= MIN_SIGMA_FRAMES:
+                    if self._sigma is None or self._bg_n % BG_EVERY == 0:  # it moves over seconds, like the levels
+                        s = np.asarray(self._spread)
+                        self._sigma = 1.4826 * float(np.median(np.abs(s - np.median(s)))) + 1e-9
+                        self.noise_rms = self._quiet()
+                    strong = self._rms[-1] > ENERGY_K * self.noise_rms
+                    if rel > self.k * self._sigma and strong and idx - self._last_onset >= refractory:
+                        self._last_onset = idx
+                        out.append(idx)
+                self._spread.append(rel)
+            self._level.append(score)
+        if self._rms:
+            self.noise_rms = self._quiet()
         return out
+
+    def _quiet(self) -> float:
+        return max(float(np.percentile(self._rms, NOISE_PCT)), 1e-9)
 
 
 class Locator:
@@ -314,10 +311,6 @@ class Locator:
                     det.gap()
                 self._pending += det.feed(lo + s, data[s:e, :2].astype(np.float64))
             self._cursor = lo + len(valid)
-            if det.missed:
-                with self._lock:
-                    self.skipped_gaps += det.missed
-                det.missed = 0
         self._tick_health(ring, fs)
         pre, post = int(PRE_S * fs), int(POST_S * fs)
         keep: list[int] = []

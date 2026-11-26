@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "session": "2026-11-26_office_pc-10_01",
+  "node": "rzn-601aac",
+  "firmware": "bringup-0.3.0",
+  "start_utc": "2026-11-26T10:28:11.138Z",
+  "sample_rate": 1995,
+  "sample_rate_nominal": 2000,
+  "sample_rate_measured": 1994.8964,
+  "stream": "adc_raw",
+  "clock": "ltc6903",
+  "first_sample": 0,
+  "t_dev_us": 1293238839,
+  "loss": {
+    "device": 0,
+    "link": 0,
+    "host": 0
+  },
+  "link": "usb",
+  "kind": "continuous",
+  "channels": [
+    {
+      "ch": 0,
+      "head": "geophone/sm24",
+      "serial": "unknown",
+      "units": "V",
+      "scale": 3.5762788286319847e-08,
+      "gain": 4,
+      "position_m": [
+        -0.0615,
+        0.0
+      ]
+    },
+    {
+      "ch": 1,
+      "head": "geophone/sm24",
+      "serial": "unknown",
+      "units": "V",
+      "scale": 3.5762788286319847e-08,
+      "gain": 4,
+      "position_m": [
+        0.0615,
+        0.0
+      ]
+    }
+  ],
+  "protocol": "walk-pass-v1",
+  "notes": "rzlab: frames=125446; rate_source=fit; ended=stop\nSide test: LEFT only, 60 s. Geophones about 123 mm apart in the OTIO case; ch0 assumed left.",
+  "labels": []
+}

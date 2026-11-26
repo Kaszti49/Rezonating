@@ -9,9 +9,9 @@ import numpy as np
 import pytest
 
 from rezonating_lab.core.locate import (
+    CH0_SIDE,
     FIRST_S,
-    LEFT_ABOVE,
-    RIGHT_BELOW,
+    LOUDER,
     SPACING_M,
     ZERO_TAU_S,
     StepMeasure,
@@ -25,11 +25,19 @@ from rezonating_lab.sim.room import ROOM_C_MPS, RoomAdcSignal
 from rezonating_lab.sim.scenarios import ScenarioConfig
 
 FS = 1996.1  # the S3 rig's measured rate
+WARM_S = 2.5  # the step detector learns the floor first (about 1.7 s); test steps start after this
 
 
 def burst(t: np.ndarray) -> np.ndarray:
     d = np.clip(t, 0, None)
     return np.where(t >= 0, np.exp(-d / 0.04) * (np.sin(2 * np.pi * 35 * d) + 0.4 * np.sin(2 * np.pi * 90 * d)), 0.0)
+
+
+def knock(t: np.ndarray) -> np.ndarray:
+    """A step as the geophones hear it on a real floor: a short broadband knock (a 250 Hz Ricker pulse, energy up
+    to about 600 Hz, as in the spectrograms of 2026-11-26) on top of the ringing ``burst``."""
+    a = (np.pi * 250.0 * (t - 0.004)) ** 2
+    return burst(t) + np.where(t >= 0, (1 - 2 * a) * np.exp(-a), 0.0)
 
 
 def pair(
@@ -72,44 +80,59 @@ def test_measure_rejects_bad_shapes() -> None:
 
 
 def _m(
-    tau_ms: float, ratio: float = 1.0, cc: float = -0.99, lag_limited: bool = False, corr: float = -0.95
+    lead_ms: float, ratio: float = 1.0, cc: float = -0.99, lag_limited: bool = False, corr: float = -0.95
 ) -> StepMeasure:
-    return StepMeasure(ZERO_TAU_S + tau_ms / 1e3, cc, (1000.0 * ratio, 1000.0), lag_limited, corr)
+    """A measured step: ``lead_ms`` > 0 means channel 0 heard it first; ``ratio`` is ch0 / ch1 loudness."""
+    return StepMeasure(ZERO_TAU_S + lead_ms / 1e3, cc, (1000.0 * ratio, 1000.0), lag_limited, corr)
 
 
-def test_louder_decides_the_side() -> None:
-    assert decide(_m(0.0, ratio=1.36)).side == "left" and decide(_m(0.0, ratio=1.36)).reason == "louder"
-    assert decide(_m(0.0, ratio=0.65)).side == "right"
+def test_channel_0_is_the_right_geophone() -> None:
+    # coin test 2026-11-26: taps by the right geophone reached ch0 first (0.83 ms), by the left one ch1 (0.62 ms)
+    assert CH0_SIDE == "right"
+    assert decide(_m(0.83)).side == "right" and decide(_m(-0.62)).side == "left"
 
 
-def test_louder_beats_first() -> None:
-    assert decide(_m(-1.0, ratio=1.4)).side == "left"
+def test_first_decides_the_side() -> None:
+    f = decide(_m(1.0))
+    assert f.side == "right" and f.reason == "first" and f.lead_s == pytest.approx(1e-3)
+    assert decide(_m(-1.0)).side == "left"
 
 
-def test_first_decides_when_neither_is_clearly_louder() -> None:
-    # the left steps of 2026-11-24 08:53: ratio 1.07, clearly first
-    assert decide(_m(1.0, ratio=1.07)).side == "left" and decide(_m(1.0, ratio=1.07)).reason == "first"
-    assert decide(_m(-1.0, ratio=0.97)).side == "right"
+def test_the_medians_of_the_one_side_walks_of_2026_11_26() -> None:
+    # left walks -0.17 .. -0.22 ms, right walks +0.15 .. +0.17 ms (EXP-005)
+    assert decide(_m(-0.2)).side == "left" and decide(_m(0.16)).side == "right"
+
+
+def test_first_beats_louder() -> None:
+    f = decide(_m(-1.0, ratio=1.8))
+    assert f.side == "left" and f.reason == "first"
+
+
+def test_much_louder_decides_when_the_timing_is_not_clear() -> None:
+    f = decide(_m(0.0, ratio=1.8))
+    assert f.side == "right" and f.reason == "louder" and f.lead_s == 0.0
+    assert decide(_m(0.0, ratio=0.55)).side == "left"
 
 
 def test_neither_is_the_same() -> None:
-    # 2 m front and back of round 1: ratio 0.99 .. 1.01, delay at zero. The old rule called these RIGHT.
-    for ratio in (0.99, 1.0, 1.01, 1.05):
+    # loudness that differs by 10 to 30 % was right for only 47 % of the walks' steps (2026-11-26): no side
+    for ratio in (0.8, 0.93, 1.0, 1.1, 1.3):
         f = decide(_m(0.0, ratio=ratio))
-        assert f.side == "same" and f.reason == "same"
+        assert f.side == "same" and f.reason == "same" and f.lead_s == 0.0
 
 
 def test_limits() -> None:
-    assert decide(_m(0.0, ratio=LEFT_ABOVE * 0.999)).side == "same"
-    assert decide(_m(0.0, ratio=RIGHT_BELOW * 1.001)).side == "same"
+    assert decide(_m(0.0, ratio=LOUDER * 0.999)).side == "same"
+    assert decide(_m(0.0, ratio=1.0 / LOUDER * 1.001)).side == "same"
     assert decide(_m(FIRST_S * 1e3 * 0.99)).side == "same"
+    assert decide(_m(FIRST_S * 1e3 * 1.01)).side == "right"
 
 
-@pytest.mark.parametrize("bad", [dict(cc=-0.6), dict(cc=0.5), dict(lag_limited=True), dict(tau=6.0)])
+@pytest.mark.parametrize("bad", [dict(cc=-0.6), dict(cc=0.5), dict(lag_limited=True), dict(lead=6.0)])
 def test_an_unclear_timing_peak_is_never_first(bad: dict) -> None:
-    tau = bad.pop("tau", 2.0)
-    for ratio, side in ((1.6, "left"), (0.6, "right"), (1.0, "same")):
-        assert decide(_m(tau, ratio=ratio, **bad)).side == side
+    lead = bad.pop("lead", -2.0)
+    for ratio, side in ((1.8, "right"), (0.55, "left"), (1.0, "same")):
+        assert decide(_m(lead, ratio=ratio, **bad)).side == side
 
 
 def test_agree_is_the_zero_lag_correlation_of_either_sign() -> None:
@@ -133,15 +156,17 @@ def test_the_arrival_of_the_step_counts_for_the_loudness() -> None:
 
 
 def test_swap_sides_turns_left_and_right_but_not_same() -> None:
-    assert decide(_m(0.0, ratio=1.4), swap_sides=True).side == "right"
-    assert decide(_m(0.0, ratio=0.6), swap_sides=True).side == "left"
+    assert decide(_m(1.0), swap_sides=True).side == "left"
+    assert decide(_m(-1.0), swap_sides=True).side == "right"
+    assert decide(_m(0.0, ratio=1.8), swap_sides=True).side == "left"
     assert decide(_m(0.0), swap_sides=True).side == "same"
 
 
-def test_the_bad_steps_of_2026_11_24_0915_come_out_left() -> None:
+def test_the_lag_limited_steps_of_2026_11_24_0915_with_that_days_placement() -> None:
+    # left steps whose timing peak sat on the search edge; the case stood the other way round (ch0 on the left)
     ratios = [2.31, 1.97, 2.54, 1.04, 1.44, 1.79, 1.44, 1.72]
-    got = [decide(StepMeasure(6.17e-3, -0.7, (1000.0 * r, 1000.0), True)).side for r in ratios]
-    assert got.count("left") == 7 and got[3] == "same"  # 1.04 is too close to call
+    got = [decide(StepMeasure(6.17e-3, -0.7, (1000.0 * r, 1000.0), True), swap_sides=True).side for r in ratios]
+    assert got.count("left") == 5 and got.count("same") == 3 and "right" not in got
 
 
 @pytest.mark.parametrize(
@@ -164,9 +189,9 @@ def test_walk_side_is_the_majority_of_the_last_three(sides: list[str], want: str
 
 def test_detector_finds_each_burst_once() -> None:
     rng = np.random.default_rng(3)
-    n = int(FS * 6)
+    n = int(FS * (WARM_S + 5))
     x = 100.0 + 0.01 * rng.standard_normal((n, 2))
-    onsets = [int(FS * s) for s in (1.0, 1.6, 2.4, 3.1, 4.5)]
+    onsets = [int(FS * (WARM_S + s)) for s in (0.0, 0.6, 1.4, 2.1, 3.5)]
     t = np.arange(n) / FS
     for o in onsets:
         b = burst(t - o / FS)
@@ -178,20 +203,20 @@ def test_detector_finds_each_burst_once() -> None:
         found += det.feed(i, x[i : i + 80])
     assert len(found) == len(onsets)
     for f, o in zip(found, onsets, strict=True):
-        assert abs(f - o) <= det.block + 2
+        assert abs(f - o) <= det.frame + 2  # the onset is the start of the frame that holds the step
 
 
 def test_detector_one_onset_for_a_long_ringing_step() -> None:
     rng = np.random.default_rng(4)
-    n = int(FS * 5)
+    n = int(FS * (WARM_S + 4))
     t = np.arange(n) / FS
-    d = np.clip(t - 1.0, 0, None)
-    ring = np.where(t >= 1.0, 2000.0 * np.exp(-d / 0.25) * np.sin(2 * np.pi * 14 * d), 0.0)
+    d = np.clip(t - WARM_S, 0, None)
+    ring = np.where(t >= WARM_S, 2000.0 * np.exp(-d / 0.25) * np.sin(2 * np.pi * 14 * d), 0.0)
     x = 100.0 + rng.standard_normal((n, 2)) + ring[:, None]
     det = StepDetector(FS)
     found = det.feed(0, x)
     assert len(found) == 1
-    assert abs(found[0] - int(FS)) <= det.block + 2
+    assert abs(found[0] - int(FS * WARM_S)) <= det.frame + 2
 
 
 def test_detector_finds_small_steps_after_loud_walking() -> None:
@@ -207,11 +232,11 @@ def test_detector_finds_small_steps_after_loud_walking() -> None:
     for k in range(5):
         s = 30.0 + 0.8 * k  # 5.6 s after the last loud step: the floor needs its 5 s to come down
         onsets.append(s)
-        x += (1500.0 * burst(t - s))[:, None]
+        x += (1500.0 * knock(t - s))[:, None]
     det = StepDetector(FS)
     found = np.array(det.feed(0, x))
     assert det.noise_rms < 400  # the floor is the noise, not the tails
-    assert sum(any(abs(found - int(o * FS)) <= 3 * det.block) for o in onsets) == len(onsets)
+    assert sum(any(abs(found - int(o * FS)) <= det.frame + 2) for o in onsets) == len(onsets)
 
 
 def test_detector_floor_follows_a_rise_of_the_background() -> None:
@@ -292,12 +317,12 @@ def test_room_sim_says_the_right_side_for_steps_at_the_sides() -> None:
 
 
 def _feed_steps(loc: Locator, ring: SampleRing, amps: list[float], period_s: float, full_scale: bool = False) -> None:
-    """Steps of the given peak codes every ``period_s`` on both channels, after 1 s of quiet."""
-    n = int(FS * (1.5 + period_s * len(amps)))
+    """Steps of the given peak codes every ``period_s`` on both channels, after ``WARM_S`` of quiet."""
+    n = int(FS * (WARM_S + 0.5 + period_s * len(amps)))
     t = np.arange(n) / FS
     x = 20.0 * np.random.default_rng(6).standard_normal((n, 2))
     for i, a in enumerate(amps):
-        x += (a * burst(t - 1.0 - i * period_s))[:, None]
+        x += (a * burst(t - WARM_S - i * period_s))[:, None]
     if full_scale:
         x = np.clip(x, -(2**23), 2**23 - 1)
     loc.tick()
@@ -306,23 +331,35 @@ def _feed_steps(loc: Locator, ring: SampleRing, amps: list[float], period_s: flo
         loc.tick()
 
 
-def test_detector_counts_a_loud_block_right_after_a_gap() -> None:
+def test_detector_finds_a_step_right_after_a_gap_once() -> None:
     rng = np.random.default_rng(11)
-    n = int(FS * 3)
+    n = int(FS * 4)
     x = 20.0 * rng.standard_normal((n, 2))
     det = StepDetector(FS)
-    det.feed(0, x)
+    assert det.feed(0, x) == []
     det.gap()
-    y = 20.0 * rng.standard_normal((n, 2))
+    y = 20.0 * rng.standard_normal((n, 2)) + 3000.0  # a new DC level after the gap is no step
     t = np.arange(n) / FS
-    y += (5e4 * burst(t - 0.02))[:, None]  # 20 ms after the gap: no onset can be told there
-    assert det.feed(n + 50, y) == []
-    assert det.missed == 1
-    det2 = StepDetector(FS)
-    det2.feed(0, x)
-    det2.gap()
-    det2.feed(n + 50, 20.0 * rng.standard_normal((n, 2)))
-    assert det2.missed == 0
+    y += (5e3 * knock(t - 0.02))[:, None]  # 20 ms after the gap
+    found = det.feed(n + 50, y)
+    assert len(found) == 1 and abs(found[0] - (n + 50 + int(0.02 * FS))) <= det.frame + 2
+
+
+def test_detector_ignores_noise_with_mains_hum_and_finds_knocks() -> None:
+    # k = 3 alone took 25 false steps a minute here; the energy check removes them (2026-11-26)
+    rng = np.random.default_rng(13)
+    n = int(FS * 60)
+    t = np.arange(n) / FS
+    x = 300 * rng.standard_normal((n, 2)) + 2000 * np.sin(2 * np.pi * 100 * t)[:, None]
+    x += 800 * np.sin(2 * np.pi * 245 * t + 1)[:, None]
+    det = StepDetector(FS)
+    assert det.feed(0, x[: n // 2]) == []
+    onsets = [n // 2 + int(FS * s) for s in (1.0, 1.6, 2.2, 2.8)]
+    for o in onsets:
+        x[:, 0] += 8000.0 * knock(t - o / FS)  # a step about as strong as the hum
+        x[:, 1] += 7000.0 * knock(t - o / FS)
+    found = det.feed(n // 2, x[n // 2 :])
+    assert len(found) == len(onsets)
 
 
 def test_health_agreement_rest_level_and_baseline(tmp_path) -> None:
@@ -358,22 +395,22 @@ def test_steps_carry_the_walk_side_and_a_pause_starts_a_new_walk() -> None:
     ring = SampleRing(2, int(FS * 60))
     mgr = FakeManager(ring)
     loc = Locator(mgr, None)
-    n = int(FS * 8)
+    n = int(FS * (WARM_S + 7))
     t = np.arange(n) / FS
     x = 20.0 * np.random.default_rng(6).standard_normal((n, 2))
-    for o in (1.0, 1.7, 2.4, 6.0):
-        b = 5e4 * burst(t - o)
-        x[:, 0] += 1.5 * b
-        x[:, 1] += b
+    for o in (WARM_S, WARM_S + 0.7, WARM_S + 1.4, WARM_S + 5.0):
+        x[:, 0] += 5e4 * knock(t - o)
+        x[:, 1] += 5e4 * knock(t - o - 1e-3)  # channel 0 (right) hears it 1 ms first
     loc.tick()
     for i in range(0, n, 80):
         ring.write(i, np.round(x[i : i + 80]).astype(np.int32))
         loc.tick()
     steps = [e for e in mgr.events if e["type"] == "locate_step"]
-    assert [s["side"] for s in steps] == ["left"] * 4
-    assert [s["walk_side"] for s in steps] == ["same", "left", "left", "same"]
+    assert [s["side"] for s in steps] == ["right"] * 4
+    assert [s["reason"] for s in steps] == ["first"] * 4
+    assert [s["walk_side"] for s in steps] == ["same", "right", "right", "same"]
     assert [s["walk_steps"] for s in steps] == [1, 2, 3, 1]
-    assert loc.view()["sides"] == {"left": 4, "right": 0, "same": 0}
+    assert loc.view()["sides"] == {"left": 0, "right": 4, "same": 0}
 
 
 def test_locator_publishes_steps_and_state(tmp_path) -> None:
@@ -401,12 +438,12 @@ def test_locator_counts_steps_with_lost_samples() -> None:
     loc = Locator(FakeManager(ring), None)
     sig = RoomAdcSignal(ScenarioConfig(seed=2, walk_s=1000.0, rest_s=1.0), acq_id=1)
     chunk = int(FS * 0.04)
+    blocks = [sig.block(i, chunk, FS, (4, 4))[0] for i in range(0, int(FS * (WARM_S + 6)), chunk)]  # makes the steps
+    first_step = int(next(st.t_s for st in sig._steps if st.t_s > WARM_S + 0.5) * FS)
     i = 0
-    first_step = int(sig.cfg.first_step_s * FS)
-    for _ in range(int(3.0 / 0.04)):
-        codes, _ = sig.block(i, chunk, FS, (4, 4))
+    for codes in blocks:
         if i <= first_step + 100 < i + chunk:
-            codes = codes[: first_step + 100 - i]  # lose the rest of this chunk, inside the first step's window
+            codes = codes[: first_step + 100 - i]  # lose the rest of this chunk, inside a step's window
         ring.write(i, codes)
         i += chunk
         loc.tick()
