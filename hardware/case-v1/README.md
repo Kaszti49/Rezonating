@@ -30,12 +30,16 @@ whether the plug passes the tunnel, and lid-to-base overlap in the locked positi
 `geo_lock.py` has the sizes and sums (plain Python prints them). `geo_lock_build.py` builds on `case_v1.py` in FreeCAD, runs the
 checks and writes `geo_lock.FCStd`, `out/geo_lock_*.stl` and `renders/geo_lock_*.png`. It replaces the base and the geophone cups.
 
-Print: base, 2 cages (upside down, as exported), 1 ring with lever socket, 1 plain ring, 2 collars (small supports under the pins),
-lever, rod. Test first with `fit_test_geo_lock_base.stl` plus one cage, one plain ring and one collar.
+Print: base, 2 cages (upside down, as exported), 1 ring with lever, 1 plain ring, 2 collars (small supports under the pins),
+rod. Test first with `fit_test_geo_lock_base.stl` plus one cage, one plain ring and one collar.
 
-Assemble: board in, rings on their towers, collar on each geophone (slit towards the board, zip tie in the groove), geophone into the
-cage from below, cage down turned 12° anticlockwise and then clockwise until it clicks, lever in through the slot (a drop of glue on
-the peg), rod on the two pins, lid.
+**Lever (2026-11-26):** the separate lever was too loose in its socket, even glued. The lever is now part of its ring
+(`geo_lock_ring_lever.stl`, one piece, flat on the plate), with no knob. The base did not change.
+
+Assemble: board in, rings on their towers (the ring with the lever goes in about 2 cm towards the board, just above its towers, then
+slides out along the lever until the bar sticks out through the wall slot), collar on each geophone (slit towards the board, zip tie
+in the groove), geophone into the cage from below, cage down turned 12° anticlockwise and then clockwise until it clicks, rod on the
+two pins, lid.
 
 ## Printing (PLA, Bambu X1E or A1)
 - **Base:** upright, floor on the plate, no supports. The USB tunnel roof is a 27 mm bridge.

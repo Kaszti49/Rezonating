@@ -166,15 +166,12 @@ def make_ring(lever, crank):
     pin.rotate(O, Z, crank)
     s = s.fuse(pin)
     if lever:
-        s = s.fuse(radial_box(20.5, 26, 9, G['RING_Z0'], G['LOW_Z'], LA))
-        s = s.cut(radial_box(20.7, 28, 6.0, 13.0, 15.0, LA))      # socket for the lever's peg
+        # 2026-11-26: the plug-in lever (peg in a socket) was too loose even glued, so the arm is now part of the ring.
+        # No knob: a flat bar slides out through the wall slot when the ring goes in (see the fitting check).
+        # It starts at the ring's underside so it prints flat on the plate; the slot is 11.7 to 16.3.
+        s = s.fuse(radial_box(20.5, 26.6, 9, G['RING_Z0'], G['LOW_Z'], LA))
+        s = s.fuse(radial_box(26.0, G['LEVER_R'], 8, G['RING_Z0'], 15.7, LA))
     return s.removeSplitter()
-
-
-def make_lever():
-    k = Part.makeCylinder(4, 9.7, V(G['LEVER_R'] - 3, 0, 12.3))
-    k.rotate(O, Z, LA)
-    return fuse([radial_box(20.9, 26.6, 5.8, 13.1, 14.9, LA), radial_box(26.3, G['LEVER_R'], 8, 12.3, 15.7, LA), k])
 
 
 def crank_xy(rot):
@@ -211,10 +208,10 @@ def make_base():
 def run(rep):
     rep.append('# parts')
     col, cage, ring_a, ring_b = make_collar(G['D'] / 2), make_cage(), make_ring(True, G['A_DEPLOY']), make_ring(False, G['A_DEPLOY'] - 180)
-    lever, rod, base = make_lever(), make_rod(), make_base()
+    rod, base = make_rod(), make_base()
     geo = Part.makeCylinder(G['D'] / 2, G['H']).fuse(Part.makeBox(12, 6, G['CABLE_TOP'] - G['H'], V(-6, -3, G['H'])))
     parts = {'Base': base, 'Cage_1': put(cage, 1), 'Cage_2': put(cage, 2), 'Ring_1': put(ring_a, 1), 'Ring_2': put(ring_b, 2),
-             'Collar_1': put(col, 1), 'Collar_2': put(col, 2), 'Lever': put(lever, 1), 'Rod': rod}
+             'Collar_1': put(col, 1), 'Collar_2': put(col, 2), 'Rod': rod}
     geos = {1: put(geo, 1), 2: put(geo, 2)}
     dm = {n: s for n, s in C['make_dummies']().items() if not n.startswith('SM-24')}
     for n, s in parts.items():
@@ -237,10 +234,10 @@ def run(rep):
 
     for m in (1, 2):
         a = Part.makeCompound([geos[m], parts[f'Collar_{m}']])
-        for n in ('Base', f'Cage_{m}', f'Ring_{m}', 'Lever', 'Rod'):
+        for n in ('Base', f'Cage_{m}', f'Ring_{m}', 'Rod'):
             d = a.distToShape(parts[n])[0]
             line(d >= 1.45, f'deployed, geophone {m} to {n}: {d:.2f} mm')
-    for n in ('Cage_1', 'Cage_2', 'Ring_1', 'Ring_2', 'Lever', 'Rod'):
+    for n in ('Cage_1', 'Cage_2', 'Ring_1', 'Ring_2', 'Rod'):
         for o, s in list(dm.items()) + [('Base', base)]:
             if vol(parts[n], s) > 0.01:
                 line(False, f'{n} vs {o}: {vol(parts[n], s):.2f} mm3')
@@ -273,17 +270,28 @@ def run(rep):
         x1, y1 = crank_xy(rot)
         r = rod.copy()
         r.translate(V(x1 - x0, y1 - y0, 0))
-        mv = {'Ring_1': turn(parts['Ring_1'], 1, -rot), 'Ring_2': turn(parts['Ring_2'], 2, -rot), 'Lever': turn(parts['Lever'], 1, -rot), 'Rod': r}
+        mv = {'Ring_1': turn(parts['Ring_1'], 1, -rot), 'Ring_2': turn(parts['Ring_2'], 2, -rot), 'Rod': r}
         z = max(0.0, min(G['LIFT'], pin_bottom(rot) - PIN0))
         fixed = list(dm.items()) + [(n, parts[n]) for n in ('Base', 'Cage_1', 'Cage_2')]
         pairs = [(n, s, o, t) for n, s in mv.items() for o, t in fixed]
-        pairs += [(x, mv[x], y, mv[y]) for x, y in (('Rod', 'Ring_1'), ('Rod', 'Ring_2'), ('Rod', 'Lever'), ('Lever', 'Ring_1'))]
+        pairs += [(x, mv[x], y, mv[y]) for x, y in (('Rod', 'Ring_1'), ('Rod', 'Ring_2'))]
         pairs += [('Rod', r, f'Collar_{m}', up(parts[f'Collar_{m}'], z)) for m in (1, 2)]
         bad = [f'{n}/{o} {vol(s, t):.2f}' for n, s, o, t in pairs if vol(s, t) > 0.01]
         line(not bad, f'moving parts, lever {rot:.1f} deg: ' + (', '.join(bad) or 'free'))
     for m in (1, 2):
         v = vol(up(rod, 0.9), parts[f'Ring_{m}'])
         line(v > 0.3, f'rod lifted 0.9 mm: {v:.2f} mm3 into the snap lip of ring {m} (must be held)')
+    # fit the one-piece ring with the board in and before the cage: lower it with the arm inside the wall,
+    # 0.3 above its towers, then slide it out along the arm until the bar sticks out through the slot
+    u = V(math.cos(math.radians(LA)), math.sin(math.radians(LA)), 0)
+    bad, back = [], 21.0
+    for d, z in [(back, z) for z in (25, 15, 8, 4, 1, 0.3)] + [(d, 0.3) for d in (18, 15, 12, 9, 6, 3, 0)] + [(0, 0)]:
+        r = up(parts['Ring_1'], z)
+        r.translate(u * -d)
+        hits = [f'{o} {vol(r, s):.2f}' for o, s in [('Base', base)] + list(dm.items()) if vol(r, s) > 0.01]
+        if hits:
+            bad.append(f'back {d:.0f} up {z}: ' + ', '.join(hits))
+    line(not bad, f'ring with lever fitting path (lower {back:.0f} mm in, slide out through the slot): ' + ('; '.join(bad) or 'free'))
     for m in (1, 2):      # fit the cage with the board already in: drop in turned by TWIST, then turn to lock
         bad, total, ends = [], 0.0, 0.0
         for z, t in ((15, 1), (8, 1), (4, 1), (2, 1), (0, 1), (0, .75), (0, .5), (0, .1), (0, 0)):
@@ -309,7 +317,7 @@ def run(rep):
     flat.rotate(O, V(1, 0, 0), 180)        # the cage prints upside down
     coupon = base.common(Part.makeCylinder(27, 14, V(0, -GY, -1)))
     for n, s in (('geo_lock_base', base), ('geo_lock_cage_x2', flat), ('geo_lock_ring_lever', ring_a), ('geo_lock_ring_plain', ring_b),
-                 ('geo_lock_collar_x2', make_collar((G['D'] - G['COL_INT']) / 2)), ('geo_lock_lever', lever), ('geo_lock_rod', rod),
+                 ('geo_lock_collar_x2', make_collar((G['D'] - G['COL_INT']) / 2)), ('geo_lock_rod', rod),
                  ('fit_test_geo_lock_base', coupon)):
         s = up(s, -s.BoundBox.ZMin)
         MeshPart.meshFromShape(Shape=s, LinearDeflection=0.02, AngularDeflection=0.08, Relative=False).write(os.path.join(OUT, n + '.stl'))
@@ -322,7 +330,7 @@ def run(rep):
 
 def pictures(ob):
     import FreeCADGui as Gui
-    colors = {'Base': (.93, .93, .91), 'Cage': (.20, .45, .75), 'Ring': (.95, .55, .15), 'Coll': (.85, .2, .2), 'Leve': (.95, .55, .15),
+    colors = {'Base': (.93, .93, .91), 'Cage': (.20, .45, .75), 'Ring': (.95, .55, .15), 'Coll': (.85, .2, .2),
               'Rod': (.95, .55, .15), 'SM24': (.75, .6, .2), 'Perf': (.1, .45, .25), 'ESP3': (.15, .15, .18), 'ADC_': (.6, .1, .1)}
     for n, o in ob.items():
         o.ViewObject.ShapeColor = colors.get(n[:4], (.4, .4, .4))
@@ -356,12 +364,11 @@ def pictures(ob):
             pose(f'Ring_{m}', App.Placement(O, App.Rotation(Z, -rot), V(0, GY if m == 1 else -GY, 0)))
             for n in (f'Collar_{m}', f'SM24_{m}'):
                 pose(n, App.Placement(V(0, 0, z), App.Rotation()))
-        pose('Lever', App.Placement(O, App.Rotation(Z, -rot), V(0, GY, 0)))
         x1, y1 = crank_xy(rot)
         pose('Rod', App.Placement(V(x1 - x0, y1 - y0, 0), App.Rotation()))
         save('iso', f'geo_lock_{tag}_iso.png')
         save('top', f'geo_lock_{tag}_top.png')
-        hid = [o for n, o in ob.items() if n not in ('Cage_1', 'Ring_1', 'Collar_1', 'SM24_1', 'Lever')]
+        hid = [o for n, o in ob.items() if n not in ('Cage_1', 'Ring_1', 'Collar_1', 'SM24_1')]
         ob['Cage_1'].ViewObject.Transparency = 70
         for o in hid:
             o.ViewObject.Visibility = False

@@ -15,22 +15,19 @@ Board edge 16.5 from the geophone axis: cage reaches 15.63 towards it; cam ring 
 OK   Base: valid True, solids 1, 195.07 cm3
 OK   Cage_1: valid True, solids 1, 3.57 cm3
 OK   Cage_2: valid True, solids 1, 3.57 cm3
-OK   Ring_1: valid True, solids 1, 2.73 cm3
+OK   Ring_1: valid True, solids 1, 3.39 cm3
 OK   Ring_2: valid True, solids 1, 2.68 cm3
 OK   Collar_1: valid True, solids 1, 2.30 cm3
 OK   Collar_2: valid True, solids 1, 2.30 cm3
-OK   Lever: valid True, solids 1, 0.92 cm3
 OK   Rod: valid True, solids 1, 3.01 cm3
 # checks
 OK   deployed, geophone 1 to Base: 3.30 mm
 OK   deployed, geophone 1 to Cage_1: 1.77 mm
 OK   deployed, geophone 1 to Ring_1: 1.50 mm
-OK   deployed, geophone 1 to Lever: 6.00 mm
 OK   deployed, geophone 1 to Rod: 3.54 mm
 OK   deployed, geophone 2 to Base: 3.30 mm
 OK   deployed, geophone 2 to Cage_2: 1.77 mm
 OK   deployed, geophone 2 to Ring_2: 1.50 mm
-OK   deployed, geophone 2 to Lever: 125.74 mm
 OK   deployed, geophone 2 to Rod: 5.28 mm
 OK   deployed, 1 deg tilted and 0.9 mm off centre, 8 directions: worst overlap 0.000 mm3
 OK   lever 0.0 deg, geophone up 0.00: pins vs cam 0.00, vs cage 0.00 mm3
@@ -51,9 +48,11 @@ OK   moving parts, lever 43.2 deg: free
 OK   moving parts, lever 58.0 deg: free
 OK   rod lifted 0.9 mm: 0.71 mm3 into the snap lip of ring 1 (must be held)
 OK   rod lifted 0.9 mm: 0.71 mm3 into the snap lip of ring 2 (must be held)
+OK   ring with lever fitting path (lower 21 mm in, slide out through the slot): free
 OK   cage 1 fitting path: z0 turn9: 0.03, z0 turn6: 0.39, z0 turn1: 0.14 (under 2 in all is the click bumps; 0 when locked)
 OK   cage 1 pulled up 0.6 mm while locked: 4.41 mm3 in the nubs (must be held)
 OK   cage 2 fitting path: z0 turn9: 0.03, z0 turn6: 0.39, z0 turn1: 0.14 (under 2 in all is the click bumps; 0 when locked)
 OK   cage 2 pulled up 0.6 mm while locked: 4.41 mm3 in the nubs (must be held)
 OK   lid closed over it: free
+SKIP pictures: 'NoneType' object has no attribute 'ShapeColor'
 DONE
